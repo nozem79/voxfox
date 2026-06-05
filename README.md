@@ -1,3 +1,5 @@
+<img width="1376" height="577" alt="VOXFOX-GIT-BG" src="https://github.com/user-attachments/assets/389bf7d3-8538-4748-b6ca-4e75b916f019" />
+
 # VoxFox
 
 A screen reader and dictation tool for Linux with a graphical (GTK4) interface,
