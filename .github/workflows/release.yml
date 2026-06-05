@@ -1,0 +1,44 @@
+name: Build & release .deb
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write          # needed to create the Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive version from the tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Keep the in-app version in sync with the tag
+        run: |
+          sed -i 's/^APP_VERSION = .*/APP_VERSION = "${{ steps.ver.outputs.version }}"/' src/voxfox_gtk.py
+
+      - name: Build the .deb
+        run: VERSION="${{ steps.ver.outputs.version }}" bash packaging/build-deb.sh
+
+      - name: Extract this version's changelog section
+        run: |
+          awk -v ver="${{ steps.ver.outputs.version }}" \
+            '$1=="##" && $2==ver {f=1; next} $1=="##" && f {f=0} f {print}' \
+            CHANGELOG.md > RELEASE_NOTES.md
+          [ -s RELEASE_NOTES.md ] || echo "VoxFox ${{ steps.ver.outputs.version }}" > RELEASE_NOTES.md
+
+      - name: Publish the Release with the .deb attached
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VoxFox ${{ steps.ver.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          files: voxfox_${{ steps.ver.outputs.version }}_all.deb

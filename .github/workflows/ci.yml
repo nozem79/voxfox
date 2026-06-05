@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install pyflakes
+
+      - name: Byte-compile everything (catches syntax errors)
+        run: python -m py_compile src/voxfox_gtk.py src/voxfox_core/*.py
+
+      - name: Pyflakes — fail only on undefined names
+        run: |
+          echo "--- full pyflakes report (informational) ---"
+          pyflakes src/voxfox_core/*.py src/voxfox_gtk.py || true
+          echo "--- gate: undefined names ---"
+          ! pyflakes src/voxfox_core/*.py src/voxfox_gtk.py 2>&1 | grep -i "undefined name"
