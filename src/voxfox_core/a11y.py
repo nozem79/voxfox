@@ -244,7 +244,8 @@ def get_window_at(x, y):
     try:
         r = subprocess.run(
             ["xdotool", "getmouselocation", "--shell"],
-            capture_output=True, text=True, timeout=1.0)
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            text=True, timeout=1.0)
         for line in r.stdout.splitlines():
             if line.startswith("WINDOW="):
                 val = line.split("=", 1)[1].strip()
@@ -259,7 +260,8 @@ def get_pid_for_window(win_id):
     try:
         r = subprocess.run(
             ["xdotool", "getwindowpid", str(win_id)],
-            capture_output=True, text=True, timeout=1.0)
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            text=True, timeout=1.0)
         if r.returncode == 0:
             return int(r.stdout.strip())
     except Exception:
@@ -349,7 +351,6 @@ def _query_app(app, x, y) -> str:
 
 def _best_text(node) -> str:
     """Get the best text from a node, walking up to parent if needed."""
-    import pyatspi
     # Try the node itself first
     t = _node_text(node)
     if t:
@@ -550,9 +551,23 @@ _last_event_time  = 0.0  # timestamp of last event-based speak
 _event_listener = None
 
 
-def _on_focus_event(event):
-    """Called by AT-SPI when any element gains focus or is selected."""
+def _speak_if_new(text):
+    """Speak text only if it differs from what we last announced, and record
+    the time so the polling hover can stay quiet for a moment afterwards."""
     global _last_spoken, _last_event_time
+    if not text:
+        return
+    with _last_spoken_lock:
+        if text == _last_spoken:
+            return
+        _last_spoken     = text
+        _last_event_time = time.monotonic()
+    cfg = _get_slot_config() if _get_slot_config else {}
+    speak(text, cfg)
+
+
+def _on_focus_event(event):
+    """Called by AT-SPI when an element gains focus (or its item is selected)."""
     if not _hover_running:
         return
     try:
@@ -570,20 +585,55 @@ def _on_focus_event(event):
             except Exception:
                 pass
 
-        if not text:
-            return
-
-        with _last_spoken_lock:
-            if text == _last_spoken:
-                return
-            _last_spoken     = text
-            _last_event_time = time.monotonic()
-
-        cfg = _get_slot_config() if _get_slot_config else {}
-        speak(text, cfg)
+        _speak_if_new(text)
 
     except Exception as e:
         log.debug(f"Focus event error: {e}")
+
+
+def _on_selection_event(event):
+    """A selection changed in a container (list, icon view, tree). Read the
+    selected item itself, not the container — this is what makes Nemo's icon
+    and list views speak while you arrow or click through them, the way a
+    screen reader does on focus."""
+    if not _hover_running:
+        return
+    try:
+        node = event.source
+        if node is None:
+            return
+        sel = node.querySelection()
+        if sel.nSelectedChildren < 1:
+            return
+        child = sel.getSelectedChild(0)
+        if child is not None:
+            _speak_if_new(_node_text(child))
+    except Exception as e:
+        log.debug(f"Selection event error: {e}")
+
+
+def _on_caret_event(event):
+    """The text caret moved (typing, arrow keys, clicking into text). Read the
+    line at the new caret position. Deduplicated, so resting on a line is
+    silent; moving to a new line reads it."""
+    if not _hover_running:
+        return
+    try:
+        import pyatspi
+        node = event.source
+        if node is None:
+            return
+        offset = int(getattr(event, "detail1", -1) or -1)
+        if offset < 0:
+            return
+        txt = node.queryText()
+        seg = txt.getTextAtOffset(offset, pyatspi.TEXT_BOUNDARY_LINE_START)
+        line = (seg[0] if isinstance(seg, (tuple, list)) else seg.content)
+        line = line.replace("\uFFFC", "").strip()
+        if line and len(line) > 1:
+            _speak_if_new(_trim_text(line))
+    except Exception as e:
+        log.debug(f"Caret event error: {e}")
 
 
 def _start_event_listener():
@@ -597,13 +647,21 @@ def _start_event_listener():
             def onStateChanged(self, event):
                 if event.type.endswith(("focused", "selected")):
                     _on_focus_event(event)
+            def onSelection(self, event):
+                _on_selection_event(event)
+            def onCaret(self, event):
+                _on_caret_event(event)
 
         _event_listener = Listener()
         pyatspi.Registry.registerEventListener(_event_listener.onFocus, "focus")
         pyatspi.Registry.registerEventListener(_event_listener.onStateChanged,
                                                "object:state-changed:focused")
-        pyatspi.Registry.registerEventListener(_event_listener.onStateChanged,
+        pyatspi.Registry.registerEventListener(_event_listener.onSelection,
                                                "object:selection-changed")
+        # Caret-following (onCaret) is intentionally NOT registered by default:
+        # while dictating, VoxFox types into a field and the caret moves, which
+        # would make it read back what is being typed. Left available for a
+        # future opt-in toggle.
         log.info("AT-SPI event listener started")
         pyatspi.Registry.start(async_=False)
     except Exception as e:
@@ -620,7 +678,7 @@ def _stop_event_listener():
             pyatspi.Registry.deregisterEventListener(
                 _event_listener.onStateChanged, "object:state-changed:focused")
             pyatspi.Registry.deregisterEventListener(
-                _event_listener.onStateChanged, "object:selection-changed")
+                _event_listener.onSelection, "object:selection-changed")
         pyatspi.Registry.stop()
         log.info("AT-SPI event listener stopped")
     except Exception as e:

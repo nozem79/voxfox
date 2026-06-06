@@ -15,7 +15,7 @@ nette labels voor schermlezers.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_2.0.2_all.deb
+sudo apt install ./voxfox_2.0.3_all.deb
 ```
 
 `apt` haalt de afhankelijkheden automatisch op. Start VoxFox daarna via het
@@ -25,8 +25,8 @@ toepassingenmenu, of met het commando `voxfox` in een terminal.
 > de download "door root en niet in een sandbox gebeurt, omdat `_apt` het
 > bestand niet kon benaderen". Dit is onschuldig — de installatie wordt gewoon
 > voltooid. Wil je de melding voorkomen, installeer dan vanaf een map die voor
-> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_2.0.2_all.deb /tmp/ &&
-> sudo apt install /tmp/voxfox_2.0.2_all.deb`.
+> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_2.0.3_all.deb /tmp/ &&
+> sudo apt install /tmp/voxfox_2.0.3_all.deb`.
 
 ### Wat het pakket installeert
 

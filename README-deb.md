@@ -13,7 +13,7 @@ Whisper, a tesseract CLI fallback for OCR, and proper screen-reader labels.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_2.0.2_all.deb
+sudo apt install ./voxfox_2.0.3_all.deb
 ```
 
 `apt` pulls in the dependencies automatically. Then launch VoxFox from the
@@ -22,8 +22,8 @@ application menu, or run `voxfox` in a terminal.
 > If you install from your home folder you may see a notice that the download
 > "is performed by root and not sandboxed, because `_apt` could not access the
 > file". This is harmless — the install still completes. To avoid it, install
-> from a world-readable path, e.g. `sudo cp voxfox_2.0.2_all.deb /tmp/ && sudo
-> apt install /tmp/voxfox_2.0.2_all.deb`.
+> from a world-readable path, e.g. `sudo cp voxfox_2.0.3_all.deb /tmp/ && sudo
+> apt install /tmp/voxfox_2.0.3_all.deb`.
 
 ### What the package installs
 

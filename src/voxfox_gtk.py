@@ -54,7 +54,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.2"
+APP_VERSION = "2.0.4"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -505,6 +505,7 @@ class PreferencesWindow(Gtk.Window):
         speed.set_draw_value(True)
         grid.attach(Gtk.Label(label=_("Speed:"), xalign=0), 0, 3, 1, 1)
         grid.attach(speed, 1, 3, 1, 1)
+        _a11y(speed, _("Speed:").rstrip(": "))
 
         # Pitch in semitones: 0 = the voice's natural pitch, negative = lower,
         # positive = higher. Applied in the speech worker by playing at a shifted
@@ -516,6 +517,7 @@ class PreferencesWindow(Gtk.Window):
         pitch.set_draw_value(True)
         grid.attach(Gtk.Label(label=_("Pitch:"), xalign=0), 0, 4, 1, 1)
         grid.attach(pitch, 1, 4, 1, 1)
+        _a11y(pitch, _("Pitch:").rstrip(": "))
 
         def on_lang(dd, _p):
             lang = _dropdown_value(dd)
@@ -1175,6 +1177,52 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
     def refresh_setup_bar(self):
         self.setup_bar.set_visible(not os.path.exists(vf.PIPER_BIN))
 
+    def get_window_pos(self):
+        """Return (x, y) of our window via wmctrl (X11 only), or None.
+        GTK4 has no portable get_position(), so we read it from the window
+        manager. Matches our window by its exact title (APP_NAME)."""
+        if not vf._have("wmctrl"):
+            return None
+        try:
+            r = subprocess.run(["wmctrl", "-lG"],
+                               capture_output=True, text=True, timeout=5)
+            for line in r.stdout.splitlines():
+                parts = line.split(None, 7)
+                if len(parts) >= 8 and parts[7].strip() == vf.APP_NAME:
+                    return (int(parts[2]), int(parts[3]))
+        except Exception as e:
+            log.debug(f"could not read window position: {e}")
+        return None
+
+    def save_window_pos(self):
+        """Remember the current window position so the next start reopens here."""
+        try:
+            pos = self.get_window_pos()
+            if pos:
+                self.state["win_pos"] = [pos[0], pos[1]]
+                vf.save_state(self.state)
+        except Exception as e:
+            log.debug(f"could not save window position: {e}")
+
+    def restore_window_pos(self):
+        """Move the window back to its saved position (X11 only, best-effort).
+        Size is left unchanged (-1,-1)."""
+        pos = (self.state or {}).get("win_pos")
+        if not pos or not vf._have("wmctrl"):
+            return
+        try:
+            x, y = int(pos[0]), int(pos[1])
+        except (TypeError, ValueError, IndexError):
+            return
+
+        def worker():
+            try:
+                subprocess.run(["wmctrl", "-F", "-r", vf.APP_NAME,
+                                "-e", f"0,{x},{y},-1,-1"], timeout=5)
+            except Exception as e:
+                log.debug(f"restore window position failed: {e}")
+        threading.Thread(target=worker, daemon=True).start()
+
     def set_always_on_top(self):
         """Keep the window above others, like the old Tk build's -topmost.
         GTK4 dropped a native always-on-top API, so this is best-effort via
@@ -1423,6 +1471,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             app.quit()
 
     def do_quit_cleanup(self):
+        self.save_window_pos()
         vf.set_hover_running(False)
         try:
             vf.stop_speaking()
@@ -1445,6 +1494,9 @@ class VoxFoxApplication(Gtk.Application):
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
+        # GDK has opened its X display by now; make stray Xlib errors (e.g. a
+        # window vanishing mid-query during hover) non-fatal so they can't crash us.
+        _install_x_error_handler()
         for name, cb in (("about", self._on_about),
                          ("history", self._on_history),
                          ("setup", self._on_setup),
@@ -1461,9 +1513,13 @@ class VoxFoxApplication(Gtk.Application):
             self.ipc_server = vf.IPCServer(self.win)
             self.ipc_server.start()
         self.win.present()
-        # Re-assert always-on-top after the window is mapped. Try a few times
-        # because the window title may not be set at the X level immediately,
-        # which would make the wmctrl match miss on a single early attempt.
+        # Restore the last on-screen position (X11), then re-assert always-on-top
+        # after the window is mapped. Both are retried a few times because the
+        # window title may not be set at the X level immediately, which would
+        # make the wmctrl match miss on a single early attempt.
+        for delay in (300, 1000):
+            GLib.timeout_add(delay,
+                             lambda: (self.win.restore_window_pos(), False)[1])
         for delay in (400, 1200, 2500):
             GLib.timeout_add(delay,
                              lambda: (self.win.set_always_on_top(), False)[1])
@@ -1556,7 +1612,64 @@ def _build_arg_parser():
     return p
 
 
+_X_ERROR_HANDLER_REF = None
+
+
+def _install_x_error_handler():
+    """Make Xlib errors non-fatal. By default libX11 prints the error and
+    calls exit(), so a single BadWindow (a window that vanished while it was
+    being queried) takes the whole app down. We install a handler that swallows
+    such transient errors instead. Installed in do_startup, after GDK has opened
+    its display, so this overrides GDK's default (last XSetErrorHandler wins)."""
+    global _X_ERROR_HANDLER_REF
+    try:
+        import ctypes
+        x11 = ctypes.CDLL("libX11.so.6")
+        proto = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p)
+
+        def _handler(_display, _event):
+            return 0  # ignore; do not abort the process
+
+        _X_ERROR_HANDLER_REF = proto(_handler)  # keep a ref so it is not GC'd
+        x11.XSetErrorHandler(_X_ERROR_HANDLER_REF)
+        log.debug("Installed non-fatal X error handler")
+    except Exception as e:
+        log.debug(f"could not install X error handler: {e}")
+
+
+def _enable_accessibility():
+    """Coax the desktop accessibility stack on at startup, the way a screen
+    reader (Orca) does, so GTK apps and browsers build and keep their AT-SPI
+    trees. Without this a browser may not populate its tree until a recognised
+    assistive technology shows up, leaving hover with nothing to read.
+    Best-effort: any failure is ignored."""
+    try:
+        from gi.repository import Gio
+        src = Gio.SettingsSchemaSource.get_default()
+        if src is None:
+            return
+        for schema in ("org.gnome.desktop.interface",
+                       "org.cinnamon.desktop.interface",
+                       "org.mate.interface"):
+            try:
+                sch = src.lookup(schema, True)
+                if sch is None or not sch.has_key("toolkit-accessibility"):
+                    continue
+                s = Gio.Settings.new(schema)
+                if not s.get_boolean("toolkit-accessibility"):
+                    s.set_boolean("toolkit-accessibility", True)
+                    log.info(f"Enabled toolkit-accessibility via {schema}")
+            except Exception as e:
+                log.debug(f"a11y enable via {schema} failed: {e}")
+    except Exception as e:
+        log.debug(f"accessibility warm-up skipped: {e}")
+
+
 def main():
+    # Turn the accessibility stack on early (like a screen reader) so browsers
+    # and GTK apps build their AT-SPI trees that hover-to-read depends on.
+    _enable_accessibility()
+
     # Create XDG dirs and migrate any 1.x / Tk-era data forward (non-destructive).
     vf.init_storage()
 

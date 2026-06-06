@@ -18,7 +18,7 @@ mistake.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_2.0.2_all.deb
+sudo apt install ./voxfox_2.0.3_all.deb
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,

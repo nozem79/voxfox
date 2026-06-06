@@ -19,7 +19,7 @@
 
 import fcntl, os, socket, sys, threading
 from .a11y import _clipboard_set
-from .common import APP_NAME, LOCK_FILE, PID_FILE, RUNTIME_DIR, SOCKET_PATH, _, app, load_translations, log
+from .common import APP_NAME, LOCK_FILE, PID_FILE, RUNTIME_DIR, SOCKET_PATH, _, load_translations, log
 from .ocr import OCR_SUPPORTED_EXTS, _tess_lang, ocr_file
 from .state import load_state
 

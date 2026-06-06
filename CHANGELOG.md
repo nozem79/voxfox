@@ -5,6 +5,28 @@ build; the original Tk version is no longer maintained.
 
 Format loosely follows Keep a Changelog. Dates are left for you to fill in.
 
+## 2.0.4
+
+- The window position is now remembered: VoxFox reopens where you left it.
+  (X11 only; saved on close and restored on the next start.)
+- More reliable hover-to-read in browsers: VoxFox now switches on the desktop
+  accessibility stack at startup, the way a screen reader does, so Firefox and
+  Chromium-based browsers expose their page content for reading.
+- VoxFox now reads the selected item as you move through lists, file managers
+  and trees by keyboard or click — following focus and selection, not only the
+  mouse pointer.
+- Robustness: a window disappearing while it is being read can no longer crash
+  VoxFox (stray X errors are handled instead of being fatal).
+
+## 2.0.3
+
+- Housekeeping: removed three unused imports left over from the 2.0 package
+  split (`_have` in tts, `app` in ipc, a stray `pyatspi` in a11y). No behaviour
+  change.
+- Accessibility: the speed and pitch sliders now carry explicit accessible
+  names, so screen readers announce them as "Speed"/"Pitch" (translated)
+  instead of an unlabelled slider.
+
 ## 2.0.2
 
 - Fixed the pitch control: in 2.0.1 it changed the speaking tempo instead of the

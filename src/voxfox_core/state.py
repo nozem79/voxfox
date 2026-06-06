@@ -50,6 +50,9 @@ DEFAULT_STATE = {
     # ui_lang is kept here for backwards-compat with older state files,
     # but is now derived from slot1["lang"] at runtime and ignored on load.
     "ui_lang": "en",
+    # Last on-screen window position [x, y], saved on close and restored on
+    # the next start. X11 only (GTK4 has no portable window positioning).
+    "win_pos": None,
 }
 
 
@@ -79,6 +82,7 @@ def load_state():
                          DEFAULT_STATE["whisper"]["confirm_before_typing"])
             s.setdefault("merge_lines",  DEFAULT_STATE["merge_lines"])
             s.setdefault("pronunciations", {})
+            s.setdefault("win_pos", None)
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).

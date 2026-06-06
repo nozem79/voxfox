@@ -16,7 +16,7 @@ horen.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_2.0.2_all.deb
+sudo apt install ./voxfox_2.0.3_all.deb
 ```
 
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,

@@ -18,7 +18,7 @@
 """voxfox_core.tts — Text-to-speech: Piper voices, chunking, the speaking worker."""
 
 import json, os, re, subprocess, tempfile, threading, time, urllib.request
-from .common import BASE_URL, CHUNK_SIZE, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, _have, app, log
+from .common import BASE_URL, CHUNK_SIZE, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log
 
 
 
