@@ -23,4 +23,4 @@ jobs:
           echo "--- full pyflakes report (informational) ---"
           pyflakes src/voxfox_core/*.py src/voxfox_gtk.py || true
           echo "--- gate: undefined names ---"
-          ! pyflakes src/voxfox_core/*.py src/voxfox_gtk.py 2>&1 | grep -i "undefined name"
+          ! pyflakes src/voxfox_core/*.py src/voxfox_gtk.py 2>&1 | grep -iE "undefined name '"
