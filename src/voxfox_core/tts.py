@@ -332,7 +332,10 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
       from the start. (Piper writes the whole WAV before playback, so we
       can't truly mid-stream pause without a more capable player.)
 
-    Adds a small fixed pause (300ms) between chunks for natural pacing.
+    The NEXT chunk is synthesized in the background while the current one
+    plays (prefetch). Without this, every chunk was only synthesized after
+    the previous one finished playing, which inserted Piper's synthesis
+    time (roughly 0.5-1 s) as an audible gap at every paragraph break.
     """
     global _progress
     voice = slot_config.get("voice", "")
@@ -374,107 +377,145 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
             time.sleep(0.05)
         return False
 
-    for idx, (chunk, ends_paragraph) in enumerate(chunks):
-        if stop_evt.is_set():
-            break
-
-        # Honor pause between chunks.
-        if _wait_while_paused():
-            break
-
-        _progress = {"chunk": idx + 1, "total": len(chunks),
-                     "text": chunk[:80]}
-
-        wav_path = None
+    def _synth(text):
+        """Run Piper on `text`; return the (pitch-retuned) wav path or None."""
+        path = None
         try:
             with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
-                wav_path = f.name
-
+                path = f.name
             p = subprocess.Popen(
-                [PIPER_BIN, "--model", model, "--output_file", wav_path,
+                [PIPER_BIN, "--model", model, "--output_file", path,
                  "--length_scale", str(round(pitch_factor / speed, 2)),
                  # Halve Piper's default inter-sentence silence (0.2s -> 0.1s).
                  # The default feels sluggish on paragraph breaks because each
-                 # chunk ends with this silence baked into the WAV. Cutting it
-                 # in half makes paragraph transitions noticeably snappier
-                 # while still leaving an audible breath.
+                 # chunk ends with this silence baked into the WAV.
                  "--sentence_silence", "0.1",
                  "--quiet"],
                 stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, env=env)
-            p.stdin.write(chunk.encode("utf-8"))
+            p.stdin.write(text.encode("utf-8"))
             p.stdin.close()
             p.wait()
-            if stop_evt.is_set():
-                break
-            if not os.path.isfile(wav_path) or os.path.getsize(wav_path) < 100:
-                continue
-
-            # Pitch shift: rewrite the WAV's sample rate so players reproduce it
-            # higher/lower. (length_scale above already cancelled the tempo side
+            if not os.path.isfile(path) or os.path.getsize(path) < 100:
+                raise RuntimeError("empty wav")
+            # Pitch shift: rewrite the WAV's sample rate so players reproduce
+            # it higher/lower. (length_scale already cancelled the tempo side
             # effect.) Skip when pitch is 0 so output is byte-for-byte as before.
             if abs(pitch_factor - 1.0) > 1e-6:
-                _retune_wav(wav_path, play_rate)
-
-            # Play this chunk; retry from the start on pause-then-resume. The
-            # players take the sample rate from the (possibly retuned) header.
-            for player_cmd in [["paplay", wav_path],
-                               ["aplay", "-q", wav_path]]:
-                played_ok = False
-                # Inner retry loop for pause/resume.
-                while True:
-                    try:
-                        p2 = subprocess.Popen(player_cmd,
-                                              stdout=subprocess.DEVNULL,
-                                              stderr=subprocess.DEVNULL)
-                    except FileNotFoundError:
-                        break  # try next player
-                    paused_mid = False
-                    while p2.poll() is None:
-                        if stop_evt.is_set():
-                            p2.terminate()
-                            p2.wait()
-                            return
-                        if pause_evt.is_set():
-                            p2.terminate()
-                            p2.wait()
-                            paused_mid = True
-                            break
-                        time.sleep(0.05)
-                    if paused_mid:
-                        if _wait_while_paused():
-                            return
-                        continue  # retry the same player from the top
-                    if p2.returncode == 0:
-                        played_ok = True
-                    break  # exit inner retry loop
-                if played_ok:
-                    break  # don't try the next player
+                _retune_wav(path, play_rate)
+            return path
         except Exception as e:
-            log.error(f"Speech error: {e}")
-        finally:
-            if wav_path:
+            log.debug(f"synthesis failed: {e}")
+            if path:
                 try:
-                    os.unlink(wav_path)
+                    os.unlink(path)
                 except Exception:
                     pass
+            return None
 
-        # Inter-chunk pause. Piper itself inserts a small natural pause when
-        # a chunk ends in a punctuation mark (. ! ?), so we add nothing on
-        # top of that — otherwise paragraph breaks pile up two pauses and
-        # feel sluggish. Lines without trailing punctuation (bullets, code,
-        # CLI commands) get a tiny pause so they don't smush together.
-        if idx < len(chunks) - 1:
-            ends_punctuated = chunk.rstrip().endswith((".", "!", "?", ":", ";"))
-            gap = 0.0 if ends_punctuated else 0.025
-            if gap and _responsive_sleep(gap):
+    def _play(path):
+        """Play one wav. Returns 'ok', 'failed' or 'stop'."""
+        for player_cmd in [["paplay", path], ["aplay", "-q", path]]:
+            while True:  # retry loop for pause/resume
+                try:
+                    p2 = subprocess.Popen(player_cmd,
+                                          stdout=subprocess.DEVNULL,
+                                          stderr=subprocess.DEVNULL)
+                except FileNotFoundError:
+                    break  # player missing: try the next one
+                paused_mid = False
+                while p2.poll() is None:
+                    if stop_evt.is_set():
+                        p2.terminate()
+                        p2.wait()
+                        return "stop"
+                    if pause_evt.is_set():
+                        p2.terminate()
+                        p2.wait()
+                        paused_mid = True
+                        break
+                    time.sleep(0.05)
+                if paused_mid:
+                    if _wait_while_paused():
+                        return "stop"
+                    continue  # replay this chunk with the same player
+                if p2.returncode == 0:
+                    return "ok"
+                break  # player error: try the next one
+        return "failed"
+
+    # --- Prefetch pipeline -------------------------------------------------
+    next_holder = []
+    next_thread = None
+
+    def _start_prefetch(text):
+        nonlocal next_holder, next_thread
+        next_holder = []
+        next_thread = threading.Thread(
+            target=lambda: next_holder.append(_synth(text)), daemon=True)
+        next_thread.start()
+
+    def _collect_prefetch():
+        nonlocal next_thread
+        if next_thread is None:
+            return None
+        next_thread.join()
+        next_thread = None
+        return next_holder[0] if next_holder else None
+
+    current = None
+    try:
+        for idx, (chunk, ends_paragraph) in enumerate(chunks):
+            if stop_evt.is_set():
+                break
+            if _wait_while_paused():
                 break
 
-    _progress = {"chunk": 0, "total": 0, "text": ""}
+            _progress = {"chunk": idx + 1, "total": len(chunks),
+                         "text": chunk[:80]}
+
+            # First chunk (or a failed prefetch): synthesize on the spot.
+            if current is None:
+                current = _synth(chunk)
+            # Kick off synthesis of the NEXT chunk while this one plays.
+            if idx + 1 < len(chunks):
+                _start_prefetch(chunks[idx + 1][0])
+
+            if current is not None:
+                result = _play(current)
+                try:
+                    os.unlink(current)
+                except Exception:
+                    pass
+                current = None
+                if result == "stop":
+                    break
+
+            # Inter-chunk pause. Piper itself inserts a small natural pause
+            # when a chunk ends in a punctuation mark (. ! ?), so we add
+            # nothing on top of that. Lines without trailing punctuation
+            # (bullets, code, CLI commands) get a tiny pause so they don't
+            # smush together.
+            if idx < len(chunks) - 1:
+                ends_punctuated = chunk.rstrip().endswith((".", "!", "?", ":", ";"))
+                gap = 0.0 if ends_punctuated else 0.025
+                if gap and _responsive_sleep(gap):
+                    break
+
+            current = _collect_prefetch()
+    finally:
+        # Clean up anything that never played (stop mid-way or an error).
+        leftover = _collect_prefetch()
+        for p in (current, leftover):
+            if p:
+                try:
+                    os.unlink(p)
+                except Exception:
+                    pass
+        _progress = {"chunk": 0, "total": 0, "text": ""}
 
 
 def stop_speaking():
-    global _stop_event
     _stop_event.set()
     _pause_event.clear()
 

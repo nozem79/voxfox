@@ -54,7 +54,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.4"
+APP_VERSION = "2.0.5"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -135,7 +135,13 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
                 tar.extract(member, vf.PIPER_DIR)
         os.unlink(tmp)
         if os.path.exists(vf.PIPER_BIN):
-            os.chmod(vf.PIPER_BIN, 0o755)
+            try:
+                os.chmod(vf.PIPER_BIN, 0o755)
+            except OSError:
+                # FAT32/exFAT (VoxMob stick) can't store the exec bit; such
+                # mounts usually expose files as executable already, so don't
+                # fail the whole install over it.
+                pass
         return True, "ok"
     except Exception as e:
         return False, str(e)
@@ -858,6 +864,7 @@ class PreferencesWindow(Gtk.Window):
         self.state["merge_lines"] = on
         vf.save_state(self.state)
         vf.set_merge_lines(on)
+
 
     def _on_export(self, _btn):
         dlg = Gtk.FileChooserNative.new(
@@ -1608,6 +1615,8 @@ def _build_arg_parser():
     g.add_argument("--quit",          dest="quit",          action="store_true")
     g.add_argument("--setup",         dest="setup",         action="store_true",
                    help="Download Piper engine + default voices + Whisper, then exit")
+    g.add_argument("--install-shortcuts", dest="install_shortcuts", action="store_true",
+                   help="(Re)install the Super+Z/X/C/W/A desktop shortcuts, then exit")
     p.add_argument("--verbose", action="store_true", help="Debug logging")
     return p
 
@@ -1635,6 +1644,84 @@ def _install_x_error_handler():
         log.debug("Installed non-fatal X error handler")
     except Exception as e:
         log.debug(f"could not install X error handler: {e}")
+
+
+def _install_shortcuts():
+    """Register VoxFox's global keyboard shortcuts with the desktop:
+
+        Super+Z  read          (voxfox --read)
+        Super+X  stop          (voxfox --stop)
+        Super+C  switch voice  (voxfox --toggle-slot)
+        Super+W  dictation     (voxfox --whisper-toggle)
+        Super+A  OCR select    (voxfox --ocr-select)
+
+    Written as custom keybindings via GSettings for Cinnamon and/or GNOME,
+    whichever schema the desktop provides (on some systems both exist; writing
+    both is harmless). Idempotent: existing VoxFox entries are updated in
+    place, never duplicated. Returns True if at least one desktop accepted
+    them. Users can change or remove them in the system keyboard settings."""
+    entries = [
+        ("voxfox-read",    "VoxFox: read",         "voxfox --read",           "<Super>z"),
+        ("voxfox-stop",    "VoxFox: stop",         "voxfox --stop",           "<Super>x"),
+        ("voxfox-voice",   "VoxFox: switch voice", "voxfox --toggle-slot",    "<Super>c"),
+        ("voxfox-whisper", "VoxFox: dictation",    "voxfox --whisper-toggle", "<Super>w"),
+        ("voxfox-ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
+    ]
+    installed = False
+    try:
+        from gi.repository import Gio
+        src = Gio.SettingsSchemaSource.get_default()
+        if src is None:
+            return False
+
+        # Cinnamon: custom-list holds entry names; each entry is a relocatable
+        # schema under .../custom-keybindings/<name>/ with binding as a LIST.
+        try:
+            if src.lookup("org.cinnamon.desktop.keybindings", True) is not None:
+                base = Gio.Settings.new("org.cinnamon.desktop.keybindings")
+                names = list(base.get_strv("custom-list"))
+                for name, label, cmd, binding in entries:
+                    path = (f"/org/cinnamon/desktop/keybindings/"
+                            f"custom-keybindings/{name}/")
+                    s = Gio.Settings.new_with_path(
+                        "org.cinnamon.desktop.keybindings.custom-keybinding", path)
+                    s.set_string("name", label)
+                    s.set_string("command", cmd)
+                    s.set_strv("binding", [binding])
+                    if name not in names:
+                        names.append(name)
+                base.set_strv("custom-list", names)
+                installed = True
+                log.info("Installed Cinnamon keyboard shortcuts")
+        except Exception as e:
+            log.debug(f"Cinnamon shortcuts failed: {e}")
+
+        # GNOME: custom-keybindings holds entry PATHS; binding is a STRING.
+        try:
+            if src.lookup("org.gnome.settings-daemon.plugins.media-keys",
+                          True) is not None:
+                base = Gio.Settings.new(
+                    "org.gnome.settings-daemon.plugins.media-keys")
+                paths = list(base.get_strv("custom-keybindings"))
+                for name, label, cmd, binding in entries:
+                    path = (f"/org/gnome/settings-daemon/plugins/media-keys/"
+                            f"custom-keybindings/{name}/")
+                    s = Gio.Settings.new_with_path(
+                        "org.gnome.settings-daemon.plugins.media-keys."
+                        "custom-keybinding", path)
+                    s.set_string("name", label)
+                    s.set_string("command", cmd)
+                    s.set_string("binding", binding)
+                    if path not in paths:
+                        paths.append(path)
+                base.set_strv("custom-keybindings", paths)
+                installed = True
+                log.info("Installed GNOME keyboard shortcuts")
+        except Exception as e:
+            log.debug(f"GNOME shortcuts failed: {e}")
+    except Exception as e:
+        log.debug(f"shortcut install skipped: {e}")
+    return installed
 
 
 def _enable_accessibility():
@@ -1699,6 +1786,13 @@ def main():
         print("Setup complete." if ok else f"Setup failed: {msg}")
         return
 
+    # Manual (re)install of the desktop keyboard shortcuts.
+    if args.install_shortcuts:
+        ok = _install_shortcuts()
+        print("Shortcuts installed (Super+Z/X/C/W/A)." if ok
+              else "No supported desktop (Cinnamon/GNOME GSettings) found.")
+        return
+
     # Action flags → forward to the running instance and exit (no GUI).
     if any([args.read, args.stop, args.pause, args.toggle_slot,
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
@@ -1713,6 +1807,18 @@ def main():
     if not vf.acquire_singleton_lock():
         print("VoxFox is already running.")
         return
+
+    # First GUI start on this desktop: register the default global shortcuts
+    # (Super+Z read, +X stop, +C voice, +W dictation, +A OCR). One-time, so a
+    # user who deletes or changes them in the system settings keeps their
+    # choice; `voxfox --install-shortcuts` re-installs on demand.
+    try:
+        st = vf.load_state()
+        if not st.get("shortcuts_installed") and _install_shortcuts():
+            st["shortcuts_installed"] = True
+            vf.save_state(st)
+    except Exception as e:
+        log.debug(f"shortcut auto-install skipped: {e}")
 
     VoxFoxApplication().run(None)
 

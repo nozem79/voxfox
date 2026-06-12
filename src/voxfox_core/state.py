@@ -53,6 +53,9 @@ DEFAULT_STATE = {
     # Last on-screen window position [x, y], saved on close and restored on
     # the next start. X11 only (GTK4 has no portable window positioning).
     "win_pos": None,
+    # Set once the default desktop shortcuts (Super+Z/X/C/W/A) have been
+    # registered, so user edits/removals in the system settings stick.
+    "shortcuts_installed": False,
 }
 
 
@@ -83,6 +86,7 @@ def load_state():
             s.setdefault("merge_lines",  DEFAULT_STATE["merge_lines"])
             s.setdefault("pronunciations", {})
             s.setdefault("win_pos", None)
+            s.setdefault("shortcuts_installed", False)
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).
@@ -117,7 +121,13 @@ def _atomic_write_json(path, obj, mode=0o600):
             json.dump(obj, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
-        os.chmod(tmp, mode)
+        # Best-effort: FAT32/exFAT (e.g. a VoxMob USB stick) don't support Unix
+        # permissions and chmod can raise EPERM there. The restricted mode is a
+        # hardening nicety, not a requirement — never let it block the save.
+        try:
+            os.chmod(tmp, mode)
+        except OSError:
+            pass
         os.replace(tmp, path)
     except Exception:
         try:

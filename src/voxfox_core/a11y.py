@@ -180,10 +180,14 @@ def _find_at_pos(node, x, y, depth=0) -> str:
 
     _init_roles()
 
+    try:
+        import pyatspi
+    except Exception:
+        return ""
+
     # Determine role early
     role = None
     try:
-        import pyatspi
         role = node.getRole()
     except Exception:
         pass
@@ -192,7 +196,6 @@ def _find_at_pos(node, x, y, depth=0) -> str:
     has_bounds       = False
     is_zero_size     = False
     try:
-        import pyatspi
         ext = node.queryComponent().getExtents(pyatspi.DESKTOP_COORDS)
         if (ext.width == 0 or ext.height == 0) and ext.x >= 0 and ext.y >= 0:
             is_zero_size = True
@@ -566,9 +569,25 @@ def _speak_if_new(text):
     speak(text, cfg)
 
 
+def _event_from_daemon(event) -> bool:
+    """True if an AT-SPI event originates from the desktop shell or another
+    daemon (cinnamon, nemo-desktop, …). Their UI elements fire focus/selection
+    events constantly, and querying the shell synchronously while it is
+    emitting can stall its main loop — Cinnamon's watchdog then kills it
+    ("fallback mode"). So: never even touch events from those processes."""
+    try:
+        app = getattr(event, "host_application", None)
+        if app is None:
+            src = event.source
+            app = src.getApplication() if src is not None else None
+        return app is not None and _is_daemon(app.name or "")
+    except Exception:
+        return False
+
+
 def _on_focus_event(event):
     """Called by AT-SPI when an element gains focus (or its item is selected)."""
-    if not _hover_running:
+    if not _hover_running or _event_from_daemon(event):
         return
     try:
         node = event.source
@@ -591,13 +610,24 @@ def _on_focus_event(event):
         log.debug(f"Focus event error: {e}")
 
 
+_last_selection_ts = 0.0
+
+
 def _on_selection_event(event):
     """A selection changed in a container (list, icon view, tree). Read the
     selected item itself, not the container — this is what makes Nemo's icon
     and list views speak while you arrow or click through them, the way a
-    screen reader does on focus."""
-    if not _hover_running:
+    screen reader does on focus. Daemon/shell events are ignored and the
+    handler is rate-limited: selection-changed can fire in rapid bursts
+    (e.g. select-all), and answering every one with synchronous AT-SPI
+    queries stresses the emitting app."""
+    global _last_selection_ts
+    if not _hover_running or _event_from_daemon(event):
         return
+    now = time.monotonic()
+    if now - _last_selection_ts < 0.15:
+        return
+    _last_selection_ts = now
     try:
         node = event.source
         if node is None:
@@ -692,7 +722,7 @@ _EVENT_SILENCE = 0.8  # seconds: suppress polling after an event-based speak
 
 
 def hover_loop():
-    global _hover_running, _last_spoken, _last_event_time
+    global _last_spoken
     last_pos    = (-999, -999)
     hover_start = None
     spoken_text = None

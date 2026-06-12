@@ -36,8 +36,8 @@ APP_NAME  = "VoxFox"
 # conventional location for the Piper engine, and the voice files are large, so
 # VoxFox keeps them here rather than moving (and risking re-downloading) them
 # under XDG dirs on upgrade.
-PIPER_DIR = os.path.expanduser("~/.piper")
-LOGO_PATH = os.path.expanduser("~/.piper/voxfox-logo.png")
+PIPER_DIR = os.environ.get("VOXFOX_PIPER_DIR") or os.path.expanduser("~/.piper")
+LOGO_PATH = os.path.join(PIPER_DIR, "voxfox-logo.png")
 PIPER_BIN = os.path.join(PIPER_DIR, "piper")
 
 # Everything else follows the XDG Base Directory spec (honouring the env vars,
@@ -328,7 +328,10 @@ def _migrate_file(new_path, *legacy_paths):
             try:
                 os.makedirs(os.path.dirname(new_path), exist_ok=True)
                 shutil.copy2(old, new_path)
-                os.chmod(new_path, 0o600)
+                try:
+                    os.chmod(new_path, 0o600)  # best-effort; FAT32 lacks modes
+                except OSError:
+                    pass
                 log.info(f"Migrated {os.path.basename(old)} -> {new_path}")
             except Exception as e:
                 log.warning(f"Migration of {old} failed: {e}")

@@ -98,9 +98,19 @@ WHISPER_SIZES_MB = {
 }
 
 
+def _hf_hub_cache():
+    """Location of the HuggingFace hub cache. Respects $HF_HOME so a portable
+    install (VoxMob) can keep models on a USB stick; falls back to the default
+    ~/.cache/huggingface/hub."""
+    hf = os.environ.get("HF_HOME")
+    if hf:
+        return os.path.join(hf, "hub")
+    return os.path.expanduser("~/.cache/huggingface/hub")
+
+
 def _hf_model_dir(name):
-    return os.path.expanduser(
-        f"~/.cache/huggingface/hub/models--Systran--faster-whisper-{name}")
+    return os.path.join(
+        _hf_hub_cache(), f"models--Systran--faster-whisper-{name}")
 
 
 def _dir_size(path):
@@ -116,8 +126,7 @@ def _dir_size(path):
 
 def _whisper_model_is_cached(name):
     """Check if a faster-whisper model is already downloaded locally."""
-    # HuggingFace stores models under ~/.cache/huggingface/hub/models--Systran--faster-whisper-<name>
-    cache = os.path.expanduser("~/.cache/huggingface/hub")
+    cache = _hf_hub_cache()
     repo  = f"models--Systran--faster-whisper-{name}"
     path  = os.path.join(cache, repo, "snapshots")
     if not os.path.isdir(path):
@@ -349,7 +358,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
         err_bytes = b""
     err_text = err_bytes.decode("utf-8", errors="replace").strip()
     if err_text:
-        log.warning(f"Recorder stderr: {err_text}")
+        log.warning(f"Recorder stderr (exit {rc}): {err_text}")
 
     file_ok = os.path.isfile(wav_path) and os.path.getsize(wav_path) >= 1000
 

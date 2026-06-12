@@ -5,6 +5,31 @@ build; the original Tk version is no longer maintained.
 
 Format loosely follows Keep a Changelog. Dates are left for you to fill in.
 
+## 2.0.5
+
+- Default desktop keyboard shortcuts for Cinnamon and GNOME, registered on
+  first start (and on demand via `voxfox --install-shortcuts`):
+  Super+Z read, Super+X stop, Super+C switch voice/language,
+  Super+W dictation, Super+A OCR region select. Registered once, so changes
+  or removals you make in the system keyboard settings are respected.
+- Stability fix for Cinnamon: focus/selection events coming from the desktop
+  shell itself (cinnamon, nemo-desktop, …) are now ignored, and selection
+  events are rate-limited. Querying the shell synchronously while it emits
+  events could stall it, which Cinnamon's watchdog answers by restarting into
+  fallback mode.
+- Much snappier paragraph and sentence transitions while reading: the next
+  chunk is now synthesized in the background while the current one plays.
+  Previously Piper's synthesis time (roughly half a second to a second) was
+  audible as a gap at every paragraph break.
+- Portable/VoxMob support folded into the main build: the Piper directory can
+  be redirected with the VOXFOX_PIPER_DIR environment variable, and the Whisper
+  model cache respects HF_HOME. Without these variables nothing changes.
+- Saving settings/history now works on FAT32/exFAT drives (e.g. a VoxMob USB
+  stick): file-permission tightening is best-effort there instead of aborting
+  the save. Same for the Piper install and data migration.
+- Internal cleanup (duplicate import, unused variables/globals); recorder
+  errors now include the recorder's exit code in the log.
+
 ## 2.0.4
 
 - The window position is now remembered: VoxFox reopens where you left it.
