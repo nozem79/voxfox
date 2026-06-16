@@ -30,7 +30,7 @@ jobs:
         run: sudo apt-get install -y fakeroot dpkg-dev
 
       - name: Build .deb
-        run: VERSION=$VERSION bash packaging/build-deb.sh
+        run: VERSION=$VERSION SRC=$GITHUB_WORKSPACE/src bash packaging/build-deb.sh
 
       - name: Extract changelog section
         id: changelog
@@ -48,4 +48,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body: ${{ steps.changelog.outputs.notes }}
-          files: voxfox_${{ env.VERSION }}_all.deb
+          files: src/voxfox_${{ env.VERSION }}_all.deb
