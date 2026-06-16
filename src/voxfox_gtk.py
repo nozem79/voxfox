@@ -54,7 +54,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.5"
+APP_VERSION = "2.0.6"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -699,14 +699,18 @@ class PreferencesWindow(Gtk.Window):
                                lambda e: self._save_w("remote_api_key", e.get_text()))
         test_btn = Gtk.Button(label=_("Test connection"))
         test_btn.connect("clicked", self._on_test_remote)
+        self.test_result_lbl = Gtk.Label(xalign=0.0)
+        self.test_result_lbl.set_wrap(True)
+        self.test_result_lbl.set_selectable(True)
 
-        self.remote_box.attach(Gtk.Label(label=_("URL:"), xalign=0),   0, 0, 1, 1)
-        self.remote_box.attach(self.url_entry,                          1, 0, 1, 1)
-        self.remote_box.attach(Gtk.Label(label=_("Model:"), xalign=0), 0, 1, 1, 1)
-        self.remote_box.attach(self.rmodel_entry,                       1, 1, 1, 1)
+        self.remote_box.attach(Gtk.Label(label=_("URL:"), xalign=0),    0, 0, 1, 1)
+        self.remote_box.attach(self.url_entry,                           1, 0, 1, 1)
+        self.remote_box.attach(Gtk.Label(label=_("Model:"), xalign=0),  0, 1, 1, 1)
+        self.remote_box.attach(self.rmodel_entry,                        1, 1, 1, 1)
         self.remote_box.attach(Gtk.Label(label=_("API key:"), xalign=0), 0, 2, 1, 1)
-        self.remote_box.attach(self.key_entry,                          1, 2, 1, 1)
-        self.remote_box.attach(test_btn,                                1, 3, 1, 1)
+        self.remote_box.attach(self.key_entry,                           1, 2, 1, 1)
+        self.remote_box.attach(test_btn,                                 1, 3, 1, 1)
+        self.remote_box.attach(self.test_result_lbl,                     0, 4, 2, 1)
         self.remote_box.set_visible(w.get("backend") == "remote")
         return frame
 
@@ -985,20 +989,25 @@ class PreferencesWindow(Gtk.Window):
         if not url or not model:
             self.win.set_status(_("Set a URL and model first"))
             return
-        self.win.set_status(_("Testing connection..."), duration=0)
+        self.win.set_status(_("Testing connection…"), duration=0)
+        self.test_result_lbl.set_text(_("Testing connection…"))
 
         def worker():
             import wave
             tmp = os.path.join(tempfile.gettempdir(), "voxfox_test.wav")
+            ok_text = ""
+            err = ""
             try:
                 with wave.open(tmp, "wb") as wf:
                     wf.setnchannels(1)
                     wf.setsampwidth(2)
                     wf.setframerate(16000)
                     wf.writeframes(b"\x00\x00" * 16000)
-                _txt, err = vf.transcribe_remote(tmp, url=url, api_key=key,
-                                                 model_name=model,
-                                                 language_hint=None)
+                txt, err = vf.transcribe_remote(tmp, url=url, api_key=key,
+                                                model_name=model,
+                                                language_hint=None)
+                if not err:
+                    ok_text = txt.strip() if txt and txt.strip() else _("(no transcription returned)")
             except Exception as e:
                 err = str(e)
             finally:
@@ -1006,8 +1015,14 @@ class PreferencesWindow(Gtk.Window):
                     os.unlink(tmp)
                 except Exception:
                     pass
-            GLib.idle_add(self.win.set_status,
-                          f"✗ {err}" if err else _("✓ Connection OK"))
+            if err:
+                msg = f"✗ {err}"
+            else:
+                msg = f"✓ {_('Connection OK')} — {ok_text}"
+            def _show(m=msg):
+                self.test_result_lbl.set_text(m)
+                self.win.set_status(m, 8)
+            GLib.idle_add(_show)
         threading.Thread(target=worker, daemon=True).start()
 
 
@@ -1484,6 +1499,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             vf.stop_speaking()
         except Exception:
             pass
+        try:
+            vf.shutdown_piper()
+        except Exception:
+            pass
         srv = getattr(self.get_application(), "ipc_server", None)
         if srv:
             try:
@@ -1530,6 +1549,38 @@ class VoxFoxApplication(Gtk.Application):
         for delay in (400, 1200, 2500):
             GLib.timeout_add(delay,
                              lambda: (self.win.set_always_on_top(), False)[1])
+        # Warm up the Piper server in the background so the voice model is
+        # already loaded by the time the user first speaks. This eliminates
+        # the ~1 s startup delay on the very first utterance.
+        GLib.timeout_add(500, self._warmup_piper)
+
+    def _warmup_piper(self):
+        """Start the Piper server in the background (fire-and-forget)."""
+        try:
+            slot = (self.win.state or {}).get("slot1", {})
+            voice = slot.get("voice", "")
+            if not voice:
+                return False
+            speed = float(slot.get("speed", 1.0))
+            pitch = float(slot.get("pitch", 0.0))
+            pitch_factor = 2.0 ** (pitch / 12.0)
+            length_scale = round(pitch_factor / speed, 4)
+            model = os.path.join(vf.PIPER_DIR, f"{voice}.onnx")
+            if not os.path.isfile(model):
+                return False
+
+            def _do_warmup():
+                try:
+                    vf._piper_server.synth(
+                        " ", model, length_scale, 0.1)
+                    log.debug("Piper server warmed up")
+                except Exception as e:
+                    log.debug(f"Piper warmup failed: {e}")
+
+            threading.Thread(target=_do_warmup, daemon=True).start()
+        except Exception as e:
+            log.debug(f"warmup_piper: {e}")
+        return False  # don't repeat the GLib timeout
 
     def _apply_css(self):
         try:
@@ -1575,15 +1626,34 @@ class VoxFoxApplication(Gtk.Application):
             ("voxfox --whisper-toggle", _("Dictate (speech to text)")),
             ("voxfox --ocr-select",     _("Read a screen region (OCR)")),
         ]
+        shortcuts = [
+            ("Super+Z", _("Read selected text")),
+            ("Super+X", _("Stop speaking")),
+            ("Super+C", _("Switch language slot")),
+            ("Super+W", _("Dictation")),
+            ("Super+A", _("OCR region select")),
+        ]
         cmd_block = "\n".join(f"{cmd}  —  {desc}" for cmd, desc in commands)
+        sc_block  = "\n".join(f"{key}  —  {desc}" for key, desc in shortcuts)
         dlg.set_comments(
             _("Screen reader and dictation tool") + "\n\n"
+            + _("Default keyboard shortcuts (Cinnamon / GNOME):") + "\n"
+            + sc_block + "\n\n"
             + _("Commands you can bind to keyboard shortcuts:") + "\n"
-            + cmd_block)
+            + cmd_block + "\n\n"
+            + _("Chromium / Brave / Chrome:") + "\n"
+            + _("Add --force-renderer-accessibility to the browser's desktop "
+                "file or launcher to enable hover reading in web pages."))
 
-        # Also expose the commands as a Credits section (selectable text).
+        # Credits section: selectable text for easy copy-paste.
+        dlg.add_credit_section(_("Default shortcuts"),
+                               [f"{key}  —  {desc}" for key, desc in shortcuts])
         dlg.add_credit_section(_("Shortcut commands"),
                                [f"{cmd}" for cmd, _desc in commands])
+        dlg.add_credit_section(_("Chromium / Brave / Chrome"),
+                               ["--force-renderer-accessibility",
+                                _("Add this flag to the browser launcher "
+                                  "to enable hover reading in web pages.")])
 
         logo = vf.LOGO_PATH if os.path.exists(vf.LOGO_PATH) else SYSTEM_ICON
         if os.path.exists(logo):
