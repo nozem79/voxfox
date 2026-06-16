@@ -30,7 +30,11 @@ jobs:
         run: sudo apt-get install -y fakeroot dpkg-dev
 
       - name: Build .deb
-        run: VERSION=$VERSION SRC=$GITHUB_WORKSPACE/src bash packaging/build-deb.sh
+        run: |
+          VERSION=$VERSION \
+          SRC=$GITHUB_WORKSPACE/src \
+          LOCALES=$GITHUB_WORKSPACE/locales \
+          bash packaging/build-deb.sh
 
       - name: Extract changelog section
         id: changelog

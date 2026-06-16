@@ -9,7 +9,8 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" "$INST/usr/share/voxfox/locales" \
          "$INST/usr/bin" "$INST/DEBIAN"
 cp "$SRC/voxfox_gtk.py" "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py "$INST/usr/lib/voxfox/voxfox_core/"
-cp "$SRC/locales/"*.json "$INST/usr/share/voxfox/locales/"
+LOCALES="${LOCALES:-$SRC/locales}"
+cp "$LOCALES/"*.json "$INST/usr/share/voxfox/locales/"
 [ -f "$SRC/voxfox-logo.png" ] && cp "$SRC/voxfox-logo.png" "$INST/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 cat > "$INST/usr/bin/voxfox" <<LAUNCHER
 #!/bin/sh
