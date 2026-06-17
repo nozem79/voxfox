@@ -60,6 +60,10 @@ DESKTOP
 # - python3-sounddevice + python3-soundfile + python3-numpy: dictation recording
 #   (best-effort: not available on all distros; postinst installs via pip if missing)
 # - libportaudio2 + libsndfile1: C libraries needed by sounddevice/soundfile
+# - scrot: reliable, lightweight region-select for the OCR "Select" feature.
+#   Works across desktop environments (unlike gnome-screenshot/spectacle,
+#   which depend on their native shell's DBus interface and can fail
+#   silently outside it, e.g. gnome-screenshot on Cinnamon).
 cat > "$INST/DEBIAN/control" <<CTRL
 Package: voxfox
 Version: $VERSION
@@ -79,7 +83,8 @@ Depends: python3 (>= 3.9),
  pulseaudio-utils,
  ffmpeg,
  libportaudio2,
- libsndfile1
+ libsndfile1,
+ scrot
 Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy
 Description: VoxFox — screen reader and dictation tool
  Hover-to-read, text selection reading, OCR, PDF reading,

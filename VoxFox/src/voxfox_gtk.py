@@ -27,7 +27,6 @@ Forward a command:  voxfox --read      (and --stop, --pause, --ocr-select, ...)
 
 import os
 import sys
-import time
 import platform
 import tarfile
 import argparse
@@ -231,39 +230,64 @@ def enable_accessibility():
 def _grab_region_to_file(dest_png):
     """Capture a user-drawn rectangle into dest_png using the desktop's native
     region-screenshot tool — which is what makes this work on X11 and Wayland.
+    Tries each available tool in order; if one fails (e.g. a pointer-grab
+    conflict) the next is tried instead of giving up immediately.
     Returns (ok, error_message)."""
+    # Order matters: maim/scrot are simple X11 tools that work reliably
+    # across desktop environments. gnome-screenshot/spectacle/flameshot
+    # depend on their native desktop's shell DBus interface and can fail
+    # silently (empty/missing file, but exit 0) outside it — e.g.
+    # gnome-screenshot on Cinnamon falls back to a buggy X11 path. They're
+    # tried last, only if the simpler tools aren't installed.
     candidates = [
+        ("maim",             ["-s", dest_png]),
+        ("scrot",            ["-s", dest_png]),
         ("gnome-screenshot", ["-a", "-f", dest_png]),
         ("spectacle",        ["-rbno", dest_png]),
         ("flameshot",        ["gui", "-r", "-p", dest_png]),
-        ("maim",             ["-s", dest_png]),
-        ("scrot",            ["-s", dest_png]),
     ]
+    last_err = ""
+    tried_any = False
     for binary, args in candidates:
         if not vf._have(binary):
             continue
+        tried_any = True
+        log.debug(f"_grab_region: trying {binary}")
         try:
-            subprocess.run([binary, *args], check=True, timeout=120)
+            subprocess.run([binary, *args], check=True, timeout=120,
+                           capture_output=True)
             if os.path.exists(dest_png) and os.path.getsize(dest_png) > 0:
+                log.debug(f"_grab_region: {binary} succeeded")
                 return True, ""
-        except subprocess.CalledProcessError:
-            return False, _("Selection cancelled")
+            log.debug(f"_grab_region: {binary} exit 0 but no file produced")
+            last_err = _("Selection cancelled")
+        except subprocess.CalledProcessError as e:
+            # Tool exists but failed (cancelled, or a pointer-grab conflict).
+            # Keep last_err and try the next candidate instead of bailing out.
+            stderr = (e.stderr or b"").decode(errors="replace").strip()
+            last_err = stderr or _("Selection cancelled")
+            continue
         except Exception as e:
-            return False, str(e)
+            last_err = str(e)
+            continue
     if vf._have("grim") and vf._have("slurp"):
+        tried_any = True
         try:
             geom = subprocess.run(["slurp"], capture_output=True, text=True,
                                   timeout=120)
             if geom.returncode != 0 or not geom.stdout.strip():
-                return False, _("Selection cancelled")
-            subprocess.run(["grim", "-g", geom.stdout.strip(), dest_png],
-                           check=True, timeout=120)
-            if os.path.exists(dest_png) and os.path.getsize(dest_png) > 0:
-                return True, ""
+                last_err = _("Selection cancelled")
+            else:
+                subprocess.run(["grim", "-g", geom.stdout.strip(), dest_png],
+                               check=True, timeout=120)
+                if os.path.exists(dest_png) and os.path.getsize(dest_png) > 0:
+                    return True, ""
         except Exception as e:
-            return False, str(e)
-    return False, _("No screenshot tool found "
-                    "(install gnome-screenshot, spectacle, scrot, or grim+slurp)")
+            last_err = str(e)
+    if not tried_any:
+        return False, _("No screenshot tool found "
+                        "(install gnome-screenshot, spectacle, scrot, or grim+slurp)")
+    return False, last_err or _("Selection cancelled")
 
 
 def _dropdown(items, selected_value=None):
@@ -1424,6 +1448,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         dialog.show()
 
     def do_ocr_select(self):
+        log.debug("do_ocr_select: called")
         tess = vf._tess_lang(self._active_cfg().get("lang", ""))
         self.set_status(_("Select a region..."), duration=0)
 
@@ -1432,35 +1457,26 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             try:
                 fd, tmp = tempfile.mkstemp(suffix=".png")
                 os.close(fd)
+                # mkstemp creates an empty file; scrot/maim refuse to overwrite
+                # an existing file and exit 0 without writing. Remove it first
+                # so the tool has a free path to write to.
+                try:
+                    os.unlink(tmp)
+                except Exception:
+                    pass
+                log.debug(f"do_ocr_select: grabbing region to {tmp}")
                 ok, err = _grab_region_to_file(tmp)
+                log.debug(f"do_ocr_select: grab ok={ok} err={err!r}")
                 if not ok:
                     GLib.idle_add(self.set_status, err)
                     return
                 GLib.idle_add(self.set_status, _("Reading text..."), 0)
                 text, oerr = vf.ocr_image(tmp, tess_lang=tess)
+                log.debug(f"do_ocr_select: ocr text_len={len(text or '')} err={oerr!r}")
                 GLib.idle_add(self._after_ocr, text, oerr)
-            finally:
-                if tmp and os.path.exists(tmp):
-                    try:
-                        os.unlink(tmp)
-                    except Exception:
-                        pass
-        threading.Thread(target=worker, daemon=True).start()
-
-        self.set_status(_("Select a region..."), duration=0)
-
-        def worker():
-            tmp = None
-            try:
-                fd, tmp = tempfile.mkstemp(suffix=".png")
-                os.close(fd)
-                ok, err = _grab_region_to_file(tmp)
-                if not ok:
-                    self.root.after(0, self.set_status, err)
-                    return
-                self.root.after(0, self.set_status, _("Reading text..."), 0)
-                text, oerr = vf.ocr_image(tmp, tess_lang=tess)
-                self.root.after(0, self._after_ocr, text, oerr)
+            except Exception as e:
+                log.debug(f"do_ocr_select worker crashed: {e}")
+                GLib.idle_add(self.set_status, f"{_('Error')}: {e}")
             finally:
                 if tmp and os.path.exists(tmp):
                     try:
