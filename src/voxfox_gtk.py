@@ -27,6 +27,7 @@ Forward a command:  voxfox --read      (and --stop, --pause, --ocr-select, ...)
 
 import os
 import sys
+import time
 import platform
 import tarfile
 import argparse
@@ -870,6 +871,7 @@ class PreferencesWindow(Gtk.Window):
         vf.set_merge_lines(on)
 
 
+
     def _on_export(self, _btn):
         dlg = Gtk.FileChooserNative.new(
             _("Export settings"), self, Gtk.FileChooserAction.SAVE, None, None)
@@ -1423,6 +1425,28 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def do_ocr_select(self):
         tess = vf._tess_lang(self._active_cfg().get("lang", ""))
+        self.set_status(_("Select a region..."), duration=0)
+
+        def worker():
+            tmp = None
+            try:
+                fd, tmp = tempfile.mkstemp(suffix=".png")
+                os.close(fd)
+                ok, err = _grab_region_to_file(tmp)
+                if not ok:
+                    GLib.idle_add(self.set_status, err)
+                    return
+                GLib.idle_add(self.set_status, _("Reading text..."), 0)
+                text, oerr = vf.ocr_image(tmp, tess_lang=tess)
+                GLib.idle_add(self._after_ocr, text, oerr)
+            finally:
+                if tmp and os.path.exists(tmp):
+                    try:
+                        os.unlink(tmp)
+                    except Exception:
+                        pass
+        threading.Thread(target=worker, daemon=True).start()
+
         self.set_status(_("Select a region..."), duration=0)
 
         def worker():
