@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
+# Repo root, relative to this script (packaging/ lives one level below root).
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SRC="${SRC:-$ROOT/src}"
 VERSION="${VERSION:-$(grep APP_VERSION "$SRC/voxfox_gtk.py" | grep -oP '".*"' | tr -d '"')}"
-SRC="${SRC:-$(cd "$(dirname "$0")/.." && pwd)}"
-LOCALES="${LOCALES:-$SRC/locales}"
+LOCALES="${LOCALES:-$ROOT/locales}"
 
 WORK=$(mktemp -d); trap "rm -rf $WORK" EXIT
 INST="$WORK/install"
@@ -12,6 +14,7 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
          "$INST/usr/share/voxfox/locales" \
          "$INST/usr/share/applications" \
          "$INST/usr/share/icons/hicolor/256x256/apps" \
+         "$INST/usr/share/pixmaps" \
          "$INST/usr/bin" \
          "$INST/DEBIAN"
 
@@ -19,8 +22,39 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
-[ -f "$SRC/voxfox-logo.png" ] && \
-    cp "$SRC/voxfox-logo.png"  "$INST/usr/share/icons/hicolor/256x256/apps/voxfox.png"
+
+# Application icon. The source PNG lives in the repo root (NOT in src/), so
+# look there first, then fall back to $SRC for unusual layouts. Install it as
+# the themed icon "voxfox" so the .desktop's Icon=voxfox resolves in the menu
+# and taskbar. We generate the standard hicolor sizes when Pillow is available
+# (crisper at panel sizes than scaling one 300px image), and always drop a
+# /usr/share/pixmaps/voxfox.png copy as a theme-independent fallback.
+LOGO=""
+for cand in "$ROOT/voxfox-logo.png" "$SRC/voxfox-logo.png" "$SRC/../voxfox-logo.png"; do
+    [ -f "$cand" ] && { LOGO="$cand"; break; }
+done
+if [ -n "$LOGO" ]; then
+    cp "$LOGO" "$INST/usr/share/pixmaps/voxfox.png"
+    if python3 - "$LOGO" "$INST" <<'PY' 2>/dev/null
+import sys
+from PIL import Image
+logo, inst = sys.argv[1], sys.argv[2]
+img = Image.open(logo).convert("RGBA")
+for size in (48, 64, 128, 256, 512):
+    d = f"{inst}/usr/share/icons/hicolor/{size}x{size}/apps"
+    import os; os.makedirs(d, exist_ok=True)
+    img.resize((size, size), Image.LANCZOS).save(f"{d}/voxfox.png")
+PY
+    then
+        echo "Icon: generated hicolor sizes 48-512 from $(basename "$LOGO")"
+    else
+        # No Pillow at build time: ship the original under 256x256 as-is.
+        cp "$LOGO" "$INST/usr/share/icons/hicolor/256x256/apps/voxfox.png"
+        echo "Icon: Pillow unavailable, installed $(basename "$LOGO") as-is (256x256)"
+    fi
+else
+    echo "WARNING: voxfox-logo.png not found (looked in repo root and \$SRC); package will have no icon" >&2
+fi
 
 # Launcher
 cat > "$INST/usr/bin/voxfox" <<'LAUNCHER'
@@ -34,11 +68,15 @@ cat > "$INST/usr/share/applications/voxfox.desktop" <<'DESKTOP'
 [Desktop Entry]
 Name=VoxFox
 Comment=Screen reader and dictation tool
+Comment[nl]=Schermlezer en dicteerhulpmiddel
 Exec=voxfox
 Icon=voxfox
 Terminal=false
 Type=Application
-Categories=Accessibility;
+Categories=Utility;GTK;
+Keywords=screen reader;tts;ocr;dictation;speech;accessibility;voorlezen;dicteren;
+StartupNotify=true
+StartupWMClass=org.voxfox.VoxFox
 DESKTOP
 
 # Control file — full dependency list
@@ -115,9 +153,35 @@ echo "VoxFox: installing Python dictation dependencies (faster-whisper, sounddev
 pip_install
 echo "VoxFox: done. Run 'voxfox --setup' to download voices."
 
+# Refresh the icon cache and desktop database so the menu/taskbar pick up the
+# voxfox icon and .desktop entry immediately (otherwise the icon may not
+# resolve until the next login, showing a generic fallback). All best-effort.
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+fi
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
+
 exit 0
 POSTINST
 chmod 755 "$INST/DEBIAN/postinst"
+
+# Post-removal: refresh the caches again so the icon/entry disappear cleanly.
+cat > "$INST/DEBIAN/postrm" <<'POSTRM'
+#!/bin/sh
+set -e
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+    fi
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+    fi
+fi
+exit 0
+POSTRM
+chmod 755 "$INST/DEBIAN/postrm"
 
 fakeroot dpkg-deb --build "$INST" "$SRC/voxfox_${VERSION}_all.deb"
 echo "Built: $SRC/voxfox_${VERSION}_all.deb"

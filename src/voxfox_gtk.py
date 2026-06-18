@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.6"
+APP_VERSION = "2.0.8"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -231,25 +231,89 @@ def enable_accessibility():
 def _grab_region_to_file(dest_png):
     """Capture a user-drawn rectangle into dest_png using the desktop's native
     region-screenshot tool — which is what makes this work on X11 and Wayland.
-    Returns (ok, error_message)."""
-    candidates = [
+    Returns (ok, error_message).
+
+    Tool order is deliberate: maim/scrot first. gnome-screenshot fails
+    *silently* on non-GNOME desktops (notably Cinnamon: no GNOME Shell DBus,
+    broken X11 fallback), producing no file and no error, so it must not be
+    preferred where maim/scrot are present.
+
+    maim/scrot grab the pointer to draw the rectangle. When OCR-select is
+    triggered from a Super-key shortcut, the window manager still holds the
+    keybinding's pointer grab for a moment, so the first attempt can fail with
+    'couldn't grab pointer'. That clears once the keys are released, so we
+    retry briefly. A non-zero exit *without* a grab error means the user
+    cancelled (Escape), which we report as such rather than retrying."""
+    grabbers = [
+        ("maim",  ["-s", dest_png]),
+        ("scrot", ["-s", dest_png]),
+    ]
+    fallbacks = [
         ("gnome-screenshot", ["-a", "-f", dest_png]),
         ("spectacle",        ["-rbno", dest_png]),
         ("flameshot",        ["gui", "-r", "-p", dest_png]),
-        ("maim",             ["-s", dest_png]),
-        ("scrot",            ["-s", dest_png]),
     ]
-    for binary, args in candidates:
+
+    def _run_grabber(binary, args, attempts=10, delay=0.12):
+        """Run a pointer-grabbing tool, retrying only on grab contention."""
+        last_err = ""
+        for i in range(attempts):
+            # Newer scrot refuses to overwrite an existing file, and mkstemp()
+            # has already created an empty one. Remove it before every attempt
+            # so the tool writes a fresh capture.
+            try:
+                if os.path.exists(dest_png):
+                    os.unlink(dest_png)
+            except OSError:
+                pass
+            try:
+                r = subprocess.run([binary, *args], timeout=120,
+                                   capture_output=True, text=True)
+            except Exception as e:
+                return False, str(e)
+            if r.returncode == 0 and os.path.exists(dest_png) \
+                    and os.path.getsize(dest_png) > 0:
+                return True, ""
+            stderr = (r.stderr or "").strip()
+            last_err = stderr
+            if "grab" in stderr.lower():
+                # WM still holds the hotkey grab; wait for it to clear, retry.
+                log.debug(f"{binary} grab busy (attempt {i+1}/{attempts}): {stderr}")
+                time.sleep(delay)
+                continue
+            # Non-zero without a grab error → user cancelled the selection.
+            return False, _("Selection cancelled")
+        return False, last_err or _("Could not grab the screen for selection")
+
+    for binary, args in grabbers:
         if not vf._have(binary):
             continue
+        ok, err = _run_grabber(binary, args)
+        if ok:
+            return True, ""
+        # Grab contention that never cleared, or a cancel — report it; don't
+        # silently fall through to gnome-screenshot (which would fail quietly).
+        return False, err
+
+    for binary, args in fallbacks:
+        if not vf._have(binary):
+            continue
+        try:
+            if os.path.exists(dest_png):
+                os.unlink(dest_png)
+        except OSError:
+            pass
         try:
             subprocess.run([binary, *args], check=True, timeout=120)
             if os.path.exists(dest_png) and os.path.getsize(dest_png) > 0:
                 return True, ""
+            # gnome-screenshot on Cinnamon: exit 0 but no file. Keep trying.
+            log.debug(f"{binary} produced no file; trying next tool")
         except subprocess.CalledProcessError:
             return False, _("Selection cancelled")
         except Exception as e:
             return False, str(e)
+
     if vf._have("grim") and vf._have("slurp"):
         try:
             geom = subprocess.run(["slurp"], capture_output=True, text=True,
@@ -1740,7 +1804,171 @@ def _install_x_error_handler():
         log.debug(f"could not install X error handler: {e}")
 
 
-def _install_shortcuts():
+# VoxFox's default global shortcuts, in a stable order. The first element is
+# an internal action key (used to track which desktop slot we own); it is NOT
+# the slot name written to the desktop. Fields: key, label, command, binding.
+_SHORTCUT_ACTIONS = [
+    ("read",    "VoxFox: read",         "voxfox --read",           "<Super>z"),
+    ("stop",    "VoxFox: stop",         "voxfox --stop",           "<Super>x"),
+    ("voice",   "VoxFox: switch voice", "voxfox --toggle-slot",    "<Super>c"),
+    ("whisper", "VoxFox: dictation",    "voxfox --whisper-toggle", "<Super>w"),
+    ("ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
+]
+
+# Non-numeric entry names used by VoxFox <= 2.0.7. These broke Cinnamon's
+# "Add custom shortcut" button: its settings panel computes the next free
+# slot by walking a numeric customN sequence, and chokes on names like
+# "voxfox-read". On install we migrate any of these away to numeric slots.
+_LEGACY_SHORTCUT_NAMES = [
+    "voxfox-read", "voxfox-stop", "voxfox-voice", "voxfox-whisper", "voxfox-ocr",
+]
+
+
+def _next_custom_slots(taken, count):
+    """Return `count` fresh 'customN' slot names not already in `taken`,
+    lowest indices first, so the desktop's custom-list stays a compact
+    numeric sequence (which is what keeps the "Add shortcut" button working)."""
+    taken = set(taken)
+    out, n = [], 0
+    while len(out) < count:
+        name = f"custom{n}"
+        if name not in taken:
+            out.append(name)
+            taken.add(name)
+        n += 1
+    return out
+
+
+def _slot_sort_key(name):
+    """Sort customN names numerically; anything else sorts last, by string."""
+    if name.startswith("custom") and name[6:].isdigit():
+        return (0, int(name[6:]))
+    return (1, name)
+
+
+def _install_cinnamon_shortcuts(src, state):
+    """Cinnamon: custom-list holds slot NAMES; each is a relocatable schema
+    under .../custom-keybindings/<name>/ with binding as a LIST. We allocate
+    numeric customN slots (never literal names), migrate any legacy
+    voxfox-* entries away, and remember our slots in state."""
+    if src.lookup("org.cinnamon.desktop.keybindings", True) is None:
+        return False
+    SCHEMA = "org.cinnamon.desktop.keybindings.custom-keybinding"
+    base = Gio.Settings.new("org.cinnamon.desktop.keybindings")
+    names = list(base.get_strv("custom-list"))
+
+    def path_for(slot):
+        return f"/org/cinnamon/desktop/keybindings/custom-keybindings/{slot}/"
+
+    def slot_command(slot):
+        try:
+            return Gio.Settings.new_with_path(SCHEMA, path_for(slot)).get_string("command")
+        except Exception:
+            return ""
+
+    # 1. Migrate: drop legacy non-numeric voxfox-* names and clear their values.
+    for legacy in _LEGACY_SHORTCUT_NAMES:
+        if legacy in names:
+            names.remove(legacy)
+        try:
+            s = Gio.Settings.new_with_path(SCHEMA, path_for(legacy))
+            s.reset("name"); s.reset("command"); s.reset("binding")
+        except Exception as e:
+            log.debug(f"clear legacy {legacy}: {e}")
+
+    # 2. Decide a slot per action: reuse a previously-recorded slot only if it
+    #    is still in the list AND still ours; otherwise allocate a fresh one.
+    recorded = dict(state.get("cinnamon_shortcut_slots", {}))
+    name_set = set(names)
+    assigned = {}
+    for key, *_ in _SHORTCUT_ACTIONS:
+        rec = recorded.get(key)
+        if rec and rec in name_set and slot_command(rec).startswith("voxfox"):
+            assigned[key] = rec
+    need = [key for key, *_ in _SHORTCUT_ACTIONS if key not in assigned]
+    fresh = _next_custom_slots(name_set | set(assigned.values()), len(need))
+    for key, slot in zip(need, fresh):
+        assigned[key] = slot
+
+    # 3. Write each slot and ensure it is listed; keep the list numeric & sorted.
+    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+        slot = assigned[key]
+        s = Gio.Settings.new_with_path(SCHEMA, path_for(slot))
+        s.set_string("name", label)
+        s.set_string("command", cmd)
+        s.set_strv("binding", [binding])
+        if slot not in name_set:
+            names.append(slot)
+            name_set.add(slot)
+    names.sort(key=_slot_sort_key)
+    base.set_strv("custom-list", names)
+    state["cinnamon_shortcut_slots"] = assigned
+    log.info("Installed Cinnamon keyboard shortcuts")
+    return True
+
+
+def _install_gnome_shortcuts(src, state):
+    """GNOME: custom-keybindings holds entry PATHS; binding is a STRING. Same
+    numeric-slot approach as Cinnamon so gnome-control-center's add button
+    keeps working and upgraders' legacy voxfox-* paths get migrated."""
+    if src.lookup("org.gnome.settings-daemon.plugins.media-keys", True) is None:
+        return False
+    SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
+    PREFIX = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
+    base = Gio.Settings.new("org.gnome.settings-daemon.plugins.media-keys")
+    paths = list(base.get_strv("custom-keybindings"))
+
+    def slot_of(p):
+        return p[len(PREFIX):].strip("/") if p.startswith(PREFIX) else p.strip("/")
+
+    def cmd_at(p):
+        try:
+            return Gio.Settings.new_with_path(SCHEMA, p).get_string("command")
+        except Exception:
+            return ""
+
+    # 1. Migrate legacy voxfox-* paths.
+    for legacy in _LEGACY_SHORTCUT_NAMES:
+        lp = f"{PREFIX}{legacy}/"
+        if lp in paths:
+            paths.remove(lp)
+        try:
+            s = Gio.Settings.new_with_path(SCHEMA, lp)
+            s.reset("name"); s.reset("command"); s.reset("binding")
+        except Exception as e:
+            log.debug(f"clear legacy gnome {legacy}: {e}")
+
+    # 2. Reuse recorded slots still present & ours, else allocate fresh numerics.
+    recorded = dict(state.get("gnome_shortcut_slots", {}))
+    slot_set = {slot_of(p) for p in paths}
+    assigned = {}
+    for key, *_ in _SHORTCUT_ACTIONS:
+        rec = recorded.get(key)
+        if rec and rec in slot_set and cmd_at(f"{PREFIX}{rec}/").startswith("voxfox"):
+            assigned[key] = rec
+    need = [key for key, *_ in _SHORTCUT_ACTIONS if key not in assigned]
+    fresh = _next_custom_slots(slot_set | set(assigned.values()), len(need))
+    for key, slot in zip(need, fresh):
+        assigned[key] = slot
+
+    # 3. Write and list.
+    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+        slot = assigned[key]
+        p = f"{PREFIX}{slot}/"
+        s = Gio.Settings.new_with_path(SCHEMA, p)
+        s.set_string("name", label)
+        s.set_string("command", cmd)
+        s.set_string("binding", binding)
+        if p not in paths:
+            paths.append(p)
+    paths.sort(key=lambda p: _slot_sort_key(slot_of(p)))
+    base.set_strv("custom-keybindings", paths)
+    state["gnome_shortcut_slots"] = assigned
+    log.info("Installed GNOME keyboard shortcuts")
+    return True
+
+
+def _install_shortcuts(state):
     """Register VoxFox's global keyboard shortcuts with the desktop:
 
         Super+Z  read          (voxfox --read)
@@ -1751,68 +1979,24 @@ def _install_shortcuts():
 
     Written as custom keybindings via GSettings for Cinnamon and/or GNOME,
     whichever schema the desktop provides (on some systems both exist; writing
-    both is harmless). Idempotent: existing VoxFox entries are updated in
-    place, never duplicated. Returns True if at least one desktop accepted
+    both is harmless). Slots are allocated as numeric customN entries and
+    tracked in `state`, so the desktop's custom-list stays a clean numeric
+    sequence — non-numeric names break Cinnamon's "Add custom shortcut" button.
+    Idempotent: existing VoxFox slots are updated in place, never duplicated,
+    and legacy voxfox-* entries from <= 2.0.7 are migrated. Mutates `state`
+    (the caller persists it) and returns True if at least one desktop accepted
     them. Users can change or remove them in the system keyboard settings."""
-    entries = [
-        ("voxfox-read",    "VoxFox: read",         "voxfox --read",           "<Super>z"),
-        ("voxfox-stop",    "VoxFox: stop",         "voxfox --stop",           "<Super>x"),
-        ("voxfox-voice",   "VoxFox: switch voice", "voxfox --toggle-slot",    "<Super>c"),
-        ("voxfox-whisper", "VoxFox: dictation",    "voxfox --whisper-toggle", "<Super>w"),
-        ("voxfox-ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
-    ]
     installed = False
     try:
-        from gi.repository import Gio
         src = Gio.SettingsSchemaSource.get_default()
         if src is None:
             return False
-
-        # Cinnamon: custom-list holds entry names; each entry is a relocatable
-        # schema under .../custom-keybindings/<name>/ with binding as a LIST.
-        try:
-            if src.lookup("org.cinnamon.desktop.keybindings", True) is not None:
-                base = Gio.Settings.new("org.cinnamon.desktop.keybindings")
-                names = list(base.get_strv("custom-list"))
-                for name, label, cmd, binding in entries:
-                    path = (f"/org/cinnamon/desktop/keybindings/"
-                            f"custom-keybindings/{name}/")
-                    s = Gio.Settings.new_with_path(
-                        "org.cinnamon.desktop.keybindings.custom-keybinding", path)
-                    s.set_string("name", label)
-                    s.set_string("command", cmd)
-                    s.set_strv("binding", [binding])
-                    if name not in names:
-                        names.append(name)
-                base.set_strv("custom-list", names)
-                installed = True
-                log.info("Installed Cinnamon keyboard shortcuts")
-        except Exception as e:
-            log.debug(f"Cinnamon shortcuts failed: {e}")
-
-        # GNOME: custom-keybindings holds entry PATHS; binding is a STRING.
-        try:
-            if src.lookup("org.gnome.settings-daemon.plugins.media-keys",
-                          True) is not None:
-                base = Gio.Settings.new(
-                    "org.gnome.settings-daemon.plugins.media-keys")
-                paths = list(base.get_strv("custom-keybindings"))
-                for name, label, cmd, binding in entries:
-                    path = (f"/org/gnome/settings-daemon/plugins/media-keys/"
-                            f"custom-keybindings/{name}/")
-                    s = Gio.Settings.new_with_path(
-                        "org.gnome.settings-daemon.plugins.media-keys."
-                        "custom-keybinding", path)
-                    s.set_string("name", label)
-                    s.set_string("command", cmd)
-                    s.set_string("binding", binding)
-                    if path not in paths:
-                        paths.append(path)
-                base.set_strv("custom-keybindings", paths)
-                installed = True
-                log.info("Installed GNOME keyboard shortcuts")
-        except Exception as e:
-            log.debug(f"GNOME shortcuts failed: {e}")
+        for fn in (_install_cinnamon_shortcuts, _install_gnome_shortcuts):
+            try:
+                if fn(src, state):
+                    installed = True
+            except Exception as e:
+                log.debug(f"{fn.__name__} failed: {e}")
     except Exception as e:
         log.debug(f"shortcut install skipped: {e}")
     return installed
@@ -1847,6 +2031,13 @@ def _enable_accessibility():
 
 
 def main():
+    # Force the program name so GTK4 under X11 stamps the window with
+    # WM_CLASS "org.voxfox.VoxFox" instead of "python3". Without this the
+    # panel/taskbar cannot match the running window to the .desktop launcher,
+    # so it shows up as a separate, generic-icon window. Must run before any
+    # GTK/GDK initialisation. StartupWMClass in voxfox.desktop must match this.
+    GLib.set_prgname("org.voxfox.VoxFox")
+
     # Turn the accessibility stack on early (like a screen reader) so browsers
     # and GTK apps build their AT-SPI trees that hover-to-read depends on.
     _enable_accessibility()
@@ -1882,7 +2073,11 @@ def main():
 
     # Manual (re)install of the desktop keyboard shortcuts.
     if args.install_shortcuts:
-        ok = _install_shortcuts()
+        st = vf.load_state()
+        ok = _install_shortcuts(st)
+        if ok:
+            st["shortcuts_installed"] = True
+            vf.save_state(st)
         print("Shortcuts installed (Super+Z/X/C/W/A)." if ok
               else "No supported desktop (Cinnamon/GNOME GSettings) found.")
         return
@@ -1905,11 +2100,19 @@ def main():
     # First GUI start on this desktop: register the default global shortcuts
     # (Super+Z read, +X stop, +C voice, +W dictation, +A OCR). One-time, so a
     # user who deletes or changes them in the system settings keeps their
-    # choice; `voxfox --install-shortcuts` re-installs on demand.
+    # choice; `voxfox --install-shortcuts` re-installs on demand. Upgraders
+    # from <= 2.0.7 are migrated once from the old non-numeric voxfox-* entries
+    # (which jam Cinnamon's "Add custom shortcut" button) to numeric slots.
     try:
         st = vf.load_state()
-        if not st.get("shortcuts_installed") and _install_shortcuts():
-            st["shortcuts_installed"] = True
+        first_time = not st.get("shortcuts_installed")
+        needs_migration = (st.get("shortcuts_installed")
+                           and not st.get("shortcuts_slot_migrated"))
+        if first_time or needs_migration:
+            ok = _install_shortcuts(st)
+            if ok:
+                st["shortcuts_installed"] = True
+            st["shortcuts_slot_migrated"] = True
             vf.save_state(st)
     except Exception as e:
         log.debug(f"shortcut auto-install skipped: {e}")

@@ -56,6 +56,17 @@ DEFAULT_STATE = {
     # Set once the default desktop shortcuts (Super+Z/X/C/W/A) have been
     # registered, so user edits/removals in the system settings stick.
     "shortcuts_installed": False,
+    # Which numeric custom slots (customN) VoxFox owns in each desktop's
+    # keybinding list, keyed by action ("read"/"stop"/"voice"/"whisper"/"ocr").
+    # Tracked by slot rather than by a fixed name so the desktop's custom-list
+    # stays a clean numeric sequence — Cinnamon's "Add custom shortcut" button
+    # breaks when the list contains non-numeric names. Empty until installed.
+    "cinnamon_shortcut_slots": {},
+    "gnome_shortcut_slots": {},
+    # One-time flag: set once the 2.0.8 numeric-slot migration has run, so
+    # upgraders from <= 2.0.7 (who have non-numeric voxfox-* entries that jam
+    # Cinnamon's add-shortcut button) get migrated exactly once on first start.
+    "shortcuts_slot_migrated": False,
 }
 
 
@@ -87,6 +98,9 @@ def load_state():
             s.setdefault("pronunciations", {})
             s.setdefault("win_pos", None)
             s.setdefault("shortcuts_installed", False)
+            s.setdefault("cinnamon_shortcut_slots", {})
+            s.setdefault("gnome_shortcut_slots", {})
+            s.setdefault("shortcuts_slot_migrated", False)
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).
