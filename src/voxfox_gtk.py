@@ -149,7 +149,19 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
 
 
 def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
-    for key in DEFAULT_VOICES:
+    # Always ensure the bundled English + Dutch voices, plus whatever voices
+    # the two slots currently point at (on a fresh install these are seeded
+    # from the system language, so a German system also pulls its German voice).
+    keys = list(DEFAULT_VOICES)
+    try:
+        st = vf.load_state()
+        for slot in ("slot1", "slot2"):
+            v = st.get(slot, {}).get("voice", "")
+            if v and v not in keys:
+                keys.append(v)
+    except Exception as e:
+        log.debug(f"slot voice lookup skipped: {e}")
+    for key in keys:
         if key in vf.get_local_voices():
             continue
         progress(f"{_('Downloading voice')}: {key}...")

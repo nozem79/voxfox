@@ -18,7 +18,7 @@
 """voxfox_core.state — Persistent state and history (load/save, atomic writes, migration)."""
 
 import copy, json, os, tempfile, time
-from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang
+from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG
 
 
 
@@ -70,6 +70,30 @@ DEFAULT_STATE = {
 }
 
 
+def _fresh_state():
+    """A brand-new state for a first install, with Slot 1 seeded from the
+    system language when we recognise it. A Dutch system therefore starts in
+    Dutch (UI + first voice) instead of always defaulting to English; Slot 2
+    becomes English so there's always a second language to switch to (or Dutch
+    if the system itself is English). Unknown system languages keep the English
+    default unchanged."""
+    s = copy.deepcopy(DEFAULT_STATE)
+    try:
+        lang = detect_system_piper_lang()
+        if lang:
+            s["slot1"] = {"lang": lang,
+                          "voice": DEFAULT_VOICE_FOR_LANG.get(lang, ""),
+                          "speed": 1.0, "pitch": 0.0}
+            second = "English" if lang != "English" else "Dutch"
+            s["slot2"] = {"lang": second,
+                          "voice": DEFAULT_VOICE_FOR_LANG.get(second, ""),
+                          "speed": 1.0, "pitch": 0.0}
+            log.info(f"Fresh install: seeded Slot 1 from system language ({lang})")
+    except Exception as e:
+        log.debug(f"system language detection skipped: {e}")
+    return s
+
+
 def load_state():
     # init_storage() copies any legacy file to STATE_FILE on startup; this
     # read-only fallback keeps load_state() correct even if called on its own.
@@ -79,6 +103,12 @@ def load_state():
             if os.path.isfile(old):
                 path = old
                 break
+    # True fresh install: no state file anywhere. Seed from the system language
+    # so a Dutch desktop starts in Dutch instead of defaulting to English.
+    if not os.path.isfile(path):
+        s = _fresh_state()
+        set_language(ui_code_for_piper_lang(s["slot1"].get("lang", "")))
+        return s
     try:
         with open(path) as f:
             s = json.load(f)
@@ -108,7 +138,7 @@ def load_state():
             set_language(ui_code)
             return s
     except Exception:
-        s = copy.deepcopy(DEFAULT_STATE)
+        s = _fresh_state()
         ui_code = ui_code_for_piper_lang(s["slot1"].get("lang", ""))
         set_language(ui_code)
         return s

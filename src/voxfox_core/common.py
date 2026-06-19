@@ -298,6 +298,50 @@ def ui_code_for_piper_lang(piper_lang_name):
     return code if app.has_language(code) else "en"
 
 
+# Reverse of PIPER_LANG_TO_CODE: locale code -> Piper language name.
+_CODE_TO_PIPER_LANG = {code: name for name, code in PIPER_LANG_TO_CODE.items()}
+
+# A sensible default Piper voice per language, used to seed Slot 1 on a fresh
+# install once the system language is detected. English and Dutch are the
+# voices we always bundle (DEFAULT_VOICES); the rest are reasonable medium
+# voices that exist in the Piper voices catalogue. A wrong/unavailable key is
+# harmless: voice download logs a warning and skips, and the user can pick
+# another voice in the preferences.
+DEFAULT_VOICE_FOR_LANG = {
+    "English":    "en_GB-alba-medium",
+    "Dutch":      "nl_NL-pim-medium",
+    "German":     "de_DE-thorsten-medium",
+    "French":     "fr_FR-siwis-medium",
+    "Spanish":    "es_ES-davefx-medium",
+    "Italian":    "it_IT-paola-medium",
+    "Portuguese": "pt_BR-faber-medium",
+}
+
+
+def detect_system_piper_lang():
+    """Return the Piper language NAME matching the system locale (e.g. 'Dutch'
+    for nl_NL.UTF-8), or None if the system language isn't one we ship a UI
+    translation for. Reads the standard locale environment variables in POSIX
+    priority order; falls back to None so callers keep their existing default.
+
+    Used only to seed Slot 1 on a fresh install, so a Dutch system starts in
+    Dutch instead of always defaulting to English."""
+    raw = ""
+    for var in ("LC_ALL", "LC_MESSAGES", "LANG"):
+        val = os.environ.get(var, "").strip()
+        if val:
+            raw = val
+            break
+    if not raw or raw.upper() in ("C", "POSIX"):
+        return None
+    # Normalise "nl_NL.UTF-8" / "nl_NL@euro" / "nl" -> "nl".
+    code = raw.split(".")[0].split("@")[0].split("_")[0].lower()
+    name = _CODE_TO_PIPER_LANG.get(code)
+    if name and app.has_language(code):
+        return name
+    return None
+
+
 # ── State ──────────────────────────────────────────────────────────────────────
 def _setup_file_logging():
     """Append VoxFox log output to ~/.cache/voxfox/voxfox.log (rotating). Best
@@ -434,6 +478,8 @@ __all__ = [
     "_",
     "available_ui_languages",
     "ui_code_for_piper_lang",
+    "DEFAULT_VOICE_FOR_LANG",
+    "detect_system_piper_lang",
     "_setup_file_logging",
     "_migrate_file",
     "init_storage",
