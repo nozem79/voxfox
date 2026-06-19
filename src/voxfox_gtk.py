@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.8"
+APP_VERSION = "2.0.9"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.

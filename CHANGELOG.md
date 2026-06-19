@@ -1,3 +1,17 @@
+## 2.0.9
+
+- Fresh-install language seeding now works properly. On a brand-new install
+  Slot 1 is set from the system language ($LANG) for both the interface and the
+  first voice, and Slot 2 becomes English (or Dutch if the system is already
+  English), so there is always a second language to switch to. Unknown system
+  languages keep the English default.
+- Voice download now also fetches the voices the two slots currently point at,
+  not just the bundled English and Dutch ones, so e.g. a German system pulls
+  its German voice during setup.
+- maim is now a package dependency. It is the preferred screenshot tool for OCR
+  region select (tried before scrot), so it should be present rather than
+  optional.
+
 ## 2.0.8
 
 - Keyboard shortcuts no longer break Cinnamon's "Add custom shortcut" button.
