@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "2.0.9"
+APP_VERSION = "3.0"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -69,6 +69,57 @@ ACCENT_CSS = b"""
 .voxfox-accent:hover  { background-color: #F47E3A; }
 .voxfox-accent:active { background-color: #D9590F; }
 """
+
+
+# ── 3.0 modular toolbar registry ──────────────────────────────────────────
+# The seven front-end action buttons. This is the single source of truth for
+# which buttons exist; state.json (ui_layout) only stores the user's chosen
+# visibility and order. Fields per button:
+#   id       stable key, persisted in state — never rename, only add/remove
+#   attr     the VoxFoxWindow attribute kept for the live widget (other code
+#            still refers to self.read_btn, self.whisper_btn, ...)
+#   label    English button text (run through _() at build time)
+#   tooltip  English tooltip text (through _())
+#   a11y     English accessible label (through _())
+#   handler  name of the VoxFoxWindow method invoked on click
+#   css      optional extra CSS class (e.g. the orange accent on Read)
+TOOLBAR_BUTTONS = [
+    ("read",    "read_btn",    "Read",   "Read selected text aloud",
+     "Read selected text aloud", "do_read", "voxfox-accent"),
+    ("stop",    "stop_btn",    "Stop",   "Stop speaking",
+     "Stop", "do_stop", None),
+    ("pause",   "pause_btn",   "Pause",  "Pause or resume speech",
+     "Pause or resume", "do_pause", None),
+    ("dictate", "whisper_btn", "Speak",  "Dictate: record speech and type it",
+     "Dictate (speech to text)", "do_whisper", None),
+    ("hover",   "hover_btn",   "Hover",
+     "Read UI text under the mouse pointer aloud (AT-SPI)",
+     "Toggle hover reading", "do_hover", None),
+    ("select",  "select_btn",  "Select",
+     "Select a screen region and read its text aloud via OCR",
+     "Select a screen region to read via OCR", "do_ocr_select", None),
+    ("ocr",     "ocr_btn",     "OCR",
+     "OCR: open a PDF or image and read the text aloud",
+     "Open a PDF or image to read via OCR", "do_ocr_file", None),
+]
+TOOLBAR_IDS = [b[0] for b in TOOLBAR_BUTTONS] + ["switch"]
+
+
+def _scale_css(scale):
+    """CSS that scales the main window. .voxfox-root only sets the root
+    font-size (which scales the title text and, via em, the header icons) so it
+    can safely sit on the header without bloating the window-control or
+    menu/settings buttons. Everything that contributes to the window's width —
+    the toolbar button padding/min-width, the gaps between buttons, and the
+    padding around the toolbar — is expressed in em and scoped to the toolbar,
+    so the whole window shrinks proportionally at 75 % instead of keeping
+    fixed-pixel slack. Only the main window and its header carry these classes;
+    the settings dialog keeps the theme default."""
+    return (f".voxfox-root {{ font-size: {scale}%; }}\n"
+            ".voxfox-root button image { -gtk-icon-size: 1.1em; }\n"
+            ".voxfox-pad { padding: 0.2em; }\n"
+            ".voxfox-toolbar button { padding: 0.25em 0.4em; min-width: 2.6em; margin: 0.12em; }\n"
+            ".voxfox-toolbar flowboxchild { margin: 0.12em; }\n").encode()
 
 
 # ── GLib adapter so voxfox_core.IPCServer can schedule work on the UI thread ──
@@ -542,6 +593,8 @@ class PreferencesWindow(Gtk.Window):
                              Gtk.Label(label=_("Pronunciation")))
         notebook.append_page(_page(self._misc_group()),
                              Gtk.Label(label=_("Misc")))
+        notebook.append_page(_page(self._interface_group()),
+                             Gtk.Label(label=_("Interface")))
         self.set_child(notebook)
 
         self.connect("close-request", self._on_close)
@@ -550,6 +603,102 @@ class PreferencesWindow(Gtk.Window):
         self._save_pron()
         self.win.reload_active_controls()
         return False
+
+    # ── Interface: UI scale + modular toolbar (3.0) ──────────────────────────
+    def _interface_group(self):
+        layout = vf.reconcile_toolbar_layout(self.state.get("ui_layout"),
+                                             TOOLBAR_IDS)
+        self.state["ui_layout"] = layout
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+
+        # Interface size: 75 / 100 / 125 % as a radio group.
+        size_frame = Gtk.Frame(label=_("Interface size"))
+        srow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(srow, f"set_margin_{m}")(10)
+        radios, leader = [], None
+        for s in vf.UI_SCALES:
+            rb = Gtk.CheckButton(label=f"{s}%")
+            if leader is None:
+                leader = rb
+            else:
+                rb.set_group(leader)
+            radios.append((s, rb))
+            srow.append(rb)
+        for s, rb in radios:
+            rb.set_active(s == layout["scale"])
+        for s, rb in radios:
+            rb.connect("toggled", self._on_scale_toggled, s)
+        size_frame.set_child(srow)
+        box.append(size_frame)
+
+        # Buttons: per-button visibility toggle + up/down reordering.
+        btn_frame = Gtk.Frame(label=_("Buttons"))
+        self._iface_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                   spacing=4)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(self._iface_list, f"set_margin_{m}")(10)
+        self._populate_button_list()
+        btn_frame.set_child(self._iface_list)
+        box.append(btn_frame)
+        return box
+
+    def _on_scale_toggled(self, rb, scale):
+        if rb.get_active():
+            self.win.apply_ui_scale(scale)
+
+    def _populate_button_list(self):
+        # Clear current rows.
+        child = self._iface_list.get_first_child()
+        while child:
+            nxt = child.get_next_sibling()
+            self._iface_list.remove(child)
+            child = nxt
+        labels = {b[0]: b[2] for b in TOOLBAR_BUTTONS}
+        labels["switch"] = "Switch language"
+        buttons = self.state["ui_layout"]["buttons"]
+        n = len(buttons)
+        for i, entry in enumerate(buttons):
+            bid = entry["id"]
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            chk = Gtk.CheckButton(label=_(labels.get(bid, bid)))
+            chk.set_active(entry["visible"])
+            chk.set_hexpand(True)
+            chk.connect("toggled", self._on_btn_visible, bid)
+            up = Gtk.Button(icon_name="go-up-symbolic")
+            up.set_tooltip_text(_("Move up"))
+            up.set_sensitive(i > 0)
+            up.connect("clicked", self._on_btn_move, bid, -1)
+            down = Gtk.Button(icon_name="go-down-symbolic")
+            down.set_tooltip_text(_("Move down"))
+            down.set_sensitive(i < n - 1)
+            down.connect("clicked", self._on_btn_move, bid, 1)
+            row.append(chk)
+            row.append(up)
+            row.append(down)
+            self._iface_list.append(row)
+
+    def _on_btn_visible(self, chk, bid):
+        for e in self.state["ui_layout"]["buttons"]:
+            if e["id"] == bid:
+                e["visible"] = chk.get_active()
+                break
+        vf.save_state(self.state)
+        self.win.rebuild_ui()
+
+    def _on_btn_move(self, _btn, bid, delta):
+        buttons = self.state["ui_layout"]["buttons"]
+        idx = next((i for i, e in enumerate(buttons) if e["id"] == bid), None)
+        if idx is None:
+            return
+        new = idx + delta
+        if new < 0 or new >= len(buttons):
+            return
+        buttons[idx], buttons[new] = buttons[new], buttons[idx]
+        vf.save_state(self.state)
+        self._populate_button_list()
+        self.win.rebuild_ui()
 
     # ── per-slot language + voice + speed ────────────────────────────────────
     def _slot_group(self, slot, title):
@@ -1107,12 +1256,26 @@ class PreferencesWindow(Gtk.Window):
 class VoxFoxWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title=vf.APP_NAME)
-        self.set_default_size(360, 0)
+        # No fixed default size: let the window size itself to the toolbar's
+        # natural size, so it is exactly wide enough for the visible buttons
+        # (4-5 on one row) and exactly tall enough (no empty filler below). It
+        # stays resizable, and the maximize button is dropped via the header
+        # decoration layout in _build_ui.
         self.state      = vf.load_state()
         self.whisper_on = False
         self._record_stop_event = None
         self.hover_on   = False
         self.root       = _RootShim()
+        # 3.0 UI scale: one CSS provider on the display whose root font-size we
+        # swap to zoom the whole main window (see _scale_css / apply_ui_scale).
+        self._scale_provider = Gtk.CssProvider()
+        try:
+            Gtk.StyleContext.add_provider_for_display(
+                Gdk.Display.get_default(), self._scale_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        except Exception as e:
+            log.debug(f"scale provider add failed: {e}")
+        self._load_scale_css()
         # Hover mode (in voxfox_core) asks this callback which voice to speak with.
         vf.set_slot_config_provider(self._active_cfg)
         self._build_ui()
@@ -1130,12 +1293,68 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def rebuild_ui(self):
         """Rebuild the whole window UI in place. Used to re-render every label
-        in a new UI language when slot 1's language changes."""
+        in a new UI language when slot 1's language changes, and after the
+        toolbar layout (visible buttons / order) changes."""
         self._build_ui()
         self._sync_pause_btn()
+        self._fit_to_content()
+
+    def _load_scale_css(self):
+        """(Re)load the scale provider from the scale stored in ui_layout."""
+        scale = (self.state.get("ui_layout") or {}).get("scale",
+                                                         vf.DEFAULT_UI_SCALE)
+        if scale not in vf.UI_SCALES:
+            scale = vf.DEFAULT_UI_SCALE
+        try:
+            self._scale_provider.load_from_data(_scale_css(scale))
+        except Exception as e:
+            log.debug(f"scale css load failed: {e}")
+
+    def apply_ui_scale(self, scale):
+        """Set the global UI scale (75/100/125) live — no rebuild needed, the
+        CSS cascade reflows the toolbar. Persists the choice and shrinks the
+        window back to the new, smaller content size."""
+        if scale not in vf.UI_SCALES:
+            scale = vf.DEFAULT_UI_SCALE
+        self.state.setdefault("ui_layout", {})["scale"] = scale
+        vf.save_state(self.state)
+        self._load_scale_css()
+        self._fit_to_content()
+
+    def _fit_to_content(self):
+        """Shrink the window to the toolbar's current natural size (X11, best-
+        effort). GTK4 doesn't auto-shrink a window when its content gets smaller
+        (after lowering the UI scale or hiding buttons), so we nudge it via
+        wmctrl to keep the window as narrow/short as the visible buttons allow.
+        The window stays resizable; this only removes leftover empty space."""
+        if not vf._have("wmctrl"):
+            return
+
+        def do_fit():
+            try:
+                _min, nat = self.get_preferred_size()
+                w, h = max(1, nat.width), max(1, nat.height)
+            except Exception as e:
+                log.debug(f"fit measure failed: {e}")
+                return False
+
+            def worker():
+                try:
+                    subprocess.run(["wmctrl", "-F", "-r", vf.APP_NAME,
+                                    "-e", f"0,-1,-1,{w},{h}"], timeout=5)
+                except Exception as e:
+                    log.debug(f"fit-to-content failed: {e}")
+            threading.Thread(target=worker, daemon=True).start()
+            return False
+        # Defer so the new CSS / layout has settled before we measure.
+        GLib.timeout_add(50, do_fit)
 
     def _build_ui(self):
         header = Gtk.HeaderBar()
+        header.add_css_class("voxfox-root")   # scale the title + header icons too
+        # Drop the useless maximize button; keep minimize + close. The window
+        # stays resizable by edge-drag.
+        header.set_decoration_layout(":minimize,close")
         self.set_titlebar(header)
 
         # The language switcher lives at the end of the second button row
@@ -1163,9 +1382,9 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         _a11y(menu_btn, _("Menu"))
         header.pack_end(menu_btn)
 
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        for m in ("top", "bottom", "start", "end"):
-            getattr(outer, f"set_margin_{m}")(6)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        outer.add_css_class("voxfox-root")   # scopes the 3.0 UI-scale CSS
+        outer.add_css_class("voxfox-pad")    # em-based padding, scales with size
         self.set_child(outer)
 
         # Setup banner — only shown when the Piper engine is missing.
@@ -1181,50 +1400,57 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self.setup_bar.append(setup_btn)
         outer.append(self.setup_bar)
 
-        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6,
-                          homogeneous=True)
-        self.read_btn = Gtk.Button(label=_("Read"))
-        self.read_btn.add_css_class("voxfox-accent")
-        self.read_btn.set_tooltip_text(_("Read selected text aloud"))
-        self.read_btn.connect("clicked", lambda *_a: self.do_read())
-        self.stop_btn = Gtk.Button(label=_("Stop"))
-        self.stop_btn.set_tooltip_text(_("Stop speaking"))
-        self.stop_btn.connect("clicked", lambda *_a: self.do_stop())
-        self.pause_btn = Gtk.Button(label=_("Pause"))
-        self.pause_btn.set_tooltip_text(_("Pause or resume speech"))
-        self.pause_btn.connect("clicked", lambda *_a: self.do_pause())
-        _a11y(self.read_btn,  _("Read selected text aloud"))
-        _a11y(self.stop_btn,  _("Stop"))
-        _a11y(self.pause_btn, _("Pause or resume"))
-        for b in (self.read_btn, self.stop_btn, self.pause_btn):
-            actions.append(b)
-        outer.append(actions)
+        # ── Modular toolbar (3.0) ────────────────────────────────────────────
+        # The seven action buttons, shown and ordered per the user's ui_layout.
+        # All seven are always instantiated (other code refers to self.read_btn,
+        # self.whisper_btn, ...), but only the enabled ones are packed, in the
+        # chosen order. The language switcher is fixed and always shown last.
+        self._toolbar_btns = {}
+        for bid, attr, label, tip, a11y_lbl, handler, css in TOOLBAR_BUTTONS:
+            btn = Gtk.Button(label=_(label))
+            btn.set_tooltip_text(_(tip))
+            _a11y(btn, _(a11y_lbl))
+            if css:
+                btn.add_css_class(css)
+            btn.connect("clicked", lambda *_a, h=handler: getattr(self, h)())
+            setattr(self, attr, btn)
+            self._toolbar_btns[bid] = btn
+        # The language switcher is a modular button too (id "switch"); it is
+        # built specially because its label is dynamic (the current language).
+        self._toolbar_btns["switch"] = self.switch_btn
+        # Note: labels are deliberately NOT ellipsized or width-capped. Showing
+        # the full text means each button's minimum width is its full label, so
+        # the window can never shrink small enough to clip the text — the
+        # buttons stay fully readable at every scale. (The dictate button no
+        # longer needs a width cap: its recording label is the short "Stop".)
 
-        row2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6,
-                       homogeneous=False, halign=Gtk.Align.CENTER)
-        self.whisper_btn = Gtk.Button(label=_("Speak"))
-        self.whisper_btn.set_tooltip_text(_("Dictate: record speech and type it"))
-        self.whisper_btn.connect("clicked", lambda *_a: self.do_whisper())
-        self.hover_btn = Gtk.Button(label=_("Hover"))
-        self.hover_btn.set_tooltip_text(
-            _("Read UI text under the mouse pointer aloud (AT-SPI)"))
-        self.hover_btn.connect("clicked", lambda *_a: self.do_hover())
-        self.select_btn = Gtk.Button(label=_("Select"))
-        self.select_btn.set_tooltip_text(
-            _("Select a screen region and read its text aloud via OCR"))
-        self.select_btn.connect("clicked", lambda *_a: self.do_ocr_select())
-        self.ocr_btn = Gtk.Button(label="OCR")
-        self.ocr_btn.set_tooltip_text(
-            _("OCR: open a PDF or image and read the text aloud"))
-        self.ocr_btn.connect("clicked", lambda *_a: self.do_ocr_file())
-        _a11y(self.whisper_btn, _("Dictate (speech to text)"))
-        _a11y(self.hover_btn,   _("Toggle hover reading"))
-        _a11y(self.select_btn,  _("Select a screen region to read via OCR"))
-        _a11y(self.ocr_btn,     _("Open a PDF or image to read via OCR"))
-        for b in (self.whisper_btn, self.hover_btn, self.select_btn,
-                  self.ocr_btn, self.switch_btn):
-            row2.append(b)
-        outer.append(row2)
+        layout = vf.reconcile_toolbar_layout(self.state.get("ui_layout"),
+                                             TOOLBAR_IDS)
+        self.state["ui_layout"] = layout
+
+        # Lay the visible buttons out in explicit rows rather than a FlowBox.
+        # A FlowBox wraps on window width (so a narrow window split 4 buttons as
+        # 3+1) and, worse, negotiates a tall minimum height as if every button
+        # might stack in one column — which left empty vertical space the window
+        # could not be shrunk below. Explicit rows give a predictable, compact
+        # size: up to 5 buttons on one row, 6+ split evenly over two rows.
+        visible_ids = [e["id"] for e in layout["buttons"] if e["visible"]]
+        n = len(visible_ids)
+        if n <= 5:
+            rows = [visible_ids] if visible_ids else []
+        else:
+            half = (n + 1) // 2
+            rows = [visible_ids[:half], visible_ids[half:]]
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        toolbar.add_css_class("voxfox-toolbar")
+        toolbar.set_halign(Gtk.Align.CENTER)
+        for row_ids in rows:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0,
+                          homogeneous=True)
+            for bid in row_ids:
+                row.append(self._toolbar_btns[bid])
+            toolbar.append(row)
+        outer.append(toolbar)
 
         # STATUS role makes screen readers announce status changes (a live
         # region), so blind users hear "Reading...", errors, etc.
@@ -1421,7 +1647,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             self.set_status(_("Stopping..."), duration=0)
             return
         self.whisper_on = True
-        self.whisper_btn.set_label(_("Stop recording"))
+        self.whisper_btn.set_label(_("Stop"))
         self.whisper_btn.add_css_class("destructive-action")
         self.set_status(_("Recording..."), duration=0)
         self._record_stop_event = threading.Event()
@@ -1649,6 +1875,11 @@ class VoxFoxApplication(Gtk.Application):
         for delay in (400, 1200, 2500):
             GLib.timeout_add(delay,
                              lambda: (self.win.set_always_on_top(), False)[1])
+        # Shrink the window to its natural content size after it is mapped,
+        # overriding any larger geometry the window manager may have remembered.
+        for delay in (350, 1100):
+            GLib.timeout_add(delay,
+                             lambda: (self.win._fit_to_content(), False)[1])
         # Warm up the Piper server in the background so the voice model is
         # already loaded by the time the user first speaks. This eliminates
         # the ~1 s startup delay on the very first utterance.

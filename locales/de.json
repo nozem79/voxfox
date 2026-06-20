@@ -154,5 +154,11 @@
   "Import failed": "Import fehlgeschlagen",
   "Export failed": "Export fehlgeschlagen",
   "Merge wrapped lines into paragraphs": "Umbrochene Zeilen zu Absätzen zusammenführen",
-  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Beim Vorlesen von OCR- oder markiertem Text werden nur umbrochene Zeilen zusammengeführt, sodass nur an echten Absätzen pausiert wird. Ausschalten, um jede Zeile einzeln vorzulesen (Listen, Code)."
+  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Beim Vorlesen von OCR- oder markiertem Text werden nur umbrochene Zeilen zusammengeführt, sodass nur an echten Absätzen pausiert wird. Ausschalten, um jede Zeile einzeln vorzulesen (Listen, Code).",
+  "Interface size": "Oberflächengröße",
+  "Buttons": "Schaltflächen",
+  "Move up": "Nach oben",
+  "Move down": "Nach unten",
+  "Interface": "Oberfläche",
+  "Switch language": "Sprache wechseln"
 }

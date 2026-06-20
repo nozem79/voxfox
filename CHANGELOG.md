@@ -1,3 +1,21 @@
+## 3.0
+
+This release reworks the main window into a modular, scalable toolbar.
+
+- The seven action buttons (Read, Stop, Pause, Speak, Hover, Select, OCR) and
+  the language switcher can now each be shown or hidden and reordered, from a
+  new Interface tab in the settings. People who only dictate, or who use a
+  single language, can pare the toolbar down to just what they need. Choices are
+  remembered, and the settings panel and menus stay fixed.
+- A global interface scale of 75%, 100% or 125% scales the whole main window —
+  title, buttons, text, icons and spacing together — and applies live without a
+  restart. The scale is remembered across restarts.
+- The window now sizes itself to its content: exactly wide enough for the
+  visible buttons (up to five on one row, six or more split over two rows) and
+  exactly tall enough, with no empty filler. It stays resizable, and the unused
+  maximize button has been removed. Button labels are always shown in full, so
+  the toolbar can never shrink small enough to clip the text.
+
 ## 2.0.9
 
 - Fresh-install language seeding now works properly. On a brand-new install

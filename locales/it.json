@@ -154,5 +154,11 @@
   "Import failed": "Importazione non riuscita",
   "Export failed": "Esportazione non riuscita",
   "Merge wrapped lines into paragraphs": "Unisci le righe spezzate in paragrafi",
-  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Durante la lettura di testo OCR o selezionato, unisce le righe solo spezzate e si ferma solo ai paragrafi reali. Disattiva per leggere ogni riga separatamente (elenchi, codice)."
+  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Durante la lettura di testo OCR o selezionato, unisce le righe solo spezzate e si ferma solo ai paragrafi reali. Disattiva per leggere ogni riga separatamente (elenchi, codice).",
+  "Interface size": "Dimensione interfaccia",
+  "Buttons": "Pulsanti",
+  "Move up": "Sposta su",
+  "Move down": "Sposta giù",
+  "Interface": "Interfaccia",
+  "Switch language": "Cambia lingua"
 }

@@ -154,5 +154,11 @@
   "Import failed": "Falha na importação",
   "Export failed": "Falha na exportação",
   "Merge wrapped lines into paragraphs": "Juntar linhas quebradas em parágrafos",
-  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Ao ler texto de OCR ou selecionado, junta as linhas que estão apenas quebradas e pausa apenas em parágrafos reais. Desative para ler cada linha separadamente (listas, código)."
+  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Ao ler texto de OCR ou selecionado, junta as linhas que estão apenas quebradas e pausa apenas em parágrafos reais. Desative para ler cada linha separadamente (listas, código).",
+  "Interface size": "Tamanho da interface",
+  "Buttons": "Botões",
+  "Move up": "Mover para cima",
+  "Move down": "Mover para baixo",
+  "Interface": "Interface",
+  "Switch language": "Mudar idioma"
 }

@@ -154,5 +154,11 @@
   "Import failed": "Importeren mislukt",
   "Export failed": "Exporteren mislukt",
   "Merge wrapped lines into paragraphs": "Afgebroken regels samenvoegen tot alinea's",
-  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Bij het voorlezen van OCR of geselecteerde tekst worden alleen-afgebroken regels samengevoegd, zodat er alleen bij echte alinea's wordt gepauzeerd. Zet uit om elke regel apart voor te lezen (lijsten, code)."
+  "When reading OCR or selected text, join lines that are only word-wrapped and pause only at real paragraphs. Turn off to read every line separately (lists, code).": "Bij het voorlezen van OCR of geselecteerde tekst worden alleen-afgebroken regels samengevoegd, zodat er alleen bij echte alinea's wordt gepauzeerd. Zet uit om elke regel apart voor te lezen (lijsten, code).",
+  "Interface size": "Interfacegrootte",
+  "Buttons": "Knoppen",
+  "Move up": "Omhoog",
+  "Move down": "Omlaag",
+  "Interface": "Interface",
+  "Switch language": "Taal wisselen"
 }

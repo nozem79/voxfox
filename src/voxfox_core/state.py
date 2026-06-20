@@ -67,6 +67,13 @@ DEFAULT_STATE = {
     # upgraders from <= 2.0.7 (who have non-numeric voxfox-* entries that jam
     # Cinnamon's add-shortcut button) get migrated exactly once on first start.
     "shortcuts_slot_migrated": False,
+    # 3.0 modular toolbar: the user's chosen visibility and order for the seven
+    # front-end buttons, plus the global UI scale (75/100/125). The list of
+    # buttons that actually exist lives in the GTK layer; here we store only the
+    # user's choices. "version" allows future layout migrations. An empty
+    # "buttons" list means "not customised yet" — reconcile_toolbar_layout()
+    # fills it from the app's default order on load.
+    "ui_layout": {"version": 1, "scale": 100, "buttons": []},
 }
 
 
@@ -131,6 +138,8 @@ def load_state():
             s.setdefault("cinnamon_shortcut_slots", {})
             s.setdefault("gnome_shortcut_slots", {})
             s.setdefault("shortcuts_slot_migrated", False)
+            s.setdefault("ui_layout",
+                         copy.deepcopy(DEFAULT_STATE["ui_layout"]))
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).
@@ -217,6 +226,58 @@ def add_history(kind, text):
     return items
 
 
+# ── 3.0 modular toolbar: UI scale + button-layout reconciliation ──────────
+
+UI_SCALES = (75, 100, 125)
+DEFAULT_UI_SCALE = 100
+
+
+def _snap_scale(value):
+    """Clamp an arbitrary UI scale to the nearest supported step (75/100/125).
+    Junk or missing values fall back to 100."""
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        return DEFAULT_UI_SCALE
+    return min(UI_SCALES, key=lambda s: abs(s - v))
+
+
+def reconcile_toolbar_layout(layout, default_order):
+    """Reconcile a stored ui_layout against the buttons the app actually has.
+
+    Drops stored buttons whose id no longer exists (removed in an update),
+    appends buttons that are new in this version (at the end, since the user
+    may have reordered), keeps the user's order and per-button visibility for
+    everything known, and snaps the UI scale to a supported step.
+
+    `default_order` is the canonical id order (the GTK layer's TOOLBAR_IDS).
+    This function is deliberately UI-agnostic — it knows no button names, only
+    the id list it is handed — so voxfox_core stays free of UI specifics. It
+    never mutates the input and always returns a fresh, valid layout dict."""
+    layout = layout or {}
+    valid = set(default_order)
+
+    stored, order = {}, []
+    for entry in layout.get("buttons", []):
+        if not isinstance(entry, dict):
+            continue
+        bid = entry.get("id")
+        if bid in valid and bid not in stored:
+            stored[bid] = bool(entry.get("visible", True))
+            order.append(bid)
+
+    for bid in default_order:          # buttons new in this version: append, visible
+        if bid not in stored:
+            stored[bid] = True
+            order.append(bid)
+
+    return {
+        "version": 1,
+        "scale": _snap_scale(layout.get("scale", DEFAULT_UI_SCALE)),
+        "buttons": [{"id": b, "visible": stored[b]} for b in order],
+    }
+
+
 __all__ = [
     "DEFAULT_STATE",
     "load_state",
@@ -225,4 +286,7 @@ __all__ = [
     "load_history",
     "save_history",
     "add_history",
+    "UI_SCALES",
+    "DEFAULT_UI_SCALE",
+    "reconcile_toolbar_layout",
 ]
