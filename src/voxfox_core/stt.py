@@ -99,9 +99,9 @@ WHISPER_SIZES_MB = {
 
 
 def _hf_hub_cache():
-    """Location of the HuggingFace hub cache. Respects $HF_HOME so a portable
-    install (VoxMob) can keep models on a USB stick; falls back to the default
-    ~/.cache/huggingface/hub."""
+    """Location of the HuggingFace hub cache. Respects $HF_HOME when set (so the
+    models can live elsewhere, e.g. on removable media); otherwise falls back to
+    the default ~/.cache/huggingface/hub."""
     hf = os.environ.get("HF_HOME")
     if hf:
         return os.path.join(hf, "hub")

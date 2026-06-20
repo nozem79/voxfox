@@ -139,9 +139,9 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
             try:
                 os.chmod(vf.PIPER_BIN, 0o755)
             except OSError:
-                # FAT32/exFAT (VoxMob stick) can't store the exec bit; such
-                # mounts usually expose files as executable already, so don't
-                # fail the whole install over it.
+                # Some filesystems can't store the Unix exec bit (e.g. FAT32 on
+                # removable media); such mounts usually expose files as
+                # executable already, so don't fail the whole install over it.
                 pass
         return True, "ok"
     except Exception as e:

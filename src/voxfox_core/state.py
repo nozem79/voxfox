@@ -165,9 +165,10 @@ def _atomic_write_json(path, obj, mode=0o600):
             json.dump(obj, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
-        # Best-effort: FAT32/exFAT (e.g. a VoxMob USB stick) don't support Unix
-        # permissions and chmod can raise EPERM there. The restricted mode is a
-        # hardening nicety, not a requirement — never let it block the save.
+        # Best-effort: some filesystems (e.g. FAT32/exFAT on removable media)
+        # don't support Unix permissions and chmod can raise EPERM there. The
+        # restricted mode is a hardening nicety, not a requirement — never let
+        # it block the save.
         try:
             os.chmod(tmp, mode)
         except OSError:
