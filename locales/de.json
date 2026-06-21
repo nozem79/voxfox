@@ -160,5 +160,16 @@
   "Move up": "Nach oben",
   "Move down": "Nach unten",
   "Interface": "Oberfläche",
-  "Switch language": "Sprache wechseln"
+  "Switch language": "Sprache wechseln",
+  "button": "Schaltfläche",
+  "checkbox": "Kontrollkästchen",
+  "radio button": "Optionsfeld",
+  "menu item": "Menüpunkt",
+  "combo box": "Kombinationsfeld",
+  "slider": "Schieberegler",
+  "spin button": "Drehfeld",
+  "tab": "Tab",
+  "link": "Link",
+  "checked": "angekreuzt",
+  "expanded": "ausgeklappt"
 }

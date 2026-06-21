@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.0"
+APP_VERSION = "3.1"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -2211,6 +2211,79 @@ def _install_gnome_shortcuts(src, state):
     return True
 
 
+def _install_lxqt_shortcuts(src, state):
+    """LXQt: global shortcuts live in a Qt-INI file read by lxqt-globalkeysd
+    (~/.config/lxqt/globalkeyshortcuts.conf). A command shortcut is a section
+    named '<KeySeq>.<N>', with '+' encoded as %2B and N a unique index, holding
+    Comment / Enabled / Exec — where Exec is comma-separated ('voxfox, --read')
+    and the Super key is spelled 'Meta'. We append the actions still missing,
+    never duplicating an Exec already bound (so a key the user set by hand is
+    kept), and let the daemon's file-watcher reload. No-op outside LXQt. `src`
+    is unused (LXQt doesn't use GSettings); kept for a uniform installer
+    signature."""
+    import re
+    import configparser
+
+    conf = os.path.join(
+        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+        "lxqt", "globalkeyshortcuts.conf")
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
+               + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
+    # The dispatcher runs every installer on every desktop, so only act when
+    # this really is LXQt (or its config already exists).
+    if "lxqt" not in desktop and not os.path.exists(conf):
+        return False
+
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.optionxform = str  # Qt keys are case-sensitive (Comment, Exec, path)
+
+    existing_execs = set()
+    max_idx = 0
+    if os.path.exists(conf):
+        try:
+            cp.read(conf, encoding="utf-8")
+        except Exception as e:
+            log.debug(f"lxqt shortcuts: cannot parse conf: {e}")
+            return False
+        for sect in cp.sections():
+            m = re.search(r"\.(\d+)$", sect)
+            if m:
+                max_idx = max(max_idx, int(m.group(1)))
+            ex = cp[sect].get("Exec", "")
+            if ex:  # normalise 'voxfox, --read' -> 'voxfox --read'
+                existing_execs.add(" ".join(p.strip() for p in ex.split(",")))
+
+    blocks, idx = [], max_idx
+    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+        if cmd in existing_execs:
+            continue  # already bound (e.g. a key the user set themselves)
+        letter = binding.split(">")[-1].upper()          # '<Super>z' -> 'Z'
+        exec_val = ", ".join(cmd.split())                 # 'voxfox --read'
+        idx += 1
+        blocks.append(f"[Meta%2B{letter}.{idx}]\n"
+                      f"Comment={label}\n"
+                      f"Enabled=true\n"
+                      f"Exec={exec_val}\n")
+
+    if not blocks:
+        log.info("LXQt shortcuts already present")
+        return True
+
+    try:
+        os.makedirs(os.path.dirname(conf), exist_ok=True)
+        new_file = not os.path.exists(conf)
+        with open(conf, "a", encoding="utf-8") as f:
+            if new_file:
+                f.write("[General]\nMultipleActionsBehaviour=first\n")
+            for b in blocks:
+                f.write(b)
+    except Exception as e:
+        log.debug(f"lxqt shortcuts write failed: {e}")
+        return False
+    log.info("Installed LXQt keyboard shortcuts")
+    return True
+
+
 def _install_shortcuts(state):
     """Register VoxFox's global keyboard shortcuts with the desktop:
 
@@ -2220,26 +2293,30 @@ def _install_shortcuts(state):
         Super+W  dictation     (voxfox --whisper-toggle)
         Super+A  OCR select    (voxfox --ocr-select)
 
-    Written as custom keybindings via GSettings for Cinnamon and/or GNOME,
-    whichever schema the desktop provides (on some systems both exist; writing
-    both is harmless). Slots are allocated as numeric customN entries and
-    tracked in `state`, so the desktop's custom-list stays a clean numeric
-    sequence — non-numeric names break Cinnamon's "Add custom shortcut" button.
-    Idempotent: existing VoxFox slots are updated in place, never duplicated,
-    and legacy voxfox-* entries from <= 2.0.7 are migrated. Mutates `state`
-    (the caller persists it) and returns True if at least one desktop accepted
-    them. Users can change or remove them in the system keyboard settings."""
+    On GNOME and Cinnamon these are written as custom keybindings via GSettings
+    (numeric customN slots tracked in `state`, legacy voxfox-* names migrated,
+    idempotent). On LXQt they are appended to globalkeyshortcuts.conf as Meta+
+    command entries. Writing for several desktops is harmless; each installer
+    is a no-op where its desktop isn't present. Mutates `state` (the caller
+    persists it) and returns True if at least one desktop accepted them. Users
+    can change or remove them in the system keyboard settings."""
     installed = False
+    # LXQt uses a config file, not GSettings, so try it independently of any
+    # schema source (a pure LXQt box may have no relevant GSettings schemas).
+    try:
+        if _install_lxqt_shortcuts(None, state):
+            installed = True
+    except Exception as e:
+        log.debug(f"_install_lxqt_shortcuts failed: {e}")
     try:
         src = Gio.SettingsSchemaSource.get_default()
-        if src is None:
-            return False
-        for fn in (_install_cinnamon_shortcuts, _install_gnome_shortcuts):
-            try:
-                if fn(src, state):
-                    installed = True
-            except Exception as e:
-                log.debug(f"{fn.__name__} failed: {e}")
+        if src is not None:
+            for fn in (_install_cinnamon_shortcuts, _install_gnome_shortcuts):
+                try:
+                    if fn(src, state):
+                        installed = True
+                except Exception as e:
+                    log.debug(f"{fn.__name__} failed: {e}")
     except Exception as e:
         log.debug(f"shortcut install skipped: {e}")
     return installed

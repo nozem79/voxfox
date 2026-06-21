@@ -161,5 +161,16 @@
   "Move up": "Move up",
   "Move down": "Move down",
   "Interface": "Interface",
-  "Switch language": "Switch language"
+  "Switch language": "Switch language",
+  "button": "button",
+  "checkbox": "checkbox",
+  "radio button": "radio button",
+  "menu item": "menu item",
+  "combo box": "combo box",
+  "slider": "slider",
+  "spin button": "spin button",
+  "tab": "tab",
+  "link": "link",
+  "checked": "checked",
+  "expanded": "expanded"
 }

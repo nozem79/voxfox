@@ -160,5 +160,16 @@
   "Move up": "Omhoog",
   "Move down": "Omlaag",
   "Interface": "Interface",
-  "Switch language": "Taal wisselen"
+  "Switch language": "Taal wisselen",
+  "button": "knop",
+  "checkbox": "selectievakje",
+  "radio button": "keuzerondje",
+  "menu item": "menu-item",
+  "combo box": "keuzelijst",
+  "slider": "schuifregelaar",
+  "spin button": "draaiknop",
+  "tab": "tabblad",
+  "link": "koppeling",
+  "checked": "aangevinkt",
+  "expanded": "uitgeklapt"
 }

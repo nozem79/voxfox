@@ -19,6 +19,7 @@
 
 import subprocess, threading, time
 from .common import HOVER_DELAY, HOVER_POLL, IS_WAYLAND, MIN_MOVE_PX, _have, log
+from .common import _ as tr
 from .stt import WHISPER_TYPE_LIMIT
 from .tts import speak, stop_speaking
 
@@ -41,10 +42,13 @@ _DAEMON_NAMES = {
 
 # Populated once after first successful pyatspi import
 _CONTAINER_ROLES = None
+# Interactive roles -> English control word (run through tr()). Used as a
+# last-resort label for nameless icon-only controls so hover never goes silent.
+_INTERACTIVE_ROLES = None
 
 
 def _init_roles():
-    global _CONTAINER_ROLES
+    global _CONTAINER_ROLES, _INTERACTIVE_ROLES
     if _CONTAINER_ROLES is not None:
         return
     try:
@@ -70,8 +74,27 @@ def _init_roles():
             pyatspi.ROLE_INTERNAL_FRAME,
             pyatspi.ROLE_GROUPING,
         }
+        _INTERACTIVE_ROLES = {}
+        for const, word in (
+            ("ROLE_PUSH_BUTTON",     "button"),
+            ("ROLE_TOGGLE_BUTTON",   "button"),
+            ("ROLE_CHECK_BOX",       "checkbox"),
+            ("ROLE_CHECK_MENU_ITEM", "checkbox"),
+            ("ROLE_RADIO_BUTTON",    "radio button"),
+            ("ROLE_RADIO_MENU_ITEM", "radio button"),
+            ("ROLE_MENU_ITEM",       "menu item"),
+            ("ROLE_COMBO_BOX",       "combo box"),
+            ("ROLE_SLIDER",          "slider"),
+            ("ROLE_SPIN_BUTTON",     "spin button"),
+            ("ROLE_PAGE_TAB",        "tab"),
+            ("ROLE_LINK",            "link"),
+        ):
+            r = getattr(pyatspi, const, None)
+            if r is not None:
+                _INTERACTIVE_ROLES[r] = word
     except Exception:
         _CONTAINER_ROLES = set()
+        _INTERACTIVE_ROLES = {}
 
 
 # ── Text selection (primary clipboard on X11, regular clipboard on Wayland) ──
@@ -155,9 +178,41 @@ def _trim_text(t: str, max_chars=300) -> str:
     return t[:max_chars].strip()
 
 
+def _label_for_role(node) -> str:
+    """For an interactive but nameless node (e.g. an icon-only button), return
+    a localized control-type label plus checked/expanded state. Returns "" for
+    everything else, so structural nodes stay silent and the candidate-picking
+    logic in _find_at_pos / _best_text keeps working unchanged."""
+    _init_roles()
+    try:
+        role = node.getRole()
+    except Exception:
+        return ""
+    word = (_INTERACTIVE_ROLES or {}).get(role)
+    if not word:
+        return ""
+    label = tr(word)
+    try:
+        import pyatspi
+        st = node.getState()
+        if st.contains(pyatspi.STATE_CHECKED):
+            label += ", " + tr("checked")
+        elif st.contains(pyatspi.STATE_EXPANDED):
+            label += ", " + tr("expanded")
+    except Exception:
+        pass
+    return label
+
+
 def _node_text(node) -> str:
-    """Extract the best readable string from a single AT-SPI node."""
-    # Prefer accessible text (labels, entries, paragraphs)
+    """Extract the best readable string from a single AT-SPI node.
+
+    Order, specific to generic: accessible text, name, labelled-by relation,
+    description, image description, and finally — for interactive controls
+    only — a localized role label so a nameless icon button still announces
+    "button" instead of going completely silent.
+    """
+    # 1. Accessible text (labels, entries, paragraphs)
     try:
         t = node.queryText().getText(0, -1)
         # Strip object-replacement characters (inline images/links in Firefox)
@@ -166,11 +221,42 @@ def _node_text(node) -> str:
             return _trim_text(t)
     except Exception:
         pass
-    # Fall back to node.name for buttons, icons, menu items
+
+    # 2. node.name (buttons, icons, menu items)
     name = (node.name or "").strip()
     if name and len(name) > 1 and not _is_daemon(name):
         return name
-    return ""
+
+    # 3. Labelled-by: the name sometimes lives in a separate label widget
+    try:
+        import pyatspi
+        for rel in node.getRelationSet():
+            if rel.getRelationType() == pyatspi.RELATION_LABELLED_BY:
+                for i in range(rel.getNTargets()):
+                    lt = (rel.getTarget(i).name or "").strip()
+                    if lt and len(lt) > 1 and not _is_daemon(lt):
+                        return lt
+    except Exception:
+        pass
+
+    # 4. AccessibleDescription
+    try:
+        desc = (node.description or "").strip()
+        if desc and len(desc) > 1:
+            return _trim_text(desc)
+    except Exception:
+        pass
+
+    # 5. Image description (occasionally set on icon-only buttons)
+    try:
+        idesc = (node.queryImage().imageDescription or "").strip()
+        if idesc and len(idesc) > 1:
+            return idesc
+    except Exception:
+        pass
+
+    # 6. Last resort: name the control TYPE for interactive, nameless nodes
+    return _label_for_role(node)
 
 
 def _find_at_pos(node, x, y, depth=0) -> str:

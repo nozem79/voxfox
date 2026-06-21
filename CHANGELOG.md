@@ -1,3 +1,16 @@
+## 3.1
+
+- Hover reading now falls back through several accessibility properties instead
+  of going silent on unlabelled controls. When an element has no accessible name,
+  VoxFox tries its labelling relation, its description and its image description,
+  and as a last resort announces the control type (button, checkbox, slider, ...)
+  with its checked or expanded state. Icon-only buttons that previously read
+  nothing now at least announce what they are, across GTK and Qt apps alike.
+- The default global shortcuts (Super+Z/X/C/W/A) can now be installed on LXQt,
+  not just GNOME and Cinnamon. `voxfox --install-shortcuts` writes them to LXQt's
+  globalkeyshortcuts.conf as Meta+ command entries, keeping any shortcut you set
+  by hand and never creating duplicates.
+
 ## 3.0
 
 This release reworks the main window into a modular, scalable toolbar.

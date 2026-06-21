@@ -160,5 +160,16 @@
   "Move up": "Sposta su",
   "Move down": "Sposta giù",
   "Interface": "Interfaccia",
-  "Switch language": "Cambia lingua"
+  "Switch language": "Cambia lingua",
+  "button": "pulsante",
+  "checkbox": "casella di controllo",
+  "radio button": "pulsante di opzione",
+  "menu item": "voce di menu",
+  "combo box": "casella combinata",
+  "slider": "cursore",
+  "spin button": "pulsante di selezione",
+  "tab": "scheda",
+  "link": "collegamento",
+  "checked": "selezionato",
+  "expanded": "espanso"
 }

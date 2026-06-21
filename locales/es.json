@@ -160,5 +160,16 @@
   "Move up": "Subir",
   "Move down": "Bajar",
   "Interface": "Interfaz",
-  "Switch language": "Cambiar idioma"
+  "Switch language": "Cambiar idioma",
+  "button": "botón",
+  "checkbox": "casilla",
+  "radio button": "botón de opción",
+  "menu item": "elemento de menú",
+  "combo box": "cuadro combinado",
+  "slider": "control deslizante",
+  "spin button": "botón de número",
+  "tab": "pestaña",
+  "link": "enlace",
+  "checked": "marcado",
+  "expanded": "expandido"
 }
