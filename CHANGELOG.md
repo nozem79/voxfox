@@ -1,3 +1,10 @@
+## 3.2
+
+- The default global shortcuts (Super+Z/X/C/W/A) can now be installed on XFCE.
+  `voxfox --install-shortcuts` writes them via xfconf-query into the
+  xfce4-keyboard-shortcuts channel, keeping any shortcut you set by hand and
+  never creating duplicates. No-op when xfconf-query is unavailable.
+
 ## 3.1.1
 
 - Fixed OCR region select ("Kies/Select") triggering two screenshot captures on

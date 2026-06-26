@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.1.1"
+APP_VERSION = "3.2"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -2262,6 +2262,74 @@ def _install_lxqt_shortcuts(src, state):
     return True
 
 
+def _install_xfce_shortcuts(state):
+    """Install VoxFox's global shortcuts on XFCE via xfconf-query.
+
+    XFCE stores custom keyboard shortcuts in the xfce4-keyboard-shortcuts
+    channel under /commands/custom/<binding>. xfconf-query is the only stable
+    interface (the XML file location varies between XFCE versions and is not
+    meant for direct editing). The Super key maps to <Super> in XFCE bindings.
+
+    The `state` parameter is unused (no numeric-slot tracking needed here);
+    kept for a uniform installer signature. Idempotent: existing VoxFox commands
+    are left in place; the install only writes bindings that are not yet set.
+    No-op when not on XFCE or xfconf-query is unavailable."""
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
+               + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
+    if "xfce" not in desktop:
+        return False
+    if not vf._have("xfconf-query"):
+        log.debug("xfconf-query not found; skipping XFCE shortcut install")
+        return False
+
+    CHANNEL = "xfce4-keyboard-shortcuts"
+    # Read which commands are already bound so we stay idempotent.
+    try:
+        out = subprocess.run(
+            ["xfconf-query", "-c", CHANNEL, "-l"],
+            capture_output=True, text=True, timeout=5)
+        existing_lines = out.stdout.splitlines()
+    except Exception as e:
+        log.debug(f"xfconf-query list failed: {e}")
+        return False
+
+    # Build a set of already-bound commands (property values).
+    existing_cmds = set()
+    for prop in existing_lines:
+        prop = prop.strip()
+        if not prop.startswith("/commands/custom/"):
+            continue
+        try:
+            r = subprocess.run(
+                ["xfconf-query", "-c", CHANNEL, "-p", prop],
+                capture_output=True, text=True, timeout=5)
+            existing_cmds.add(r.stdout.strip())
+        except Exception:
+            pass
+
+    written = 0
+    for _key, _label, cmd, binding in _SHORTCUT_ACTIONS:
+        if cmd in existing_cmds:
+            log.debug(f"XFCE: {cmd!r} already bound, skipping")
+            continue
+        # Convert '<Super>z' → '<Super>z' (XFCE uses the same format).
+        prop = f"/commands/custom/{binding}"
+        try:
+            subprocess.run(
+                ["xfconf-query", "-c", CHANNEL, "-p", prop,
+                 "--create", "-t", "string", "-s", cmd],
+                capture_output=True, text=True, timeout=5, check=True)
+            written += 1
+        except Exception as e:
+            log.debug(f"xfconf-query set {prop} failed: {e}")
+
+    if written:
+        log.info(f"Installed {written} XFCE keyboard shortcuts")
+    else:
+        log.info("XFCE shortcuts already present")
+    return True
+
+
 def _install_shortcuts(state):
     """Register VoxFox's global keyboard shortcuts with the desktop:
 
@@ -2274,18 +2342,24 @@ def _install_shortcuts(state):
     On GNOME and Cinnamon these are written as custom keybindings via GSettings
     (numeric customN slots tracked in `state`, legacy voxfox-* names migrated,
     idempotent). On LXQt they are appended to globalkeyshortcuts.conf as Meta+
-    command entries. Writing for several desktops is harmless; each installer
-    is a no-op where its desktop isn't present. Mutates `state` (the caller
-    persists it) and returns True if at least one desktop accepted them. Users
-    can change or remove them in the system keyboard settings."""
+    command entries. On XFCE they are written via xfconf-query into the
+    xfce4-keyboard-shortcuts channel. Writing for several desktops is harmless;
+    each installer is a no-op where its desktop isn't present. Mutates `state`
+    (the caller persists it) and returns True if at least one desktop accepted
+    them. Users can change or remove them in the system keyboard settings."""
     installed = False
-    # LXQt uses a config file, not GSettings, so try it independently of any
-    # schema source (a pure LXQt box may have no relevant GSettings schemas).
+    # LXQt and XFCE use config files / CLI tools, not GSettings; try them
+    # independently (a pure LXQt/XFCE box may have no relevant GSettings schemas).
     try:
         if _install_lxqt_shortcuts(None, state):
             installed = True
     except Exception as e:
         log.debug(f"_install_lxqt_shortcuts failed: {e}")
+    try:
+        if _install_xfce_shortcuts(state):
+            installed = True
+    except Exception as e:
+        log.debug(f"_install_xfce_shortcuts failed: {e}")
     try:
         src = Gio.SettingsSchemaSource.get_default()
         if src is not None:
