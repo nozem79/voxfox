@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.1"
+APP_VERSION = "3.1.1"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -1741,28 +1741,6 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 GLib.idle_add(self.set_status, _("Reading text..."), 0)
                 text, oerr = vf.ocr_image(tmp, tess_lang=tess)
                 GLib.idle_add(self._after_ocr, text, oerr)
-            finally:
-                if tmp and os.path.exists(tmp):
-                    try:
-                        os.unlink(tmp)
-                    except Exception:
-                        pass
-        threading.Thread(target=worker, daemon=True).start()
-
-        self.set_status(_("Select a region..."), duration=0)
-
-        def worker():
-            tmp = None
-            try:
-                fd, tmp = tempfile.mkstemp(suffix=".png")
-                os.close(fd)
-                ok, err = _grab_region_to_file(tmp)
-                if not ok:
-                    self.root.after(0, self.set_status, err)
-                    return
-                self.root.after(0, self.set_status, _("Reading text..."), 0)
-                text, oerr = vf.ocr_image(tmp, tess_lang=tess)
-                self.root.after(0, self._after_ocr, text, oerr)
             finally:
                 if tmp and os.path.exists(tmp):
                     try:

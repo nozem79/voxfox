@@ -1,3 +1,10 @@
+## 3.1.1
+
+- Fixed OCR region select ("Kies/Select") triggering two screenshot captures on
+  every use. A leftover Tkinter worker from an old VoxMob code path was still
+  present alongside the GTK4 worker, causing two selections to be requested in
+  sequence. Now only the correct GTK4 worker runs.
+
 ## 3.1
 
 - Hover reading now falls back through several accessibility properties instead
