@@ -1,3 +1,21 @@
+## 3.3
+
+- Keyboard shortcuts are now configurable from Settings → Shortcuts. Each of the
+  five VoxFox actions shows its current key; click it and press the combination
+  you want to change it. Pick your keys, then Install shortcuts writes them to
+  the desktop in one go, and Reset to defaults restores the originals. A
+  combination already used by another VoxFox action is refused, and capture
+  briefly inhibits the desktop's own global shortcuts so you can even reassign a
+  key that is already taken.
+- Shortcuts are no longer installed automatically on first start. Some desktops
+  already use these keys, so VoxFox now waits until you choose to install them.
+- Installing shortcuts now works across Cinnamon, GNOME, LXQt and XFCE, and
+  correctly replaces a key you changed instead of leaving the old one bound. On
+  Cinnamon the desktop is briefly reloaded after installing so the new keys take
+  effect immediately, without logging out.
+- Added python3-pip as a dependency so the speech-to-text component
+  (faster-whisper) can be installed on a fresh system.
+
 ## 3.2
 
 - The default global shortcuts (Super+Z/X/C/W/A) can now be installed on XFCE.

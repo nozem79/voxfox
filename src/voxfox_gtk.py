@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.2"
+APP_VERSION = "3.3"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -595,11 +595,15 @@ class PreferencesWindow(Gtk.Window):
                              Gtk.Label(label=_("Misc")))
         notebook.append_page(_page(self._interface_group()),
                              Gtk.Label(label=_("Interface")))
+        notebook.append_page(_page(self._shortcuts_group()),
+                             Gtk.Label(label=_("Shortcuts")))
         self.set_child(notebook)
 
         self.connect("close-request", self._on_close)
 
     def _on_close(self, *_a):
+        if getattr(self, "_shortcuts_inhibited", False):
+            self._stop_capture()
         self._save_pron()
         self.win.reload_active_controls()
         return False
@@ -699,6 +703,168 @@ class PreferencesWindow(Gtk.Window):
         vf.save_state(self.state)
         self._populate_button_list()
         self.win.rebuild_ui()
+
+    # ── Shortcuts: per-action key capture + one-shot install (3.3) ───────────
+    def _shortcuts_group(self):
+        self._capturing_key = None
+        self._capture_btns = {}
+        self._shortcuts_inhibited = False
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+
+        intro = Gtk.Label(xalign=0, wrap=True)
+        intro.set_text(_("Click a shortcut and press the key combination you "
+                         "want. Then choose Install shortcuts to register them "
+                         "with your desktop. Nothing is installed automatically."))
+        box.append(intro)
+
+        frame = Gtk.Frame(label=_("Shortcuts"))
+        rows = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(rows, f"set_margin_{m}")(10)
+
+        for key, _label, _cmd, default in _SHORTCUT_ACTIONS:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+            name = Gtk.Label(label=_(_SHORTCUT_LABELS.get(key, key)), xalign=0)
+            name.set_hexpand(True)
+            row.append(name)
+
+            cap = Gtk.Button(label=_binding_display(
+                _binding_for(self.state, key, default)))
+            cap.set_size_request(140, -1)
+            cap.connect("clicked", self._on_capture_clicked, key)
+            ctrl = Gtk.EventControllerKey()
+            # CAPTURE phase: intercept keys before the button activates on Space.
+            ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+            ctrl.connect("key-pressed", self._on_capture_key, key, cap)
+            cap.add_controller(ctrl)
+            self._capture_btns[key] = cap
+            row.append(cap)
+            rows.append(row)
+
+        frame.set_child(rows)
+        box.append(frame)
+
+        # Action row: reset + install, with a result label.
+        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        reset = Gtk.Button(label=_("Reset to defaults"))
+        reset.connect("clicked", self._on_shortcuts_reset)
+        install = Gtk.Button(label=_("Install shortcuts"))
+        install.add_css_class("suggested-action")
+        install.connect("clicked", self._on_shortcuts_install)
+        actions.append(reset)
+        actions.append(install)
+        box.append(actions)
+
+        self._shortcut_result = Gtk.Label(xalign=0, wrap=True)
+        box.append(self._shortcut_result)
+        return box
+
+    def _begin_capture(self, key, btn):
+        # Stop any capture already running on another row.
+        if self._capturing_key and self._capturing_key != key:
+            prev = self._capture_btns.get(self._capturing_key)
+            if prev:
+                self._refresh_capture_label(self._capturing_key, prev)
+        self._capturing_key = key
+        btn.set_label(_("Press keys…"))
+        btn.add_css_class("suggested-action")
+        btn.grab_focus()
+        # Ask the compositor/WM to deliver system-grabbed combinations to this
+        # window during capture, so a key that is already a global shortcut can
+        # still be recorded here (otherwise the WM swallows it and we never see
+        # the press). Best-effort: a no-op where the backend doesn't support it.
+        try:
+            surface = self.get_surface()
+            if surface is not None and not self._shortcuts_inhibited:
+                surface.inhibit_system_shortcuts(None)
+                self._shortcuts_inhibited = True
+        except Exception as e:
+            log.debug(f"inhibit_system_shortcuts failed: {e}")
+
+    def _stop_capture(self):
+        self._capturing_key = None
+        if self._shortcuts_inhibited:
+            try:
+                surface = self.get_surface()
+                if surface is not None:
+                    surface.restore_system_shortcuts()
+            except Exception as e:
+                log.debug(f"restore_system_shortcuts failed: {e}")
+            self._shortcuts_inhibited = False
+
+    def _refresh_capture_label(self, key, btn):
+        default = next((d for k, _l, _c, d in _SHORTCUT_ACTIONS if k == key), "")
+        btn.set_label(_binding_display(_binding_for(self.state, key, default)))
+        btn.remove_css_class("suggested-action")
+
+    def _on_capture_clicked(self, btn, key):
+        self._begin_capture(key, btn)
+
+    def _on_capture_key(self, _ctrl, keyval, _keycode, gtk_state, key, btn):
+        if self._capturing_key != key:
+            return False
+        if keyval == Gdk.KEY_Escape:                 # cancel
+            self._stop_capture()
+            self._refresh_capture_label(key, btn)
+            return True
+        # Ignore bare modifier presses — wait for a real key.
+        if keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R, Gdk.KEY_Alt_L,
+                      Gdk.KEY_Alt_R, Gdk.KEY_Shift_L, Gdk.KEY_Shift_R,
+                      Gdk.KEY_Super_L, Gdk.KEY_Super_R, Gdk.KEY_Meta_L,
+                      Gdk.KEY_Meta_R, Gdk.KEY_ISO_Level3_Shift):
+            return True
+        mods = gtk_state & Gtk.accelerator_get_default_mod_mask()
+        if not Gtk.accelerator_valid(keyval, mods):
+            return True                              # not usable yet
+        binding = Gtk.accelerator_name(keyval, mods)
+        # Reject a combination already assigned to another VoxFox action, so two
+        # actions can't fight over the same key.
+        for k, _l, _c, d in _SHORTCUT_ACTIONS:
+            if k != key and _binding_for(self.state, k, d) == binding:
+                self._stop_capture()
+                self._refresh_capture_label(key, btn)
+                self._shortcut_result.set_text(
+                    _("That key combination is already used by another "
+                      "VoxFox shortcut."))
+                return True
+        self.state.setdefault("shortcut_bindings", {})[key] = binding
+        vf.save_state(self.state)
+        self._stop_capture()
+        btn.set_label(_binding_display(binding))
+        btn.remove_css_class("suggested-action")
+        self._shortcut_result.set_text("")
+        return True
+
+    def _on_shortcuts_reset(self, _btn):
+        self._stop_capture()
+        self.state["shortcut_bindings"] = {}
+        vf.save_state(self.state)
+        for key, cap in self._capture_btns.items():
+            self._refresh_capture_label(key, cap)
+        self._shortcut_result.set_text(_("Shortcuts reset to defaults."))
+
+    def _on_shortcuts_install(self, _btn):
+        try:
+            ok = _install_shortcuts(self.state)
+        except Exception as e:
+            log.debug(f"install shortcuts (settings) failed: {e}")
+            ok = False
+        vf.save_state(self.state)
+        if ok:
+            if _cinnamon_reload():
+                self._shortcut_result.set_text(
+                    _("Shortcuts installed. The desktop was reloaded to "
+                      "activate them."))
+            else:
+                self._shortcut_result.set_text(
+                    _("Shortcuts installed. You can change or remove them in "
+                      "your system keyboard settings."))
+        else:
+            self._shortcut_result.set_text(
+                _("Could not install shortcuts on this desktop. Your desktop "
+                  "may use a different method — set them manually in its "
+                  "keyboard settings."))
 
     # ── per-slot language + voice + speed ────────────────────────────────────
     def _slot_group(self, slot, title):
@@ -1946,7 +2112,8 @@ class VoxFoxApplication(Gtk.Application):
         sc_block  = "\n".join(f"{key}  —  {desc}" for key, desc in shortcuts)
         dlg.set_comments(
             _("Screen reader and dictation tool") + "\n\n"
-            + _("Default keyboard shortcuts (Cinnamon / GNOME):") + "\n"
+            + _("Default keyboard shortcuts — change them in "
+                "Settings → Shortcuts:") + "\n"
             + sc_block + "\n\n"
             + _("Commands you can bind to keyboard shortcuts:") + "\n"
             + cmd_block + "\n\n"
@@ -2036,6 +2203,63 @@ _SHORTCUT_ACTIONS = [
     ("ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
 ]
 
+# Short, translatable names for the five actions, shown in the settings
+# Shortcuts tab. Keyed by the action id from _SHORTCUT_ACTIONS.
+_SHORTCUT_LABELS = {
+    "read":    "Read",
+    "stop":    "Stop",
+    "voice":   "Switch language",
+    "whisper": "Dictate",
+    "ocr":     "OCR select",
+}
+
+
+def _binding_for(state, key, default):
+    """The effective binding for an action: the user's chosen key from
+    state["shortcut_bindings"], or the built-in default when unset."""
+    chosen = (state.get("shortcut_bindings") or {}).get(key) if state else None
+    return chosen or default
+
+
+def _binding_display(binding):
+    """Human-readable label for an accelerator string ('<Super>z' -> 'Super+Z').
+    Falls back to the raw string if it can't be parsed."""
+    if not binding:
+        return ""
+    try:
+        ok, keyval, mods = Gtk.accelerator_parse(binding)
+        if ok and keyval:
+            return Gtk.accelerator_get_label(keyval, mods)
+    except Exception:
+        pass
+    return binding
+
+
+def _binding_to_lxqt(binding):
+    """Convert an accelerator string to LXQt's section-name format:
+    '<Super>z' -> 'Meta%2BZ', '<Control><Alt>x' -> 'Control%2BAlt%2BX'.
+    Returns None if the binding can't be parsed."""
+    try:
+        ok, keyval, mods = Gtk.accelerator_parse(binding)
+    except Exception:
+        ok = False
+    if not ok or not keyval:
+        return None
+    parts = []
+    if mods & Gdk.ModifierType.SUPER_MASK:
+        parts.append("Meta")
+    if mods & Gdk.ModifierType.CONTROL_MASK:
+        parts.append("Control")
+    if mods & Gdk.ModifierType.ALT_MASK:
+        parts.append("Alt")
+    if mods & Gdk.ModifierType.SHIFT_MASK:
+        parts.append("Shift")
+    name = Gdk.keyval_name(Gdk.keyval_to_upper(keyval)) or ""
+    if not name:
+        return None
+    parts.append(name)
+    return "%2B".join(parts)
+
 # Non-numeric entry names used by VoxFox <= 2.0.7. These broke Cinnamon's
 # "Add custom shortcut" button: its settings panel computes the next free
 # slot by walking a numeric customN sequence, and chokes on names like
@@ -2097,19 +2321,26 @@ def _install_cinnamon_shortcuts(src, state):
         except Exception as e:
             log.debug(f"clear legacy {legacy}: {e}")
 
-    # 2. Decide a slot per action: reuse a previously-recorded slot only if it
-    #    is still in the list AND still ours; otherwise allocate a fresh one.
-    recorded = dict(state.get("cinnamon_shortcut_slots", {}))
+    # 2. Remove every slot that currently holds a VoxFox command (old binding,
+    #    duplicate, or a previous install), then create fresh slots below.
+    #    Recreating the keybindings rather than overwriting a slot's binding in
+    #    place is what makes cinnamon-settings-daemon re-grab the new keys — an
+    #    in-place binding change is not reliably re-grabbed, which left changed
+    #    shortcuts dead.
+    for slot in list(names):
+        if slot_command(slot).startswith("voxfox"):
+            try:
+                s = Gio.Settings.new_with_path(SCHEMA, path_for(slot))
+                s.reset("name"); s.reset("command"); s.reset("binding")
+            except Exception as e:
+                log.debug(f"clear voxfox slot {slot}: {e}")
+            names.remove(slot)
+
+    # 2.5 Allocate fresh numeric slots for the five actions.
     name_set = set(names)
-    assigned = {}
-    for key, *_ in _SHORTCUT_ACTIONS:
-        rec = recorded.get(key)
-        if rec and rec in name_set and slot_command(rec).startswith("voxfox"):
-            assigned[key] = rec
-    need = [key for key, *_ in _SHORTCUT_ACTIONS if key not in assigned]
-    fresh = _next_custom_slots(name_set | set(assigned.values()), len(need))
-    for key, slot in zip(need, fresh):
-        assigned[key] = slot
+    keys = [a[0] for a in _SHORTCUT_ACTIONS]
+    fresh = _next_custom_slots(name_set, len(keys))
+    assigned = dict(zip(keys, fresh))
 
     # 3. Write each slot and ensure it is listed; keep the list numeric & sorted.
     for key, label, cmd, binding in _SHORTCUT_ACTIONS:
@@ -2117,12 +2348,18 @@ def _install_cinnamon_shortcuts(src, state):
         s = Gio.Settings.new_with_path(SCHEMA, path_for(slot))
         s.set_string("name", label)
         s.set_string("command", cmd)
-        s.set_strv("binding", [binding])
+        s.set_strv("binding", [_binding_for(state, key, binding)])
         if slot not in name_set:
             names.append(slot)
             name_set.add(slot)
+    # Flush the slot data to dconf *before* changing custom-list: the daemon
+    # re-reads the listed slots the moment custom-list changes, so the binding
+    # values must already be committed or it grabs nothing (and only a restart
+    # fixes it).
+    Gio.Settings.sync()
     names.sort(key=_slot_sort_key)
     base.set_strv("custom-list", names)
+    Gio.Settings.sync()   # then flush the list itself
     state["cinnamon_shortcut_slots"] = assigned
     log.info("Installed Cinnamon keyboard shortcuts")
     return True
@@ -2159,18 +2396,23 @@ def _install_gnome_shortcuts(src, state):
         except Exception as e:
             log.debug(f"clear legacy gnome {legacy}: {e}")
 
-    # 2. Reuse recorded slots still present & ours, else allocate fresh numerics.
-    recorded = dict(state.get("gnome_shortcut_slots", {}))
+    # 2. Remove every slot holding a VoxFox command (old binding, duplicate, or
+    #    previous install), then create fresh slots below — recreating rather
+    #    than overwriting in place is what makes the daemon re-grab the new keys.
+    for p in list(paths):
+        if cmd_at(p).startswith("voxfox"):
+            try:
+                s = Gio.Settings.new_with_path(SCHEMA, p)
+                s.reset("name"); s.reset("command"); s.reset("binding")
+            except Exception as e:
+                log.debug(f"clear voxfox slot {slot_of(p)}: {e}")
+            paths.remove(p)
+
+    # 2.5 Allocate fresh numeric slots for the five actions.
     slot_set = {slot_of(p) for p in paths}
-    assigned = {}
-    for key, *_ in _SHORTCUT_ACTIONS:
-        rec = recorded.get(key)
-        if rec and rec in slot_set and cmd_at(f"{PREFIX}{rec}/").startswith("voxfox"):
-            assigned[key] = rec
-    need = [key for key, *_ in _SHORTCUT_ACTIONS if key not in assigned]
-    fresh = _next_custom_slots(slot_set | set(assigned.values()), len(need))
-    for key, slot in zip(need, fresh):
-        assigned[key] = slot
+    keys = [a[0] for a in _SHORTCUT_ACTIONS]
+    fresh = _next_custom_slots(slot_set, len(keys))
+    assigned = dict(zip(keys, fresh))
 
     # 3. Write and list.
     for key, label, cmd, binding in _SHORTCUT_ACTIONS:
@@ -2179,11 +2421,13 @@ def _install_gnome_shortcuts(src, state):
         s = Gio.Settings.new_with_path(SCHEMA, p)
         s.set_string("name", label)
         s.set_string("command", cmd)
-        s.set_string("binding", binding)
+        s.set_string("binding", _binding_for(state, key, binding))
         if p not in paths:
             paths.append(p)
+    Gio.Settings.sync()   # flush slot data before changing the list (see Cinnamon)
     paths.sort(key=lambda p: _slot_sort_key(slot_of(p)))
     base.set_strv("custom-keybindings", paths)
+    Gio.Settings.sync()   # then flush the list itself
     state["gnome_shortcut_slots"] = assigned
     log.info("Installed GNOME keyboard shortcuts")
     return True
@@ -2194,11 +2438,12 @@ def _install_lxqt_shortcuts(src, state):
     (~/.config/lxqt/globalkeyshortcuts.conf). A command shortcut is a section
     named '<KeySeq>.<N>', with '+' encoded as %2B and N a unique index, holding
     Comment / Enabled / Exec — where Exec is comma-separated ('voxfox, --read')
-    and the Super key is spelled 'Meta'. We append the actions still missing,
-    never duplicating an Exec already bound (so a key the user set by hand is
-    kept), and let the daemon's file-watcher reload. No-op outside LXQt. `src`
-    is unused (LXQt doesn't use GSettings); kept for a uniform installer
-    signature."""
+    and the Super key is spelled 'Meta'. On each install we drop our own old
+    sections (matched by Exec) and write the current five, preserving any
+    sections the user added themselves, then let the daemon's file-watcher
+    reload. This makes changing a shortcut replace its old key. No-op outside
+    LXQt. `src` is unused (LXQt doesn't use GSettings); kept for a uniform
+    installer signature."""
     import re
     import configparser
 
@@ -2215,7 +2460,7 @@ def _install_lxqt_shortcuts(src, state):
     cp = configparser.ConfigParser(interpolation=None)
     cp.optionxform = str  # Qt keys are case-sensitive (Comment, Exec, path)
 
-    existing_execs = set()
+    our_cmds = {cmd for _k, _l, cmd, _b in _SHORTCUT_ACTIONS}
     max_idx = 0
     if os.path.exists(conf):
         try:
@@ -2223,38 +2468,40 @@ def _install_lxqt_shortcuts(src, state):
         except Exception as e:
             log.debug(f"lxqt shortcuts: cannot parse conf: {e}")
             return False
-        for sect in cp.sections():
-            m = re.search(r"\.(\d+)$", sect)
-            if m:
-                max_idx = max(max_idx, int(m.group(1)))
+        # Remove any section that runs one of our commands (old VoxFox bindings),
+        # so a changed shortcut replaces its old key instead of piling up. Other
+        # sections (the user's own shortcuts) are preserved.
+        for sect in list(cp.sections()):
             ex = cp[sect].get("Exec", "")
-            if ex:  # normalise 'voxfox, --read' -> 'voxfox --read'
-                existing_execs.add(" ".join(p.strip() for p in ex.split(",")))
+            norm = " ".join(p.strip() for p in ex.split(",")) if ex else ""
+            if norm in our_cmds:
+                cp.remove_section(sect)
+            else:
+                m = re.search(r"\.(\d+)$", sect)
+                if m:
+                    max_idx = max(max_idx, int(m.group(1)))
 
-    blocks, idx = [], max_idx
+    if not cp.has_section("General"):
+        cp.add_section("General")
+        cp["General"]["MultipleActionsBehaviour"] = "first"
+
+    idx = max_idx
     for key, label, cmd, binding in _SHORTCUT_ACTIONS:
-        if cmd in existing_execs:
-            continue  # already bound (e.g. a key the user set themselves)
-        letter = binding.split(">")[-1].upper()          # '<Super>z' -> 'Z'
-        exec_val = ", ".join(cmd.split())                 # 'voxfox --read'
+        combo = _binding_to_lxqt(_binding_for(state, key, binding))
+        if not combo:
+            log.debug(f"LXQt: cannot convert binding for {key}, skipping")
+            continue
         idx += 1
-        blocks.append(f"[Meta%2B{letter}.{idx}]\n"
-                      f"Comment={label}\n"
-                      f"Enabled=true\n"
-                      f"Exec={exec_val}\n")
-
-    if not blocks:
-        log.info("LXQt shortcuts already present")
-        return True
+        sect = f"{combo}.{idx}"
+        cp.add_section(sect)
+        cp[sect]["Comment"] = label
+        cp[sect]["Enabled"] = "true"
+        cp[sect]["Exec"] = ", ".join(cmd.split())     # 'voxfox, --read'
 
     try:
         os.makedirs(os.path.dirname(conf), exist_ok=True)
-        new_file = not os.path.exists(conf)
-        with open(conf, "a", encoding="utf-8") as f:
-            if new_file:
-                f.write("[General]\nMultipleActionsBehaviour=first\n")
-            for b in blocks:
-                f.write(b)
+        with open(conf, "w", encoding="utf-8") as f:
+            cp.write(f, space_around_delimiters=False)
     except Exception as e:
         log.debug(f"lxqt shortcuts write failed: {e}")
         return False
@@ -2271,9 +2518,11 @@ def _install_xfce_shortcuts(state):
     meant for direct editing). The Super key maps to <Super> in XFCE bindings.
 
     The `state` parameter is unused (no numeric-slot tracking needed here);
-    kept for a uniform installer signature. Idempotent: existing VoxFox commands
-    are left in place; the install only writes bindings that are not yet set.
-    No-op when not on XFCE or xfconf-query is unavailable."""
+    kept for a uniform installer signature. On each install we first remove any
+    existing custom binding that runs one of our commands (whatever key it is
+    on), then write the current five — so changing a shortcut replaces the old
+    key instead of leaving it bound. No-op when not on XFCE or xfconf-query is
+    unavailable."""
     desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
                + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
     if "xfce" not in desktop:
@@ -2283,37 +2532,37 @@ def _install_xfce_shortcuts(state):
         return False
 
     CHANNEL = "xfce4-keyboard-shortcuts"
-    # Read which commands are already bound so we stay idempotent.
+    our_cmds = {cmd for _k, _l, cmd, _b in _SHORTCUT_ACTIONS}
+    # List existing custom command properties.
     try:
         out = subprocess.run(
             ["xfconf-query", "-c", CHANNEL, "-l"],
             capture_output=True, text=True, timeout=5)
-        existing_lines = out.stdout.splitlines()
+        props = [p.strip() for p in out.stdout.splitlines()
+                 if p.strip().startswith("/commands/custom/")]
     except Exception as e:
         log.debug(f"xfconf-query list failed: {e}")
         return False
 
-    # Build a set of already-bound commands (property values).
-    existing_cmds = set()
-    for prop in existing_lines:
-        prop = prop.strip()
-        if not prop.startswith("/commands/custom/"):
-            continue
+    # Remove any existing binding that runs one of our commands, so a changed
+    # shortcut doesn't leave its previous key working.
+    for prop in props:
         try:
             r = subprocess.run(
                 ["xfconf-query", "-c", CHANNEL, "-p", prop],
                 capture_output=True, text=True, timeout=5)
-            existing_cmds.add(r.stdout.strip())
+            if r.stdout.strip() in our_cmds:
+                subprocess.run(
+                    ["xfconf-query", "-c", CHANNEL, "-p", prop, "-r"],
+                    capture_output=True, text=True, timeout=5)
         except Exception:
             pass
 
+    # Write the current five.
     written = 0
-    for _key, _label, cmd, binding in _SHORTCUT_ACTIONS:
-        if cmd in existing_cmds:
-            log.debug(f"XFCE: {cmd!r} already bound, skipping")
-            continue
-        # Convert '<Super>z' → '<Super>z' (XFCE uses the same format).
-        prop = f"/commands/custom/{binding}"
+    for key, _label, cmd, binding in _SHORTCUT_ACTIONS:
+        # XFCE uses the same accelerator format as the stored binding.
+        prop = f"/commands/custom/{_binding_for(state, key, binding)}"
         try:
             subprocess.run(
                 ["xfconf-query", "-c", CHANNEL, "-p", prop,
@@ -2323,11 +2572,30 @@ def _install_xfce_shortcuts(state):
         except Exception as e:
             log.debug(f"xfconf-query set {prop} failed: {e}")
 
-    if written:
-        log.info(f"Installed {written} XFCE keyboard shortcuts")
-    else:
-        log.info("XFCE shortcuts already present")
+    log.info(f"Installed {written} XFCE keyboard shortcuts")
     return True
+
+
+def _cinnamon_reload():
+    """Soft-restart the Cinnamon shell (windows are preserved) so it re-grabs
+    freshly-installed custom keybindings. Cinnamon rebuilds its keybindings only
+    on certain triggers that a plain settings write doesn't hit, so without this
+    an install needs a manual Ctrl+Alt+Esc. Uses the same DBus call as Alt+F2 r.
+    No-op off Cinnamon or if the call fails."""
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
+               + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
+    if "cinnamon" not in desktop:
+        return False
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        bus.call_sync("org.Cinnamon", "/org/Cinnamon", "org.Cinnamon",
+                      "RestartCinnamon", GLib.Variant("(b)", (False,)),
+                      None, Gio.DBusCallFlags.NONE, 4000, None)
+        log.info("Requested Cinnamon reload to activate shortcuts")
+        return True
+    except Exception as e:
+        log.debug(f"cinnamon reload failed: {e}")
+        return False
 
 
 def _install_shortcuts(state):
@@ -2449,9 +2717,12 @@ def main():
         ok = _install_shortcuts(st)
         if ok:
             st["shortcuts_installed"] = True
-            vf.save_state(st)
-        print("Shortcuts installed (Super+Z/X/C/W/A)." if ok
-              else "No supported desktop (Cinnamon/GNOME GSettings) found.")
+        vf.save_state(st)
+        if ok:
+            _cinnamon_reload()
+        print("Shortcuts installed." if ok
+              else "Could not install shortcuts on this desktop "
+                   "(no supported method found).")
         return
 
     # Action flags → forward to the running instance and exit (no GUI).
@@ -2469,25 +2740,10 @@ def main():
         print("VoxFox is already running.")
         return
 
-    # First GUI start on this desktop: register the default global shortcuts
-    # (Super+Z read, +X stop, +C voice, +W dictation, +A OCR). One-time, so a
-    # user who deletes or changes them in the system settings keeps their
-    # choice; `voxfox --install-shortcuts` re-installs on demand. Upgraders
-    # from <= 2.0.7 are migrated once from the old non-numeric voxfox-* entries
-    # (which jam Cinnamon's "Add custom shortcut" button) to numeric slots.
-    try:
-        st = vf.load_state()
-        first_time = not st.get("shortcuts_installed")
-        needs_migration = (st.get("shortcuts_installed")
-                           and not st.get("shortcuts_slot_migrated"))
-        if first_time or needs_migration:
-            ok = _install_shortcuts(st)
-            if ok:
-                st["shortcuts_installed"] = True
-            st["shortcuts_slot_migrated"] = True
-            vf.save_state(st)
-    except Exception as e:
-        log.debug(f"shortcut auto-install skipped: {e}")
+    # Shortcuts are no longer auto-installed on first start: some desktops ship
+    # their own bindings for these keys, and silently overwriting them is rude.
+    # The user picks keys and installs them from Settings → Shortcuts (or via
+    # `voxfox --install-shortcuts`).
 
     VoxFoxApplication().run(None)
 

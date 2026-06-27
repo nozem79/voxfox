@@ -299,29 +299,29 @@ voxfox --verbose          # Enable debug logging
 
 ## Keyboard shortcuts
 
-VoxFox doesn't register shortcuts for you. Set them up once in your desktop's
-keyboard settings; after that every press calls the running instance via the
-CLI flags above.
+VoxFox can register five global shortcuts for you, but never does so
+automatically — some desktops already use these keys for other things. Open
+**Settings → Shortcuts**, optionally change any combination (click it and press
+the keys you want), then choose **Install shortcuts**. They are written to your
+desktop on **Cinnamon, GNOME, LXQt and XFCE** (on Cinnamon the desktop is
+briefly reloaded so the new keys take effect immediately). **Reset to defaults**
+restores the originals, and you can always change or remove them later in your
+desktop's own keyboard settings.
 
-- **Cinnamon**: System Settings → Keyboard → Shortcuts → Custom Shortcuts → Add.
-- **GNOME**: Settings → Keyboard → View and Customize Shortcuts → Custom
-  Shortcuts → +.
-- **XFCE / Xubuntu**: Settings → Keyboard → Application Shortcuts → Add.
+The five installable actions and their defaults:
 
-In each case the command is `voxfox --read` (etc.) and you then press the key
-combination to bind.
+| Action          | Command                   | Default   |
+|-----------------|---------------------------|-----------|
+| Read            | `voxfox --read`           | `Super+Z` |
+| Stop            | `voxfox --stop`           | `Super+X` |
+| Switch language | `voxfox --toggle-slot`    | `Super+C` |
+| Dictate         | `voxfox --whisper-toggle` | `Super+W` |
+| OCR select      | `voxfox --ocr-select`     | `Super+A` |
 
-### Suggested layout
-
-| Command                   | Suggestion |
-|---------------------------|------------|
-| `voxfox --read`           | `Super+R`  |
-| `voxfox --pause`          | `Super+P`  |
-| `voxfox --stop`           | `Super+S`  |
-| `voxfox --toggle-slot`    | `Super+T`  |
-| `voxfox --hover-toggle`   | `Super+H`  |
-| `voxfox --whisper-toggle` | `Super+W`  |
-| `voxfox --ocr-select`     | `Super+G`  |
+You can also run `voxfox --install-shortcuts` from a terminal. Other commands
+(`voxfox --pause`, `voxfox --hover-toggle`) aren't in the installer but can be
+bound by hand in your desktop's keyboard settings — every press calls the
+running instance via the CLI flags above.
 
 ## Adjusting speed
 

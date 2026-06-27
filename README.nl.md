@@ -307,31 +307,30 @@ voxfox --verbose          # Debug-logging aanzetten
 
 ## Sneltoetsen
 
-VoxFox legt geen sneltoetsen voor je vast. Stel ze één keer in via de
-toetsenbordinstellingen van je bureaublad; daarna roept elke druk de draaiende
-instantie aan via de vlaggen hierboven.
+VoxFox kan vijf globale sneltoetsen voor je instellen, maar doet dat nooit
+automatisch — sommige bureaubladen gebruiken deze toetsen al voor iets anders.
+Open **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie (klik erop
+en druk de gewenste toetsen in) en kies dan **Sneltoetsen installeren**. Ze
+worden geschreven naar je bureaublad op **Cinnamon, GNOME, LXQt en XFCE** (op
+Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
+werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
+later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
 
-- **Cinnamon**: Systeeminstellingen → Toetsenbord → Sneltoetsen → Aangepaste
-  sneltoetsen → Toevoegen.
-- **GNOME**: Instellingen → Toetsenbord → Sneltoetsen weergeven en aanpassen →
-  Aangepaste sneltoetsen → +.
-- **XFCE / Xubuntu**: Instellingen → Toetsenbord → Programmasneltoetsen →
-  Toevoegen.
+De vijf installeerbare acties en hun standaardtoetsen:
 
-In alle gevallen is de opdracht `voxfox --read` (enz.) en druk je daarna de
-toetscombinatie in die je eraan wilt koppelen.
+| Actie           | Opdracht                  | Standaard |
+|-----------------|---------------------------|-----------|
+| Voorlezen       | `voxfox --read`           | `Super+Z` |
+| Stop            | `voxfox --stop`           | `Super+X` |
+| Taal wisselen   | `voxfox --toggle-slot`    | `Super+C` |
+| Dicteren        | `voxfox --whisper-toggle` | `Super+W` |
+| OCR-selectie    | `voxfox --ocr-select`     | `Super+A` |
 
-### Voorgestelde indeling
-
-| Opdracht                  | Suggestie  |
-|---------------------------|------------|
-| `voxfox --read`           | `Super+R`  |
-| `voxfox --pause`          | `Super+P`  |
-| `voxfox --stop`           | `Super+S`  |
-| `voxfox --toggle-slot`    | `Super+T`  |
-| `voxfox --hover-toggle`   | `Super+H`  |
-| `voxfox --whisper-toggle` | `Super+W`  |
-| `voxfox --ocr-select`     | `Super+G`  |
+Je kunt ook `voxfox --install-shortcuts` in een terminal draaien. Andere
+opdrachten (`voxfox --pause`, `voxfox --hover-toggle`) zitten niet in de
+installer maar kun je handmatig koppelen in de toetsenbordinstellingen van je
+bureaublad — elke druk roept de draaiende instantie aan via de vlaggen
+hierboven.
 
 ## Snelheid aanpassen
 

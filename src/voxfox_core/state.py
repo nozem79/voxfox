@@ -74,6 +74,11 @@ DEFAULT_STATE = {
     # "buttons" list means "not customised yet" — reconcile_toolbar_layout()
     # fills it from the app's default order on load.
     "ui_layout": {"version": 1, "scale": 100, "buttons": []},
+    # 3.3 custom shortcuts: the user's chosen key binding per VoxFox action,
+    # as accelerator strings ("<Super>z"). Empty/missing means "use the built-in
+    # default" (see _SHORTCUT_ACTIONS in the GTK layer). Shortcuts are no longer
+    # auto-installed; the user picks keys and installs them from the settings.
+    "shortcut_bindings": {},
 }
 
 
@@ -140,6 +145,7 @@ def load_state():
             s.setdefault("shortcuts_slot_migrated", False)
             s.setdefault("ui_layout",
                          copy.deepcopy(DEFAULT_STATE["ui_layout"]))
+            s.setdefault("shortcut_bindings", {})
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).

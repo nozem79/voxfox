@@ -184,18 +184,23 @@ daar kan het zonder effect blijven.
 
 ## Sneltoetsen
 
-Elke actie is een commando dat je aan een globale sneltoets kunt koppelen via
-*GNOME-instellingen → Toetsenbord → Eigen sneltoetsen*:
+VoxFox kan vijf globale sneltoetsen voor je installeren — open
+**Instellingen → Sneltoetsen**, wijzig eventueel een combinatie door erop te
+klikken en de toetsen in te drukken, en kies dan **Sneltoetsen installeren**.
+Dit werkt op Cinnamon, GNOME, LXQt en XFCE; er wordt niets automatisch
+geïnstalleerd. Standaardtoetsen:
 
-| Commando                   | Actie                           | Voorstel toets |
-|----------------------------|---------------------------------|----------------|
-| `voxfox --read`            | Geselecteerde tekst voorlezen   | `Super+R`      |
-| `voxfox --stop`            | Voorlezen stoppen               | `Super+S`      |
-| `voxfox --pause`           | Pauzeren / hervatten            | `Super+P`      |
-| `voxfox --toggle-slot`     | Taalslot wisselen               | `Super+T`      |
-| `voxfox --hover-toggle`    | Hover-lezen aan/uit             | `Super+H`      |
-| `voxfox --whisper-toggle`  | Dicteren (spraak naar tekst)    | `Super+W`      |
-| `voxfox --ocr-select`      | Schermgebied voorlezen (OCR)    | `Super+G`      |
+| Commando                   | Actie                        | Standaard |
+|----------------------------|------------------------------|-----------|
+| `voxfox --read`            | Geselecteerde tekst voorlezen| `Super+Z` |
+| `voxfox --stop`            | Voorlezen stoppen            | `Super+X` |
+| `voxfox --toggle-slot`     | Taal wisselen                | `Super+C` |
+| `voxfox --whisper-toggle`  | Dicteren (spraak naar tekst) | `Super+W` |
+| `voxfox --ocr-select`      | Schermgebied voorlezen (OCR) | `Super+A` |
+
+`voxfox --install-shortcuts` doet hetzelfde vanuit een terminal. Overige
+commando's (`voxfox --pause`, `voxfox --hover-toggle`) kun je handmatig koppelen
+in de toetsenbordinstellingen van je bureaublad.
 
 Overige commando's: `voxfox --ocr <bestand>` (OCR op een bestand, werkt zonder
 draaiende instantie), `voxfox --status`, `voxfox --quit`, `voxfox --setup`,

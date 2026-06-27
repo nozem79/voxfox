@@ -172,18 +172,22 @@ may not take effect.
 
 ## Keyboard shortcuts
 
-Every action is a command you can bind to a global shortcut in
-*GNOME Settings → Keyboard → Custom Shortcuts*:
+VoxFox can install five global shortcuts for you — open
+**Settings → Shortcuts**, optionally change any combination by clicking it and
+pressing the keys, then choose **Install shortcuts**. This works on Cinnamon,
+GNOME, LXQt and XFCE; nothing is installed automatically. Defaults:
 
-| Command                    | Action                          | Suggested key |
-|----------------------------|---------------------------------|---------------|
-| `voxfox --read`            | Read selected text              | `Super+R`     |
-| `voxfox --stop`            | Stop speaking                   | `Super+S`     |
-| `voxfox --pause`           | Pause / resume                  | `Super+P`     |
-| `voxfox --toggle-slot`     | Switch language slot            | `Super+T`     |
-| `voxfox --hover-toggle`    | Toggle hover reading            | `Super+H`     |
-| `voxfox --whisper-toggle`  | Dictate (speech to text)        | `Super+W`     |
-| `voxfox --ocr-select`      | Read a screen region (OCR)      | `Super+G`     |
+| Command                    | Action                     | Default   |
+|----------------------------|----------------------------|-----------|
+| `voxfox --read`            | Read selected text         | `Super+Z` |
+| `voxfox --stop`            | Stop speaking              | `Super+X` |
+| `voxfox --toggle-slot`     | Switch language slot       | `Super+C` |
+| `voxfox --whisper-toggle`  | Dictate (speech to text)   | `Super+W` |
+| `voxfox --ocr-select`      | Read a screen region (OCR) | `Super+A` |
+
+`voxfox --install-shortcuts` does the same from a terminal. Other commands
+(`voxfox --pause`, `voxfox --hover-toggle`) can be bound by hand in your
+desktop's keyboard settings.
 
 Other commands: `voxfox --ocr <file>` (OCR a file, works without a running
 instance), `voxfox --status`, `voxfox --quit`, `voxfox --setup`,

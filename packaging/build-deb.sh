@@ -96,6 +96,7 @@ Architecture: all
 Maintainer: Daniël Vos
 Depends: python3 (>= 3.9),
  python3-gi,
+ python3-pip,
  gir1.2-gtk-4.0,
  gir1.2-glib-2.0,
  python3-pyatspi,
