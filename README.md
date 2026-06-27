@@ -18,7 +18,7 @@ mistake.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_2.0.3_all.deb
+sudo apt install ./voxfox_3.3_all.deb
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
@@ -59,10 +59,12 @@ launch Chromium browsers with `--force-renderer-accessibility`).
 
 ## The window
 
-The main window is deliberately small. The top row has **Read**, **Stop** and
-**Pause**; the second row has **Dictate**, **Hover**, **Select** and **OCR**,
-plus the language-switch button. The title bar has a **Settings** (gear) button
-and a **Menu** (hamburger) button.
+The main window is deliberately small and hugs its content. By default the
+buttons are **Read**, **Stop**, **Pause**, **Speak** (dictate), **Hover**,
+**Select** and **OCR**, plus the language-switch button. You can show or hide
+any of them and change their order, and scale the whole interface to 75 %,
+100 % or 125 % — both under **Settings → Interface** (see below). The title bar
+has a **Settings** (gear) button and a **Menu** (hamburger) button.
 
 A status line appears below the buttons while something is happening and hides
 itself when idle. It is exposed as a live region, so a screen reader announces
@@ -74,12 +76,12 @@ progress of any download in flight.
 | Read     | Read the currently selected text aloud                  |
 | Stop     | Stop speaking immediately                               |
 | Pause    | Pause / resume the current speech                       |
-| Dictate  | Record your voice; Whisper transcribes and types it     |
+| Speak    | Dictate: record your voice; Whisper transcribes and types it |
 | Hover    | Toggle hover-to-read                                     |
 | Select   | Select a screen region and read its text aloud (OCR)    |
 | OCR      | Open a PDF or image and read its text aloud             |
 | Language | Switch between Language 1 and Language 2                |
-| Settings | Open Settings (tabs: Language 1 / 2, Dictation, Pronunciation, Misc) |
+| Settings | Open Settings (tabs: Language 1 / 2, Dictation, Pronunciation, Misc, Interface, Shortcuts) |
 | Menu     | History, Install/repair components, accessibility, About, Quit |
 
 ## Reading text aloud
@@ -138,6 +140,18 @@ The *Misc* tab holds two things:
 scp voxfox-settings.json other-machine:~/
 # On the other machine: open VoxFox, Settings → Misc → Import
 ```
+
+## Settings → Interface
+
+The *Interface* tab lets you tailor the toolbar and overall size:
+
+- **Interface size** — scale the whole window to 75 %, 100 % or 125 %. Useful
+  on high-DPI screens or when you want larger hit targets.
+- **Buttons** — show or hide each toolbar button with a checkbox, and reorder
+  them with the up/down arrows. Hide the ones you never use (for example *Pause*
+  or *OCR*) to keep the window compact; the layout is remembered.
+
+The *Shortcuts* tab is covered under **Keyboard shortcuts** below.
 
 ## Speech-to-text (Whisper)
 
@@ -386,9 +400,10 @@ parts of hover depend on the compositor and may be limited.
 
 ## For developers
 
-The code is split into a UI-agnostic backend (`voxfox_core.py`: TTS, STT, OCR,
-IPC, CLI, state) and a GTK4 front-end (`voxfox_gtk.py`). The package is built
-with `packaging/build-deb.sh` (`VERSION=x.y.z bash packaging/build-deb.sh`).
+The code is split into a UI-agnostic backend (the `voxfox_core/` package —
+`tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) and
+a GTK4 front-end (`voxfox_gtk.py`, which also holds the CLI). The package is
+built with `packaging/build-deb.sh` (`VERSION=x.y.z bash packaging/build-deb.sh`).
 Translations are plain JSON files under `locales/`, key-aligned across all
 languages. See `CHANGELOG.md` for the version history.
 
