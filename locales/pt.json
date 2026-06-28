@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Atalhos de teclado predefinidos — altere-os em Definições → Atalhos:",
   "Default shortcuts": "Atalhos predefinidos",
   "OCR region select": "Seleção de região de OCR",
-  "Testing connection…": "A testar a ligação…"
+  "Testing connection…": "A testar a ligação…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Alguns passos preparam o VoxFox. Só precisas de os fazer uma vez; podes voltar aqui a qualquer momento pelo menu.",
+  "Close": "Fechar",
+  "Done": "Concluído",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Transfere o Piper, as vozes predefinidas, o ditado (faster-whisper) e os auxiliares de OCR. Precisa de ligação à Internet.",
+  "Enable": "Ativar",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Para OCR noutros idiomas, instala o pacote Tesseract correspondente, p. ex. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Atalhos de teclado",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Permite ao VoxFox ler texto noutras aplicações e ativa a leitura ao passar o cursor. Reinicia essas aplicações depois.",
+  "Not done yet": "Ainda não feito",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Regista os cinco atalhos do VoxFox no teu ambiente de trabalho. Se quiseres, muda primeiro as teclas em Definições → Atalhos.",
+  "Reinstall / repair": "Reinstalar / reparar",
+  "Set up VoxFox": "Configurar o VoxFox",
+  "Set up VoxFox…": "Configurar o VoxFox…",
+  "Speech engine, voices and dictation": "Motor de voz, vozes e ditado",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Bus de acessibilidade indisponível — a leitura ao passar o cursor não pode iniciar. Ativa a acessibilidade e inicia sessão novamente."
 }

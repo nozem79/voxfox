@@ -13,7 +13,7 @@ Whisper, a tesseract CLI fallback for OCR, and proper screen-reader labels.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_2.0.3_all.deb
+sudo apt install ./voxfox_3.4_all.deb
 ```
 
 `apt` pulls in the dependencies automatically. Then launch VoxFox from the
@@ -22,8 +22,8 @@ application menu, or run `voxfox` in a terminal.
 > If you install from your home folder you may see a notice that the download
 > "is performed by root and not sandboxed, because `_apt` could not access the
 > file". This is harmless — the install still completes. To avoid it, install
-> from a world-readable path, e.g. `sudo cp voxfox_2.0.3_all.deb /tmp/ && sudo
-> apt install /tmp/voxfox_2.0.3_all.deb`.
+> from a world-readable path, e.g. `sudo cp voxfox_3.4_all.deb /tmp/ && sudo
+> apt install /tmp/voxfox_3.4_all.deb`.
 
 ### What the package installs
 
@@ -49,7 +49,7 @@ voxfox --setup
 This downloads the Piper engine for your CPU architecture, two default voices
 (`en_GB-alba-medium` and `nl_NL-pim-medium`) into `~/.piper`, and installs
 `faster-whisper` and `pytesseract` with pip. It is safe to re-run, and is also
-available from the menu as *Install / repair components*.
+available from the *Set up VoxFox…* window in the menu.
 
 > Setup needs `python3-pip` (a recommended dependency). OCR works even without
 > `pytesseract` because VoxFox falls back to the `tesseract` command line.
@@ -158,10 +158,11 @@ language data, e.g. `tesseract-ocr-nld`); `pytesseract` is optional.
 **Hover** (`voxfox --hover-toggle`) reads the UI text under the mouse pointer
 aloud, using the AT-SPI accessibility tree.
 
-For this to work the accessibility bus must be enabled. The menu has **Enable
-accessibility (system-wide)**, which sets the GNOME `toolkit-accessibility`
-option for you; restart the target application afterwards. Chromium-based
-browsers additionally need to be launched with `--force-renderer-accessibility`.
+For this to work the accessibility bus must be enabled. The *Set up VoxFox…*
+window in the menu can switch it on for you (it sets the GNOME
+`toolkit-accessibility` option); restart the target application afterwards.
+Chromium-based browsers additionally need to be launched with
+`--force-renderer-accessibility`.
 Hover is most reliable on GTK and Firefox windows.
 
 ## Always on top
@@ -226,14 +227,15 @@ program runs through the Python interpreter, and the `.deb` ships the source as
 plain text in `/usr/lib/voxfox/`. Reviewing, improving and rebuilding it is
 therefore straightforward.
 
-**The source** is two files plus assets:
+**The source** is a backend package plus a front-end and assets:
 
-- `voxfox_core.py` — the UI-agnostic backend and the bulk of the logic: Piper
-  TTS, Whisper STT (local, remote API, GPU detection), Tesseract OCR (with a
-  CLI fallback), the IPC server, the command-line interface, settings/history
-  storage, and the language tables. It imports no GUI toolkit.
-- `voxfox_gtk.py` — the GTK4 front-end (window, settings, buttons); it imports
-  `voxfox_core`.
+- `voxfox_core/` — the UI-agnostic backend, a package of focused modules:
+  `tts.py` (Piper TTS), `stt.py` (Whisper STT — local, remote API, GPU
+  detection), `ocr.py` (Tesseract OCR with a CLI fallback), `ipc.py` (the IPC
+  server), `state.py` (settings/history storage and the language tables),
+  `a11y.py` (accessibility helpers) and `common.py`. It imports no GUI toolkit.
+- `voxfox_gtk.py` — the GTK4 front-end (window, settings, buttons) plus the
+  command-line interface; it imports `voxfox_core`.
 - Assets: `locales/*.json` (translations), `voxfox-logo.png`, `licence.txt`.
 - `packaging/build-deb.sh` — assembles the `.deb`.
 

@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Atajos de teclado predeterminados — cámbialos en Configuración → Atajos:",
   "Default shortcuts": "Atajos predeterminados",
   "OCR region select": "Selección de región OCR",
-  "Testing connection…": "Probando conexión…"
+  "Testing connection…": "Probando conexión…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Unos pocos pasos dejan VoxFox listo. Solo tienes que hacerlos una vez; puedes volver aquí cuando quieras desde el menú.",
+  "Close": "Cerrar",
+  "Done": "Hecho",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Descarga Piper, las voces predeterminadas, el dictado (faster-whisper) y los ayudantes de OCR. Necesita conexión a Internet.",
+  "Enable": "Activar",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Para OCR en otros idiomas, instala el paquete de Tesseract correspondiente, p. ej. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Atajos de teclado",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Permite que VoxFox lea texto en otras aplicaciones y habilita la lectura al pasar el cursor. Reinicia esas aplicaciones después.",
+  "Not done yet": "Aún no hecho",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Registra los cinco atajos de VoxFox en tu escritorio. Si quieres, cambia primero las teclas en Configuración → Atajos.",
+  "Reinstall / repair": "Reinstalar / reparar",
+  "Set up VoxFox": "Configurar VoxFox",
+  "Set up VoxFox…": "Configurar VoxFox…",
+  "Speech engine, voices and dictation": "Motor de voz, voces y dictado",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Bus de accesibilidad no disponible: la lectura al pasar el cursor no puede iniciarse. Activa la accesibilidad y vuelve a iniciar sesión."
 }

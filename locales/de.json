@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Standard-Tastenkürzel — ändere sie in Einstellungen → Tastenkürzel:",
   "Default shortcuts": "Standard-Tastenkürzel",
   "OCR region select": "OCR-Bereichsauswahl",
-  "Testing connection…": "Verbindung wird getestet…"
+  "Testing connection…": "Verbindung wird getestet…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Ein paar Schritte machen VoxFox einsatzbereit. Du musst sie nur einmal ausführen; du kannst jederzeit über das Menü hierher zurückkehren.",
+  "Close": "Schließen",
+  "Done": "Erledigt",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Lädt Piper, die Standardstimmen, das Diktieren (faster-whisper) und die OCR-Helfer herunter. Benötigt eine Internetverbindung.",
+  "Enable": "Aktivieren",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Für OCR in anderen Sprachen installiere das passende Tesseract-Paket, z. B. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Tastenkürzel",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Ermöglicht VoxFox, Text in anderen Apps zu lesen, und treibt das Vorlesen beim Überfahren an. Starte diese Apps danach neu.",
+  "Not done yet": "Noch nicht erledigt",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Registriert die fünf VoxFox-Tastenkürzel auf deiner Arbeitsumgebung. Ändere die Tasten bei Bedarf zuerst unter Einstellungen → Tastenkürzel.",
+  "Reinstall / repair": "Neu installieren / reparieren",
+  "Set up VoxFox": "VoxFox einrichten",
+  "Set up VoxFox…": "VoxFox einrichten…",
+  "Speech engine, voices and dictation": "Sprach-Engine, Stimmen und Diktieren",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Barrierefreiheits-Bus nicht verfügbar — Vorlesen beim Überfahren kann nicht starten. Aktiviere die Barrierefreiheit und melde dich neu an."
 }

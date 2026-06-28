@@ -203,6 +203,8 @@ PIPER_LANG_TO_CODE = {
     "Spanish":    "es",
     "Italian":    "it",
     "Portuguese": "pt",
+    "Chinese":    "zh",
+    "Arabic":     "ar",
 }
 
 
@@ -219,6 +221,8 @@ PIPER_LANG_NATIVE = {
     "Spanish":    "Español",
     "Italian":    "Italiano",
     "Portuguese": "Português",
+    "Chinese":    "中文",
+    "Arabic":     "العربية",
 }
 
 
@@ -315,6 +319,8 @@ DEFAULT_VOICE_FOR_LANG = {
     "Spanish":    "es_ES-davefx-medium",
     "Italian":    "it_IT-paola-medium",
     "Portuguese": "pt_BR-faber-medium",
+    "Chinese":    "zh_CN-huayan-medium",
+    "Arabic":     "ar_JO-kareem-medium",
 }
 
 

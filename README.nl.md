@@ -16,7 +16,7 @@ horen.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_2.0.3_all.deb
+sudo apt install ./voxfox_3.4_all.deb
 ```
 
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
@@ -51,18 +51,21 @@ aan alles in te stellen. De setup downloadt:
 Bij de eerste start wordt ook `~/.config/voxfox_state.json` aangemaakt (je
 instellingen) en wordt er gelogd naar `~/.cache/voxfox.log`.
 
-Voor hover-voorlezen moet de toegankelijkheidsbus aanstaan. Het menu
-(rechtsboven) heeft *Toegankelijkheid inschakelen (systeembreed)*, dat de
-GNOME-instelling `toolkit-accessibility` voor je omzet; herstart daarna het
+Voor hover-voorlezen moet de toegankelijkheidsbus aanstaan. Het venster
+*VoxFox instellen…* in het menu kan die voor je aanzetten (het zet de
+GNOME-instelling `toolkit-accessibility` om); herstart daarna het
 betreffende programma (en start Chromium-browsers met
 `--force-renderer-accessibility`).
 
 ## Het venster
 
-Het hoofdvenster is bewust klein. De bovenste rij heeft **Voorlezen**, **Stop**
-en **Pauzeren**; de tweede rij heeft **Dicteren**, **Zweven**, **Selecteren** en
-**OCR**, plus de taalwisselknop. De titelbalk heeft een **Instellingen**-knop
-(tandwiel) en een **Menu**-knop (hamburger).
+Het hoofdvenster is bewust klein en omsluit zijn inhoud. Standaard zijn de
+knoppen **Voorlezen**, **Stop**, **Pauzeren**, **Spreken** (dicteren),
+**Zweven**, **Selecteren** en **OCR**, plus de taalwisselknop. Je kunt elke knop
+tonen of verbergen en de volgorde wijzigen, en de hele interface schalen naar
+75 %, 100 % of 125 % — beide onder **Instellingen → Interface** (zie hieronder).
+De titelbalk heeft een **Instellingen**-knop (tandwiel) en een **Menu**-knop
+(hamburger).
 
 Onder de knoppen verschijnt een statusregel zolang er iets gebeurt; daarna
 verbergt die zich weer. De statusregel is een live-gebied, zodat een schermlezer
@@ -74,13 +77,13 @@ een voortgangsbalk de voortgang van een lopende download.
 | Voorlezen   | Lees de geselecteerde tekst voor                              |
 | Stop        | Stop direct met voorlezen                                    |
 | Pauzeren    | Pauzeer / hervat het voorlezen                               |
-| Dicteren    | Neem je stem op; Whisper zet het om en typt het              |
+| Spreken     | Dicteren: neem je stem op; Whisper zet het om en typt het    |
 | Zweven      | Hover-voorlezen aan/uit                                      |
 | Selecteren  | Kies een schermgebied en lees de tekst voor (OCR)            |
 | OCR         | Open een pdf of afbeelding en lees de tekst voor             |
 | Taal        | Wissel tussen Taal 1 en Taal 2                               |
-| Instellingen| Open instellingen (tabbladen: Taal 1/2, Dicteren, Uitspraak, Overig) |
-| Menu        | Geschiedenis, componenten installeren/herstellen, toegankelijkheid, Over, Afsluiten |
+| Instellingen| Open instellingen (tabbladen: Taal 1/2, Dicteren, Uitspraak, Overig, Interface, Sneltoetsen) |
+| Menu        | VoxFox instellen…, Geschiedenis, Over, Afsluiten |
 
 ## Tekst voorlezen
 
@@ -140,6 +143,19 @@ Het tabblad *Overig* bevat twee dingen:
 scp voxfox-settings.json andere-machine:~/
 # Op de andere machine: open VoxFox, Instellingen → Overig → Importeren
 ```
+
+## Instellingen → Interface
+
+Met het tabblad *Interface* pas je de toolbar en de algehele grootte aan:
+
+- **Interfacegrootte** — schaal het hele venster naar 75 %, 100 % of 125 %.
+  Handig op high-DPI-schermen of als je grotere klikdoelen wilt.
+- **Knoppen** — toon of verberg elke toolbarknop met een vinkje en wijzig de
+  volgorde met de pijltjes omhoog/omlaag. Verberg de knoppen die je nooit
+  gebruikt (bijvoorbeeld *Pauzeren* of *OCR*) om het venster compact te houden;
+  de indeling wordt onthouden.
+
+Het tabblad *Sneltoetsen* wordt behandeld onder **Sneltoetsen** hieronder.
 
 ## Spraak-naar-tekst (Whisper)
 
@@ -343,7 +359,11 @@ voor de meeste mensen prettig snellezen zodra je aan de stem gewend bent.
 De interface volgt **de taal van slot 1**: zet je die op Duits, dan schakelen de
 knoppen, tooltips, menu's en meldingen naar het Duits; zet je 'm op Frans, dan
 schakelt alles naar het Frans. Engels, Nederlands, Duits, Frans, Spaans,
-Italiaans en Portugees zijn standaard aanwezig.
+Italiaans, Portugees, Chinees en Arabisch zijn standaard aanwezig. Kies je
+Arabisch, dan klapt de hele interface om naar rechts-naar-links. Chinees en
+Arabisch hebben ook Piper-stemmen en werken voor dicteren en OCR — voor OCR
+installeer je het bijbehorende Tesseract-pakket (`tesseract-ocr-chi-sim` of
+`tesseract-ocr-ara`).
 
 De vertaalbestanden staan in `~/.piper/locales/`, één JSON per taal. Om een
 vertaling te verbeteren of een taal toe te voegen: kopieer `en.json` naar
@@ -356,8 +376,8 @@ vertalingen werken prima.
 
 Knoppen hebben toegankelijke namen en tooltips, de statusregel is een
 live-gebied, en labels vermijden emoji (die sommige schermlezers teken voor
-teken voorlezen). Hover-voorlezen en het menu-item *Toegankelijkheid
-inschakelen (systeembreed)* staan hierboven beschreven.
+teken voorlezen). Hover-voorlezen en het aanzetten van de toegankelijkheidsbus
+(via het venster *VoxFox instellen…*) staan hierboven beschreven.
 
 ## Afhankelijkheden
 
@@ -397,9 +417,10 @@ beperkt zijn.
 
 ## Voor ontwikkelaars
 
-De code is gesplitst in een UI-onafhankelijke backend (`voxfox_core.py`: TTS,
-STT, OCR, IPC, CLI, status) en een GTK4-frontend (`voxfox_gtk.py`). Het pakket
-wordt gebouwd met `packaging/build-deb.sh`
+De code is gesplitst in een UI-onafhankelijke backend (het `voxfox_core/`-pakket
+— `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) en
+een GTK4-frontend (`voxfox_gtk.py`, die ook de CLI bevat). Het pakket wordt
+gebouwd met `packaging/build-deb.sh`
 (`VERSION=x.y.z bash packaging/build-deb.sh`). Vertalingen zijn gewone
 JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen. Zie
 `CHANGELOG.md` voor de versiegeschiedenis.

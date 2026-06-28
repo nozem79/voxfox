@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Standaard sneltoetsen — wijzig ze in Instellingen → Sneltoetsen:",
   "Default shortcuts": "Standaard sneltoetsen",
   "OCR region select": "OCR-gebiedselectie",
-  "Testing connection…": "Verbinding testen…"
+  "Testing connection…": "Verbinding testen…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Een paar stappen maken VoxFox klaar voor gebruik. Je hoeft dit maar één keer te doen; je kunt hier altijd via het menu terugkomen.",
+  "Close": "Sluiten",
+  "Done": "Klaar",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Downloadt Piper, de standaardstemmen, dicteren (faster-whisper) en de OCR-hulpprogramma’s. Vereist een internetverbinding.",
+  "Enable": "Inschakelen",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Voor OCR in andere talen installeer je het bijbehorende Tesseract-pakket, bijv. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Sneltoetsen",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Hiermee kan VoxFox tekst in andere apps lezen en werkt zweef-voorlezen. Herstart die apps daarna.",
+  "Not done yet": "Nog niet gedaan",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Registreert de vijf VoxFox-sneltoetsen op je bureaublad. Wijzig desgewenst eerst de toetsen onder Instellingen → Sneltoetsen.",
+  "Reinstall / repair": "Opnieuw installeren / herstellen",
+  "Set up VoxFox": "VoxFox instellen",
+  "Set up VoxFox…": "VoxFox instellen…",
+  "Speech engine, voices and dictation": "Spraakengine, stemmen en dicteren",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Toegankelijkheidsbus niet beschikbaar — zweef-voorlezen kan niet starten. Zet toegankelijkheid aan en log opnieuw in."
 }

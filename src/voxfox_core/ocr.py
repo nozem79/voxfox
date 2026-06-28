@@ -50,6 +50,8 @@ _TESS_LANG_MAP = {
     "Portuguese": "por",
     "Polish":     "pol",
     "Russian":    "rus",
+    "Chinese":    "chi_sim",
+    "Arabic":     "ara",
 }
 
 

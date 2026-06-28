@@ -255,9 +255,12 @@ def chunk_text(text, max_chars=CHUNK_SIZE):
         if not line:
             return []
         # Break on sentence terminators that are followed by whitespace.
-        # The list comprehension keeps non-empty trimmed pieces.
+        # The list comprehension keeps non-empty trimmed pieces. CJK
+        # terminators (。！？) are also split on directly, since Chinese text
+        # has no space after them — otherwise a whole paragraph would arrive
+        # as one chunk and get hard-sliced mid-sentence.
         sentences = [s.strip()
-                     for s in re.split(r'(?<=[.!?])\s+', line)
+                     for s in re.split(r'(?<=[.!?])\s+|(?<=[。！？])', line)
                      if s.strip()]
         if not sentences:
             return []

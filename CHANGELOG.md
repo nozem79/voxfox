@@ -1,3 +1,26 @@
+## 3.4
+
+- Added Chinese and Arabic, bringing the interface to nine languages. Pick
+  either as a slot language and the toolbar, menus and messages switch over;
+  Arabic also flips the whole interface to right-to-left. Speech uses Piper's
+  Chinese and Arabic voices, dictation and OCR work in both (install the
+  tesseract-ocr-chi-sim or tesseract-ocr-ara pack for OCR), and long Chinese
+  text now breaks into sentences correctly for natural-sounding pacing.
+- The toolbar buttons now stretch to fill the full width of the window, so both
+  rows line up edge to edge instead of sitting in a narrower centred block.
+- New "Set up VoxFox" window gathers everything needed for first use in one
+  place: installing the speech engine, voices, dictation and OCR helpers;
+  switching on system-wide accessibility; and registering the keyboard
+  shortcuts. Each step shows whether it is already done. It opens automatically
+  the first time you run VoxFox and is always available from the menu.
+- Tidied the menu: the separate "Install / repair components" and "Enable
+  accessibility" items are replaced by the single "Set up VoxFox…" entry.
+- VoxFox no longer crashes at startup when the AT-SPI accessibility bus is
+  broken or permission-denied (for example a stale root-owned
+  /root/.cache/at-spi/bus_0). It now detects an unreachable bus and skips the
+  accessibility bridge instead of aborting, and hover reading refuses with a
+  clear message rather than taking the whole app down.
+
 ## 3.3
 
 - Keyboard shortcuts are now configurable from Settings → Shortcuts. Each of the

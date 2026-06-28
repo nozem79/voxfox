@@ -17,7 +17,7 @@
 
 """voxfox_core.a11y — Desktop integration: AT-SPI hover-to-read, selection, typing/paste."""
 
-import subprocess, threading, time
+import subprocess, threading, time, os, socket
 from .common import HOVER_DELAY, HOVER_POLL, IS_WAYLAND, MIN_MOVE_PX, _have, log
 from .common import _ as tr
 from .stt import WHISPER_TYPE_LIMIT
@@ -45,6 +45,69 @@ _CONTAINER_ROLES = None
 # Interactive roles -> English control word (run through tr()). Used as a
 # last-resort label for nameless icon-only controls so hover never goes silent.
 _INTERACTIVE_ROLES = None
+
+
+def _a11y_bus_address():
+    """Discover the AT-SPI bus address the same way libatspi does, WITHOUT
+    touching libatspi (which would abort the whole process on a broken bus).
+    Returns the D-Bus address string (e.g. 'unix:path=/run/user/1000/at-spi/
+    bus_0') or None."""
+    addr = os.environ.get("AT_SPI_BUS_ADDRESS")
+    if addr:
+        return addr
+    if not _have("gdbus"):
+        return None
+    try:
+        r = subprocess.run(
+            ["gdbus", "call", "--session", "--dest", "org.a11y.Bus",
+             "--object-path", "/org/a11y/bus",
+             "--method", "org.a11y.Bus.GetAddress"],
+            capture_output=True, text=True, timeout=5)
+        if r.returncode != 0:
+            return None
+        out = r.stdout.strip()           # e.g. ('unix:path=/run/user/1000/...',)
+        i, j = out.find("unix:"), out.rfind("'")
+        if i != -1 and j > i:
+            return out[i:j]
+        return out.strip("(),' ") or None
+    except Exception as e:
+        log.debug(f"a11y bus address lookup failed: {e}")
+        return None
+
+
+def a11y_bus_reachable():
+    """True if the AT-SPI accessibility bus can actually be connected to. This
+    is a plain unix-socket probe, so a misconfigured or permission-denied bus
+    (e.g. a stale root-owned /root/.cache/at-spi/bus_0) is reported as False
+    instead of hard-aborting the process inside libatspi's dbind. When this is
+    False, hover must refuse rather than call into pyatspi."""
+    addr = _a11y_bus_address()
+    if not addr:
+        return False
+    # An address can list several transports separated by ';'. We only need one
+    # unix socket we can open.
+    for part in addr.split(";"):
+        part = part.strip()
+        path = abstract = None
+        for tok in part.split(","):
+            tok = tok.strip()
+            if tok.startswith("unix:path=") or tok.startswith("path="):
+                path = tok.split("=", 1)[1]
+            elif tok.startswith("unix:abstract=") or tok.startswith("abstract="):
+                abstract = tok.split("=", 1)[1]
+        target = ("\0" + abstract) if abstract else path
+        if not target:
+            continue
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(2)
+        try:
+            s.connect(target)
+            return True
+        except OSError as e:
+            log.debug(f"a11y bus not reachable at {part!r}: {e}")
+        finally:
+            s.close()
+    return False
 
 
 def _init_roles():
@@ -884,4 +947,6 @@ __all__ = [
     "_stop_event_listener",
     "_EVENT_SILENCE",
     "hover_loop",
+    "_a11y_bus_address",
+    "a11y_bus_reachable",
 ]

@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Raccourcis clavier par défaut — modifiez-les dans Paramètres → Raccourcis :",
   "Default shortcuts": "Raccourcis par défaut",
   "OCR region select": "Sélection de zone OCR",
-  "Testing connection…": "Test de la connexion…"
+  "Testing connection…": "Test de la connexion…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Quelques étapes préparent VoxFox. Vous ne devez les faire qu’une fois ; revenez ici à tout moment depuis le menu.",
+  "Close": "Fermer",
+  "Done": "Fait",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Télécharge Piper, les voix par défaut, la dictée (faster-whisper) et les outils OCR. Nécessite une connexion Internet.",
+  "Enable": "Activer",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Pour l’OCR dans d’autres langues, installez le paquet Tesseract correspondant, p. ex. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Raccourcis clavier",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Permet à VoxFox de lire le texte dans d’autres applications et alimente la lecture au survol. Redémarrez ensuite ces applications.",
+  "Not done yet": "Pas encore fait",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Enregistre les cinq raccourcis VoxFox sur votre bureau. Modifiez d’abord les touches dans Paramètres → Raccourcis si vous le souhaitez.",
+  "Reinstall / repair": "Réinstaller / réparer",
+  "Set up VoxFox": "Configurer VoxFox",
+  "Set up VoxFox…": "Configurer VoxFox…",
+  "Speech engine, voices and dictation": "Moteur vocal, voix et dictée",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Bus d’accessibilité indisponible — la lecture au survol ne peut pas démarrer. Activez l’accessibilité, puis reconnectez-vous."
 }

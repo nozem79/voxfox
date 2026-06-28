@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.3"
+APP_VERSION = "3.4"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -288,6 +288,46 @@ def enable_accessibility():
                        "--force-renderer-accessibility for Chromium) to apply.")
     except Exception as e:
         return False, f"{e}"
+
+
+# ── UI language + text direction ─────────────────────────────────────────────
+# Locale codes whose script runs right-to-left. When the interface switches to
+# one of these, the whole GTK layout (buttons, labels, menus) must flip.
+_RTL_UI_CODES = {"ar"}
+
+
+def apply_ui_language(piper_lang_name):
+    """Switch the UI to the locale for the given Piper language name AND set the
+    global text direction, so Arabic flips the interface to right-to-left and
+    every other language stays left-to-right. Call this everywhere the UI
+    language changes (slot 1 change, settings import, startup)."""
+    code = vf.ui_code_for_piper_lang(piper_lang_name)
+    vf.set_language(code)
+    direction = (Gtk.TextDirection.RTL if code in _RTL_UI_CODES
+                 else Gtk.TextDirection.LTR)
+    Gtk.Widget.set_default_direction(direction)
+
+
+def accessibility_enabled():
+    """True if the GNOME/AT-SPI accessibility bus is already switched on, so the
+    setup checklist can show it as done. Checks the same desktop schemas that
+    _enable_accessibility() writes (GNOME, Cinnamon, MATE), so the status is
+    accurate on each of them. Best-effort: returns False if gsettings isn't
+    available."""
+    if not vf._have("gsettings"):
+        return False
+    for schema in ("org.gnome.desktop.interface",
+                   "org.cinnamon.desktop.interface",
+                   "org.mate.interface"):
+        try:
+            r = subprocess.run(
+                ["gsettings", "get", schema, "toolkit-accessibility"],
+                capture_output=True, text=True, timeout=5)
+            if r.returncode == 0 and r.stdout.strip().lower() == "true":
+                return True
+        except Exception:
+            continue
+    return False
 
 
 # ── Region screenshot (used by "Select" / --ocr-select) ──────────────────────
@@ -928,7 +968,7 @@ class PreferencesWindow(Gtk.Window):
             vf.save_state(self.state)
             _set_dropdown_items(voice_dd, keys, chosen)
             if slot == "slot1":
-                vf.set_language(vf.ui_code_for_piper_lang(lang))
+                apply_ui_language(lang)
                 self.win.rebuild_ui()
 
         def on_voice(dd, _p):
@@ -1310,8 +1350,7 @@ class PreferencesWindow(Gtk.Window):
                 self.win.state = self.state
                 vf.set_pronunciations(self.state.get("pronunciations", {}))
                 vf.set_merge_lines(self.state.get("merge_lines", True))
-                vf.set_language(vf.ui_code_for_piper_lang(
-                    self.state["slot1"].get("lang", "")))
+                apply_ui_language(self.state["slot1"].get("lang", ""))
                 self.win.rebuild_ui()
                 self.win.set_status(_("Settings imported"))
                 dlg.destroy()
@@ -1538,9 +1577,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         header.pack_end(gear)
 
         menu = Gio.Menu()
+        menu.append(_("Set up VoxFox…"), "app.first_run")
         menu.append(_("History"), "app.history")
-        menu.append(_("Install / repair components"), "app.setup")
-        menu.append(_("Enable accessibility (system-wide)"), "app.enable_a11y")
         menu.append(_("About"), "app.about")
         menu.append(_("Quit"),  "app.quit")
         menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
@@ -1561,7 +1599,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         setup_btn = Gtk.Button(label=_("Install now"))
         setup_btn.add_css_class("voxfox-accent")
         _a11y(setup_btn, _("Install Piper and components now"))
-        setup_btn.connect("clicked", lambda *_a: self.run_setup_async())
+        setup_btn.connect("clicked", lambda *_a: SetupDialog(self).present())
         self.setup_bar.append(lbl)
         self.setup_bar.append(setup_btn)
         outer.append(self.setup_bar)
@@ -1609,12 +1647,17 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             rows = [visible_ids[:half], visible_ids[half:]]
         toolbar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         toolbar.add_css_class("voxfox-toolbar")
-        toolbar.set_halign(Gtk.Align.CENTER)
+        toolbar.set_halign(Gtk.Align.FILL)
+        toolbar.set_hexpand(True)
         for row_ids in rows:
             row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0,
                           homogeneous=True)
+            row.set_halign(Gtk.Align.FILL)
+            row.set_hexpand(True)
             for bid in row_ids:
-                row.append(self._toolbar_btns[bid])
+                btn = self._toolbar_btns[bid]
+                btn.set_hexpand(True)
+                row.append(btn)
             toolbar.append(row)
         outer.append(toolbar)
 
@@ -1752,7 +1795,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self._prefs.present()
 
     # ── setup ─────────────────────────────────────────────────────────────────
-    def run_setup_async(self):
+    def run_setup_async(self, on_done=None):
         self.set_status(_("Setting up..."), duration=0)
 
         def worker():
@@ -1763,6 +1806,9 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 self.reload_active_controls()
                 self.hide_progress()
                 self.set_status(_("Setup complete"))
+                self.refresh_setup_bar()
+                if on_done:
+                    on_done()
                 return False
             GLib.idle_add(done)
         threading.Thread(target=worker, daemon=True).start()
@@ -1949,6 +1995,15 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             threading.Thread(target=vf._stop_event_listener, daemon=True).start()
             self.set_status(_("Hover off"))
         else:
+            # Reading other apps over AT-SPI means calling into pyatspi/libatspi.
+            # On a broken or permission-denied bus that call aborts the whole
+            # process, so refuse up front when the bus can't be reached.
+            if not vf.a11y_bus_reachable():
+                self.set_status(
+                    _("Accessibility bus unavailable — hover reading can't "
+                      "start. Enable accessibility, then log out and back in."),
+                    duration=6000)
+                return
             vf.set_hover_running(True)
             self.hover_on = True
             self.hover_btn.add_css_class("voxfox-accent")
@@ -1981,6 +2036,151 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 pass
 
 
+class SetupDialog(Gtk.Window):
+    """One place that walks a new user through everything needed for first use:
+    install the engine/voices/dictation/OCR components, switch on accessibility,
+    and register the keyboard shortcuts. Each step shows whether it is already
+    done and offers a single button to do it."""
+
+    def __init__(self, parent):
+        super().__init__(title=_("Set up VoxFox"), transient_for=parent,
+                         modal=True)
+        self.parent = parent
+        self.set_default_size(460, -1)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(outer, f"set_margin_{m}")(16)
+        self.set_child(outer)
+
+        intro = Gtk.Label(
+            label=_("A few steps get VoxFox ready. You only need to do these "
+                    "once; come back here any time from the menu."),
+            xalign=0, wrap=True)
+        intro.add_css_class("dim-label")
+        outer.append(intro)
+
+        self._rows = []
+
+        # 1) Components: Piper engine + voices + faster-whisper + OCR python.
+        self._comp_btn = Gtk.Button(label=_("Install now"))
+        self._comp_btn.add_css_class("suggested-action")
+        self._comp_btn.connect("clicked", self._on_install_components)
+        outer.append(self._make_step(
+            "components",
+            _("Speech engine, voices and dictation"),
+            _("Downloads Piper, the default voices, dictation (faster-whisper) "
+              "and the OCR helpers. Needs an internet connection."),
+            self._comp_btn))
+
+        # 2) Accessibility bus (for hover reading across apps).
+        self._a11y_btn = Gtk.Button(label=_("Enable"))
+        self._a11y_btn.connect("clicked", self._on_enable_a11y)
+        outer.append(self._make_step(
+            "a11y",
+            _("Enable accessibility (system-wide)"),
+            _("Lets VoxFox read text in other apps and power hover reading. "
+              "Restart those apps afterwards."),
+            self._a11y_btn))
+
+        # 3) Keyboard shortcuts (optional, never automatic).
+        self._sc_btn = Gtk.Button(label=_("Install shortcuts"))
+        self._sc_btn.connect("clicked", self._on_install_shortcuts)
+        outer.append(self._make_step(
+            "shortcuts",
+            _("Keyboard shortcuts"),
+            _("Registers the five VoxFox shortcuts on your desktop. Change the "
+              "keys first under Settings → Shortcuts if you like."),
+            self._sc_btn))
+
+        # 4) OCR language packs — informational (installed via apt).
+        info = Gtk.Label(
+            label=_("For OCR in other languages, install the matching Tesseract "
+                    "pack, e.g. sudo apt install tesseract-ocr-nld"),
+            xalign=0, wrap=True, selectable=True)
+        info.add_css_class("dim-label")
+        outer.append(info)
+
+        self._result = Gtk.Label(label="", xalign=0, wrap=True)
+        outer.append(self._result)
+
+        close = Gtk.Button(label=_("Close"))
+        close.set_halign(Gtk.Align.END)
+        close.connect("clicked", lambda *_a: self.close())
+        outer.append(close)
+
+        self._refresh_states()
+
+    def _make_step(self, key, title, desc, button):
+        frame = Gtk.Frame()
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(row, f"set_margin_{m}")(10)
+        status = Gtk.Label(label="", xalign=0.5)
+        status.set_size_request(24, -1)
+        textbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
+                          hexpand=True)
+        t = Gtk.Label(label=title, xalign=0)
+        t.add_css_class("heading")
+        d = Gtk.Label(label=desc, xalign=0, wrap=True)
+        d.add_css_class("dim-label")
+        textbox.append(t)
+        textbox.append(d)
+        button.set_valign(Gtk.Align.CENTER)
+        row.append(status)
+        row.append(textbox)
+        row.append(button)
+        frame.set_child(row)
+        self._rows.append((key, status))
+        return frame
+
+    def _refresh_states(self):
+        done = {
+            "components": os.path.exists(vf.PIPER_BIN),
+            "a11y": accessibility_enabled(),
+            "shortcuts": bool(self.parent.state.get("shortcuts_installed")),
+        }
+        for key, status in self._rows:
+            status.set_text("✓" if done.get(key) else "•")
+            status.set_tooltip_text(
+                _("Done") if done.get(key) else _("Not done yet"))
+        self._comp_btn.set_label(
+            _("Reinstall / repair") if done["components"] else _("Install now"))
+
+    def _on_install_components(self, _btn):
+        self._result.set_text(_("Setting up..."))
+        self.parent.run_setup_async(on_done=self._refresh_states)
+
+    def _on_enable_a11y(self, _btn):
+        ok, msg = enable_accessibility()
+        self._result.set_text(msg)
+        self._refresh_states()
+
+    def _on_install_shortcuts(self, _btn):
+        try:
+            ok = _install_shortcuts(self.parent.state)
+        except Exception as e:
+            log.debug(f"setup-dialog shortcut install failed: {e}")
+            ok = False
+        if ok:
+            self.parent.state["shortcuts_installed"] = True
+        vf.save_state(self.parent.state)
+        if ok and _cinnamon_reload():
+            self._result.set_text(
+                _("Shortcuts installed. The desktop was reloaded to "
+                  "activate them."))
+        elif ok:
+            self._result.set_text(
+                _("Shortcuts installed. You can change or remove them in "
+                  "your system keyboard settings."))
+        else:
+            self._result.set_text(
+                _("Could not install shortcuts on this desktop. Your desktop "
+                  "may use a different method — set them manually in its "
+                  "keyboard settings."))
+        self._refresh_states()
+
+
 class VoxFoxApplication(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="org.voxfox.VoxFox",
@@ -1995,8 +2195,7 @@ class VoxFoxApplication(Gtk.Application):
         _install_x_error_handler()
         for name, cb in (("about", self._on_about),
                          ("history", self._on_history),
-                         ("setup", self._on_setup),
-                         ("enable_a11y", self._on_enable_a11y),
+                         ("first_run", self._on_first_run),
                          ("quit",  self._on_quit)):
             act = Gio.SimpleAction.new(name, None)
             act.connect("activate", cb)
@@ -2028,6 +2227,16 @@ class VoxFoxApplication(Gtk.Application):
         # already loaded by the time the user first speaks. This eliminates
         # the ~1 s startup delay on the very first utterance.
         GLib.timeout_add(500, self._warmup_piper)
+        # First run: when the engine is still missing, guide the user through
+        # setup once instead of leaving them to find the menu.
+        if not os.path.exists(vf.PIPER_BIN):
+            GLib.timeout_add(700, self._maybe_first_run)
+
+    def _maybe_first_run(self):
+        if not getattr(self, "_first_run_shown", False) and self.win:
+            self._first_run_shown = True
+            SetupDialog(self.win).present()
+        return False
 
     def _warmup_piper(self):
         """Start the Piper server in the background (fire-and-forget)."""
@@ -2073,14 +2282,9 @@ class VoxFoxApplication(Gtk.Application):
         self.hist_win = HistoryWindow(self.win)
         self.hist_win.present()
 
-    def _on_setup(self, *_a):
+    def _on_first_run(self, *_a):
         if self.win:
-            self.win.run_setup_async()
-
-    def _on_enable_a11y(self, *_a):
-        ok, msg = enable_accessibility()
-        if self.win:
-            self.win.set_status(msg, duration=6000 if ok else 4000)
+            SetupDialog(self.win).present()
 
     def _on_about(self, *_a):
         dlg = Gtk.AboutDialog(transient_for=self.win, modal=True)
@@ -2695,7 +2899,7 @@ def main():
     vf.load_translations()
     try:
         st = vf.load_state()
-        vf.set_language(vf.ui_code_for_piper_lang(st["slot1"].get("lang", "")))
+        apply_ui_language(st["slot1"].get("lang", ""))
         vf.set_pronunciations(st.get("pronunciations", {}))
         vf.set_merge_lines(st.get("merge_lines", True))
     except Exception:
@@ -2744,6 +2948,19 @@ def main():
     # their own bindings for these keys, and silently overwriting them is rude.
     # The user picks keys and installs them from Settings → Shortcuts (or via
     # `voxfox --install-shortcuts`).
+
+    # If the AT-SPI accessibility bus can't actually be reached (switched off,
+    # missing, or a stale root-owned socket such as /root/.cache/at-spi/bus_0),
+    # tell GTK NOT to load its accessibility bridge. Otherwise libatspi's dbind
+    # layer responds to the failed connection with a hard abort() — a core dump
+    # at startup — which no Python try/except can catch. Hover reading is guarded
+    # separately (it reports the bus as unavailable instead of crashing). When
+    # the bus works normally this branch is skipped and VoxFox stays accessible.
+    if not vf.a11y_bus_reachable():
+        os.environ.setdefault("GTK_A11Y", "none")
+        os.environ.setdefault("NO_AT_BRIDGE", "1")
+        log.debug("AT-SPI bus unreachable — disabled GTK a11y bridge for "
+                  "this process to avoid a libatspi abort.")
 
     VoxFoxApplication().run(None)
 

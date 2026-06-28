@@ -18,7 +18,7 @@ mistake.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_3.3_all.deb
+sudo apt install ./voxfox_3.4_all.deb
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
@@ -52,9 +52,9 @@ everything up. Setup downloads:
 The first run also creates `~/.config/voxfox_state.json` (your settings) and
 logs to `~/.cache/voxfox.log` for debugging.
 
-For hover-to-read, the accessibility bus must be on. The menu (top-right) has
-*Enable accessibility (system-wide)*, which flips the GNOME
-`toolkit-accessibility` setting for you; restart the target app afterwards (and
+For hover-to-read, the accessibility bus must be on. The menu's *Set up VoxFox…*
+window can switch it on for you (it flips the GNOME `toolkit-accessibility`
+setting); restart the target app afterwards (and
 launch Chromium browsers with `--force-renderer-accessibility`).
 
 ## The window
@@ -82,7 +82,7 @@ progress of any download in flight.
 | OCR      | Open a PDF or image and read its text aloud             |
 | Language | Switch between Language 1 and Language 2                |
 | Settings | Open Settings (tabs: Language 1 / 2, Dictation, Pronunciation, Misc, Interface, Shortcuts) |
-| Menu     | History, Install/repair components, accessibility, About, Quit |
+| Menu     | Set up VoxFox…, History, About, Quit |
 
 ## Reading text aloud
 
@@ -347,8 +347,11 @@ speed-listening for most people once you're used to the voice.
 
 The interface follows **Slot 1's language**: set it to German and the buttons,
 tooltips, menus and status messages switch to German; set it to French and
-everything switches to French. English, Dutch, German, French, Spanish, Italian
-and Portuguese ship out of the box.
+everything switches to French. English, Dutch, German, French, Spanish, Italian,
+Portuguese, Chinese and Arabic ship out of the box. Choosing Arabic also flips
+the whole interface to right-to-left. Chinese and Arabic have Piper speech
+voices and work for dictation and OCR too — for OCR install the matching
+Tesseract pack (`tesseract-ocr-chi-sim` or `tesseract-ocr-ara`).
 
 Translation files live in `~/.piper/locales/`, one JSON per language. To improve
 a translation or add a language: copy `en.json` to `<code>.json`, set
@@ -360,8 +363,8 @@ entries fall back to English, so partial translations work fine.
 
 Buttons carry accessible names and tooltips, the status line is a live region,
 and labels avoid emoji (which some screen readers read out character by
-character). Hover-to-read and the *Enable accessibility (system-wide)* menu item
-are described above.
+character). Hover-to-read and switching on the accessibility bus (via the
+*Set up VoxFox…* window) are described above.
 
 ## Dependencies
 

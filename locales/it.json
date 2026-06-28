@@ -193,5 +193,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Scorciatoie da tastiera predefinite — modificale in Impostazioni → Scorciatoie:",
   "Default shortcuts": "Scorciatoie predefinite",
   "OCR region select": "Selezione area OCR",
-  "Testing connection…": "Verifica della connessione…"
+  "Testing connection…": "Verifica della connessione…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "Pochi passaggi preparano VoxFox. Devi farli una sola volta; puoi tornare qui in qualsiasi momento dal menu.",
+  "Close": "Chiudi",
+  "Done": "Fatto",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Scarica Piper, le voci predefinite, la dettatura (faster-whisper) e gli strumenti OCR. Richiede una connessione Internet.",
+  "Enable": "Attiva",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "Per l’OCR in altre lingue, installa il pacchetto Tesseract corrispondente, ad es. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Scorciatoie da tastiera",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Consente a VoxFox di leggere il testo in altre app e alimenta la lettura al passaggio. Riavvia poi quelle app.",
+  "Not done yet": "Non ancora fatto",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Registra le cinque scorciatoie di VoxFox sul desktop. Se vuoi, cambia prima i tasti in Impostazioni → Scorciatoie.",
+  "Reinstall / repair": "Reinstalla / ripara",
+  "Set up VoxFox": "Configura VoxFox",
+  "Set up VoxFox…": "Configura VoxFox…",
+  "Speech engine, voices and dictation": "Motore vocale, voci e dettatura",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Bus di accessibilità non disponibile: la lettura al passaggio non può avviarsi. Attiva l’accessibilità e riaccedi."
 }

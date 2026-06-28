@@ -194,5 +194,20 @@
   "Default keyboard shortcuts — change them in Settings → Shortcuts:": "Default keyboard shortcuts — change them in Settings → Shortcuts:",
   "Default shortcuts": "Default shortcuts",
   "OCR region select": "OCR region select",
-  "Testing connection…": "Testing connection…"
+  "Testing connection…": "Testing connection…",
+  "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.": "A few steps get VoxFox ready. You only need to do these once; come back here any time from the menu.",
+  "Close": "Close",
+  "Done": "Done",
+  "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.": "Downloads Piper, the default voices, dictation (faster-whisper) and the OCR helpers. Needs an internet connection.",
+  "Enable": "Enable",
+  "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld": "For OCR in other languages, install the matching Tesseract pack, e.g. sudo apt install tesseract-ocr-nld",
+  "Keyboard shortcuts": "Keyboard shortcuts",
+  "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.": "Lets VoxFox read text in other apps and power hover reading. Restart those apps afterwards.",
+  "Not done yet": "Not done yet",
+  "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.": "Registers the five VoxFox shortcuts on your desktop. Change the keys first under Settings → Shortcuts if you like.",
+  "Reinstall / repair": "Reinstall / repair",
+  "Set up VoxFox": "Set up VoxFox",
+  "Set up VoxFox…": "Set up VoxFox…",
+  "Speech engine, voices and dictation": "Speech engine, voices and dictation",
+  "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in.": "Accessibility bus unavailable — hover reading can't start. Enable accessibility, then log out and back in."
 }

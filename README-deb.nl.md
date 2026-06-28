@@ -15,7 +15,7 @@ nette labels voor schermlezers.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_2.0.3_all.deb
+sudo apt install ./voxfox_3.4_all.deb
 ```
 
 `apt` haalt de afhankelijkheden automatisch op. Start VoxFox daarna via het
@@ -25,8 +25,8 @@ toepassingenmenu, of met het commando `voxfox` in een terminal.
 > de download "door root en niet in een sandbox gebeurt, omdat `_apt` het
 > bestand niet kon benaderen". Dit is onschuldig — de installatie wordt gewoon
 > voltooid. Wil je de melding voorkomen, installeer dan vanaf een map die voor
-> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_2.0.3_all.deb /tmp/ &&
-> sudo apt install /tmp/voxfox_2.0.3_all.deb`.
+> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_3.4_all.deb /tmp/ &&
+> sudo apt install /tmp/voxfox_3.4_all.deb`.
 
 ### Wat het pakket installeert
 
@@ -53,8 +53,8 @@ voxfox --setup
 Dit downloadt de Piper-engine voor jouw processorarchitectuur, twee
 standaardstemmen (`en_GB-alba-medium` en `nl_NL-pim-medium`) naar `~/.piper`, en
 installeert `faster-whisper` en `pytesseract` met pip. Je mag dit veilig opnieuw
-uitvoeren; het is ook beschikbaar via het menu als *Onderdelen installeren /
-herstellen*.
+uitvoeren; het is ook beschikbaar via het venster *VoxFox instellen…* in het
+menu.
 
 > De setup heeft `python3-pip` nodig (een aanbevolen afhankelijkheid). OCR werkt
 > ook zonder `pytesseract`, omdat VoxFox terugvalt op de `tesseract`-opdrachtregel.
@@ -170,10 +170,11 @@ de taalgegevens, bijv. `tesseract-ocr-nld`); `pytesseract` is optioneel.
 **Hover** (`voxfox --hover-toggle`) leest de interfacetekst onder de muisaanwijzer
 voor, via de AT-SPI-toegankelijkheidsboom.
 
-Hiervoor moet de toegankelijkheidsbus aanstaan. Het menu heeft **Toegankelijkheid
-systeembreed inschakelen**, dat de GNOME-instelling `toolkit-accessibility` voor
-je aanzet; herstart daarna de betreffende toepassing. Chromium-browsers moeten
-bovendien gestart worden met `--force-renderer-accessibility`. Hover werkt het
+Hiervoor moet de toegankelijkheidsbus aanstaan. Het venster *VoxFox instellen…*
+in het menu kan die voor je aanzetten (het zet de GNOME-instelling
+`toolkit-accessibility` aan); herstart daarna de betreffende toepassing.
+Chromium-browsers moeten bovendien gestart worden met
+`--force-renderer-accessibility`. Hover werkt het
 betrouwbaarst op GTK- en Firefox-vensters.
 
 ## Altijd op de voorgrond
@@ -240,15 +241,16 @@ programma draait via de Python-interpreter, en het `.deb` levert de broncode als
 platte tekst mee in `/usr/lib/voxfox/`. Reviewen, verbeteren en opnieuw bouwen is
 daardoor eenvoudig.
 
-**De broncode** bestaat uit twee bestanden plus assets:
+**De broncode** bestaat uit een backend-pakket plus een frontend en assets:
 
-- `voxfox_core.py` — de UI-onafhankelijke kern en het grootste deel van de
-  logica: Piper-TTS, Whisper-STT (lokaal, externe API, GPU-detectie),
-  Tesseract-OCR (met een CLI-terugval), de IPC-server, de opdrachtregel, het
-  opslaan van instellingen/geschiedenis en de taaltabellen. Het importeert geen
-  enkele GUI-toolkit.
-- `voxfox_gtk.py` — de GTK4-frontend (venster, instellingen, knoppen); dit
-  importeert `voxfox_core`.
+- `voxfox_core/` — de UI-onafhankelijke kern, een pakket met modules:
+  `tts.py` (Piper-TTS), `stt.py` (Whisper-STT — lokaal, externe API,
+  GPU-detectie), `ocr.py` (Tesseract-OCR met een CLI-terugval), `ipc.py` (de
+  IPC-server), `state.py` (opslaan van instellingen/geschiedenis en de
+  taaltabellen), `a11y.py` (toegankelijkheidshulp) en `common.py`. Het
+  importeert geen enkele GUI-toolkit.
+- `voxfox_gtk.py` — de GTK4-frontend (venster, instellingen, knoppen) plus de
+  opdrachtregel; dit importeert `voxfox_core`.
 - Assets: `locales/*.json` (vertalingen), `voxfox-logo.png`, `licence.txt`.
 - `packaging/build-deb.sh` — stelt het `.deb` samen.
 
