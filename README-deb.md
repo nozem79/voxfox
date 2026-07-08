@@ -13,7 +13,7 @@ Whisper, a tesseract CLI fallback for OCR, and proper screen-reader labels.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_3.4_all.deb
+sudo apt install ./voxfox_3.5_all.deb
 ```
 
 `apt` pulls in the dependencies automatically. Then launch VoxFox from the
@@ -22,8 +22,8 @@ application menu, or run `voxfox` in a terminal.
 > If you install from your home folder you may see a notice that the download
 > "is performed by root and not sandboxed, because `_apt` could not access the
 > file". This is harmless — the install still completes. To avoid it, install
-> from a world-readable path, e.g. `sudo cp voxfox_3.4_all.deb /tmp/ && sudo
-> apt install /tmp/voxfox_3.4_all.deb`.
+> from a world-readable path, e.g. `sudo cp voxfox_3.5_all.deb /tmp/ && sudo
+> apt install /tmp/voxfox_3.5_all.deb`.
 
 ### What the package installs
 
@@ -173,7 +173,7 @@ may not take effect.
 
 ## Keyboard shortcuts
 
-VoxFox can install five global shortcuts for you — open
+VoxFox can install six global shortcuts for you — open
 **Settings → Shortcuts**, optionally change any combination by clicking it and
 pressing the keys, then choose **Install shortcuts**. This works on Cinnamon,
 GNOME, LXQt and XFCE; nothing is installed automatically. Defaults:
@@ -185,6 +185,7 @@ GNOME, LXQt and XFCE; nothing is installed automatically. Defaults:
 | `voxfox --toggle-slot`     | Switch language slot       | `Super+C` |
 | `voxfox --whisper-toggle`  | Dictate (speech to text)   | `Super+W` |
 | `voxfox --ocr-select`      | Read a screen region (OCR) | `Super+A` |
+| `voxfox --read-page`       | Read web page (experimental) | `Super+V` |
 
 `voxfox --install-shortcuts` does the same from a terminal. Other commands
 (`voxfox --pause`, `voxfox --hover-toggle`) can be bound by hand in your

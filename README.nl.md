@@ -16,7 +16,7 @@ horen.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_3.4_all.deb
+sudo apt install ./voxfox_3.5_all.deb
 ```
 
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
@@ -323,7 +323,7 @@ voxfox --verbose          # Debug-logging aanzetten
 
 ## Sneltoetsen
 
-VoxFox kan vijf globale sneltoetsen voor je instellen, maar doet dat nooit
+VoxFox kan zes globale sneltoetsen voor je instellen, maar doet dat nooit
 automatisch — sommige bureaubladen gebruiken deze toetsen al voor iets anders.
 Open **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie (klik erop
 en druk de gewenste toetsen in) en kies dan **Sneltoetsen installeren**. Ze
@@ -332,7 +332,7 @@ Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
 werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
 later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
 
-De vijf installeerbare acties en hun standaardtoetsen:
+De zes installeerbare acties en hun standaardtoetsen:
 
 | Actie           | Opdracht                  | Standaard |
 |-----------------|---------------------------|-----------|
@@ -341,12 +341,48 @@ De vijf installeerbare acties en hun standaardtoetsen:
 | Taal wisselen   | `voxfox --toggle-slot`    | `Super+C` |
 | Dicteren        | `voxfox --whisper-toggle` | `Super+W` |
 | OCR-selectie    | `voxfox --ocr-select`     | `Super+A` |
+| Webpagina voorlezen | `voxfox --read-page`  | `Super+V` |
 
 Je kunt ook `voxfox --install-shortcuts` in een terminal draaien. Andere
 opdrachten (`voxfox --pause`, `voxfox --hover-toggle`) zitten niet in de
 installer maar kun je handmatig koppelen in de toetsenbordinstellingen van je
 bureaublad — elke druk roept de draaiende instantie aan via de vlaggen
 hierboven.
+
+## Een webpagina voorlezen (experimenteel)
+
+Selecteer het adres van de pagina — `Ctrl+L` in de browser selecteert de
+adresbalk — en druk op `Super+V` (of voer `voxfox --read-page` uit). VoxFox
+haalt de pagina zelf op en leest het artikel voor; de paginatitel verschijnt
+in de statusregel zodat altijd duidelijk is welke pagina wordt voorgelezen.
+Elke selectie met een URL erin werkt, dus een link in een e-mail of document
+kan ook.
+
+De extractie gaat in twee trappen:
+
+1. De hoofdinhoud wordt structureel geëxtraheerd: menu's, banners, zijbalken,
+   voetteksten en scripts worden overgeslagen, en een `<main>`/`<article>`-
+   sectie wint als de pagina die markeert. Zonder AI, en er wordt nooit iets
+   verzonnen.
+2. Optioneel verfijnt een **AI (Ollama)** wat overblijft, in te stellen onder
+   **Instellingen → Webpagina**: *Alleen filteren* behoudt de originele
+   zinnen en haalt overgebleven reclame en snippers van andere artikelen weg;
+   *Samenvatten* leest in plaats daarvan een spreekvriendelijke samenvatting.
+
+Trap 2 vereist een draaiende [Ollama](https://ollama.com) met een gedownload
+model (bijvoorbeeld `ollama pull llama3.2`). De URL, een optionele
+**API-sleutel** (meegestuurd als Bearer-token, voor Ollama achter een reverse
+proxy op een andere machine) en de modelnaam zijn instelbaar; *Test
+verbinding* toont de gevonden modellen. Is Ollama niet bereikbaar, dan valt
+VoxFox terug op de tekst uit trap 1.
+
+Let op: het ophalen ziet de pagina als anonieme bezoeker, dus inhoud achter
+een login kan afwijken van wat de browser toont. Pagina's die alleen met
+JavaScript renderen worden automatisch opnieuw geprobeerd in een headless
+(onzichtbare) Chromium als die geïnstalleerd is — Chromium, Chrome, Brave en
+Edge worden herkend. Zonder geselecteerde URL valt VoxFox terug op het voorlezen van het
+actieve tabblad via AT-SPI (vereist de toegankelijkheidsbus; Chromium heeft
+`--force-renderer-accessibility` nodig).
 
 ## Snelheid aanpassen
 
@@ -359,11 +395,11 @@ voor de meeste mensen prettig snellezen zodra je aan de stem gewend bent.
 De interface volgt **de taal van slot 1**: zet je die op Duits, dan schakelen de
 knoppen, tooltips, menu's en meldingen naar het Duits; zet je 'm op Frans, dan
 schakelt alles naar het Frans. Engels, Nederlands, Duits, Frans, Spaans,
-Italiaans, Portugees, Chinees en Arabisch zijn standaard aanwezig. Kies je
-Arabisch, dan klapt de hele interface om naar rechts-naar-links. Chinees en
-Arabisch hebben ook Piper-stemmen en werken voor dicteren en OCR — voor OCR
-installeer je het bijbehorende Tesseract-pakket (`tesseract-ocr-chi-sim` of
-`tesseract-ocr-ara`).
+Italiaans, Portugees, Chinees, Arabisch en Grieks zijn standaard aanwezig. Kies je
+Arabisch, dan klapt de hele interface om naar rechts-naar-links. Chinees, Arabisch
+en Grieks hebben ook Piper-stemmen en werken voor dicteren en OCR — voor OCR
+installeer je het bijbehorende Tesseract-pakket (`tesseract-ocr-chi-sim`,
+`tesseract-ocr-ara` of `tesseract-ocr-ell`).
 
 De vertaalbestanden staan in `~/.piper/locales/`, één JSON per taal. Om een
 vertaling te verbeteren of een taal toe te voegen: kopieer `en.json` naar

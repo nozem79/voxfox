@@ -167,6 +167,9 @@ class IPCServer:
         if cmd in ("ocr-select", "select", "region"):
             self.app.root.after(0, self.app.do_ocr_select)
             return "ok"
+        if cmd in ("read-page", "page"):
+            self.app.root.after(0, self.app.do_read_page)
+            return "ok"
         if cmd in ("pause-toggle", "pause", "resume"):
             self.app.root.after(0, self.app.do_pause)
             return "ok"
@@ -226,6 +229,7 @@ def run_cli(args):
         "hover_toggle":   "hover-toggle",
         "whisper_toggle": "whisper-toggle",
         "ocr_select":     "ocr-select",
+        "read_page":      "read-page",
         "pause":          "pause-toggle",
         "status":         "ping",
         "quit":           "quit",

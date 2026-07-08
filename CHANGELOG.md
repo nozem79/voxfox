@@ -1,3 +1,37 @@
+## 3.5
+
+- Added Greek as the tenth interface language, with Piper speech
+  (el_GR-rapunzelina), dictation and OCR support (install the
+  tesseract-ocr-ell pack for OCR).
+- Read web page now works from a selected URL: select the page's address
+  (Ctrl+L in the browser) and press Super+V — VoxFox fetches the page itself
+  and reads the article, showing the page title in the status line so it is
+  always clear which page is being read. This route does not need the
+  accessibility bus at all; the AT-SPI extraction of the focused tab remains
+  as fallback when no URL is selected.
+- The built-in extractor strips menus, banners, sidebars, footers and scripts
+  from fetched pages and prefers the page's main/article section, using only
+  the Python standard library (no new dependencies).
+- Pages that only render with JavaScript are retried automatically in a
+  headless Chromium (Chromium, Chrome, Brave or Edge, when installed), so
+  single-page apps and some bot walls work too. The plain fetch stays the
+  fast first attempt.
+- Settings → Web page gained an optional API key, sent as a Bearer token, so
+  an Ollama instance behind a reverse proxy on another machine can be used.
+
+- New experimental feature: read the current web page aloud with `Super+V` or
+  `voxfox --read-page`. The article is extracted from the focused browser tab
+  over AT-SPI, using the page's landmarks to skip menus, banners, sidebars and
+  footers. Optionally a local AI (Ollama) refines the result — configured in
+  the new Settings → Web page tab as either *Filter only* (keep the original
+  sentences, drop leftover adverts and snippets of other articles) or
+  *Summarize*. If Ollama is unreachable VoxFox falls back to the structurally
+  cleaned text. Requires the accessibility bus; Chromium-based browsers need
+  --force-renderer-accessibility.
+- The shortcut set grows from five to six actions (the new "Read web page" on
+  Super+V by default); keys remain fully customizable under Settings →
+  Shortcuts and are still never installed automatically.
+
 ## 3.4
 
 - Added Chinese and Arabic, bringing the interface to nine languages. Pick

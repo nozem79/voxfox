@@ -15,7 +15,7 @@ laat zien of die al gedaan is:
    voorlezen). Chromium-browsers moeten bovendien gestart worden met
    `--force-renderer-accessibility`.
 
-3. **Sneltoetsen.** Registreer desgewenst de vijf VoxFox-sneltoetsen op je
+3. **Sneltoetsen.** Registreer desgewenst de zes VoxFox-sneltoetsen op je
    bureaublad. Wijzig eerst de toetsen onder Instellingen → Sneltoetsen als je
    wilt.
 

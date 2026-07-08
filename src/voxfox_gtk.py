@@ -55,7 +55,7 @@ SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
 PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.4"
+APP_VERSION = "3.5"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -637,6 +637,8 @@ class PreferencesWindow(Gtk.Window):
                              Gtk.Label(label=_("Interface")))
         notebook.append_page(_page(self._shortcuts_group()),
                              Gtk.Label(label=_("Shortcuts")))
+        notebook.append_page(_page(self._webread_group()),
+                             Gtk.Label(label=_("Web page")))
         self.set_child(notebook)
 
         self.connect("close-request", self._on_close)
@@ -1295,6 +1297,120 @@ class PreferencesWindow(Gtk.Window):
         box.append(btnrow)
         return frame
 
+    def _webread_group(self):
+        """Experimental 'read web page' settings: stage 1 (AT-SPI extraction)
+        is always on; here the user configures stage 2 (Ollama) — off, filter
+        (keep original sentences) or summarize — plus the server URL/model."""
+        frame = Gtk.Frame(label=_("Web page"))
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        frame.set_child(box)
+        wr = self.state.setdefault("webread", {})
+
+        desc = Gtk.Label(xalign=0.0)
+        desc.set_wrap(True)
+        desc.add_css_class("dim-label")
+        desc.set_text(_("Reads a web page aloud (experimental). Select the "
+                        "page's address (Ctrl+L in the browser) and press the "
+                        "shortcut — VoxFox fetches the page itself. Menus, "
+                        "banners and sidebars are always skipped; optionally "
+                        "an AI (Ollama) filters the remaining text further or "
+                        "summarizes it."))
+        box.append(desc)
+
+        self.webread_ai_chk = Gtk.CheckButton(
+            label=_("Use AI (Ollama) to clean up the page text"))
+        self.webread_ai_chk.set_active(bool(wr.get("use_ollama")))
+        self.webread_ai_chk.connect("toggled", self._on_webread_changed)
+        box.append(self.webread_ai_chk)
+
+        mrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        mrow.append(Gtk.Label(label=_("AI mode:"), xalign=0))
+        self.webread_mode_dd = Gtk.DropDown.new_from_strings(
+            [_("Filter only (keep the original sentences)"), _("Summarize")])
+        self.webread_mode_dd.set_selected(
+            1 if wr.get("mode") == "summary" else 0)
+        self.webread_mode_dd.connect("notify::selected",
+                                     self._on_webread_changed)
+        mrow.append(self.webread_mode_dd)
+        box.append(mrow)
+
+        urow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        urow.append(Gtk.Label(label=_("URL:"), xalign=0))
+        self.webread_url = Gtk.Entry(hexpand=True)
+        self.webread_url.set_text(wr.get("url") or vf.DEFAULT_OLLAMA_URL)
+        self.webread_url.connect("changed", self._on_webread_changed)
+        urow.append(self.webread_url)
+        box.append(urow)
+
+        krow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        krow.append(Gtk.Label(label=_("API key:"), xalign=0))
+        self.webread_key = Gtk.Entry(hexpand=True)
+        self.webread_key.set_visibility(False)
+        self.webread_key.set_text(wr.get("api_key") or "")
+        self.webread_key.set_placeholder_text(_("optional"))
+        self.webread_key.connect("changed", self._on_webread_changed)
+        krow.append(self.webread_key)
+        box.append(krow)
+
+        mdrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        mdrow.append(Gtk.Label(label=_("Model:"), xalign=0))
+        self.webread_model = Gtk.Entry(hexpand=True)
+        self.webread_model.set_text(wr.get("model") or vf.DEFAULT_OLLAMA_MODEL)
+        self.webread_model.connect("changed", self._on_webread_changed)
+        mdrow.append(self.webread_model)
+        test = Gtk.Button(label=_("Test connection"))
+        test.connect("clicked", self._on_webread_test)
+        mdrow.append(test)
+        box.append(mdrow)
+
+        self.webread_status = Gtk.Label(xalign=0.0, wrap=True)
+        self.webread_status.add_css_class("dim-label")
+        box.append(self.webread_status)
+
+        hint = Gtk.Label(xalign=0.0, wrap=True, selectable=True)
+        hint.add_css_class("dim-label")
+        hint.set_text(_("Requires a running Ollama with a downloaded model, "
+                        "e.g.: ollama pull llama3.2"))
+        box.append(hint)
+        return frame
+
+    def _on_webread_changed(self, *_a):
+        wr = self.state.setdefault("webread", {})
+        wr["use_ollama"] = bool(self.webread_ai_chk.get_active())
+        wr["mode"] = ("summary" if self.webread_mode_dd.get_selected() == 1
+                      else "filter")
+        wr["url"] = self.webread_url.get_text().strip() or vf.DEFAULT_OLLAMA_URL
+        wr["model"] = (self.webread_model.get_text().strip()
+                       or vf.DEFAULT_OLLAMA_MODEL)
+        wr["api_key"] = self.webread_key.get_text().strip()
+        vf.save_state(self.state)
+
+    def _on_webread_test(self, *_a):
+        url = self.webread_url.get_text().strip() or vf.DEFAULT_OLLAMA_URL
+        self.webread_status.set_text(_("Testing connection..."))
+
+        api_key = self.webread_key.get_text().strip() or None
+
+        def worker():
+            models = vf.ollama_list_models(url, api_key=api_key)
+            def done():
+                if models is None:
+                    self.webread_status.set_text(
+                        _("Ollama not reachable — reading the unfiltered "
+                          "text"))
+                elif not models:
+                    self.webread_status.set_text(
+                        "✓ " + _("Connection OK") + " — " +
+                        _("Requires a running Ollama with a downloaded "
+                          "model, e.g.: ollama pull llama3.2"))
+                else:
+                    self.webread_status.set_text(
+                        "✓ " + _("Connection OK") + ": "
+                        + ", ".join(models[:8]))
+                return False
+            GLib.idle_add(done)
+        threading.Thread(target=worker, daemon=True).start()
+
     def _on_merge_toggled(self, btn):
         on = btn.get_active()
         self.state["merge_lines"] = on
@@ -1526,12 +1642,14 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self._load_scale_css()
         self._fit_to_content()
 
-    def _fit_to_content(self):
+    def _fit_to_content(self, keep_width=False):
         """Shrink the window to the toolbar's current natural size (X11, best-
         effort). GTK4 doesn't auto-shrink a window when its content gets smaller
         (after lowering the UI scale or hiding buttons), so we nudge it via
         wmctrl to keep the window as narrow/short as the visible buttons allow.
-        The window stays resizable; this only removes leftover empty space."""
+        The window stays resizable; this only removes leftover empty space.
+        With keep_width=True only the height shrinks back (used after the
+        status line hides), so a user-widened window keeps its width."""
         if not vf._have("wmctrl"):
             return
 
@@ -1539,6 +1657,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             try:
                 _min, nat = self.get_preferred_size()
                 w, h = max(1, nat.width), max(1, nat.height)
+                if keep_width:
+                    w = max(w, self.get_width())
             except Exception as e:
                 log.debug(f"fit measure failed: {e}")
                 return False
@@ -1687,17 +1807,28 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         return self.state[self._active_slot()]
 
     def set_status(self, msg, duration=2000):
+        # Each new message bumps the sequence number, so a hide-timer from an
+        # older message can't wipe a newer one early.
+        self._status_seq = getattr(self, "_status_seq", 0) + 1
         if msg:
             self.status.set_text(msg)
             self.status.set_visible(True)
             if duration and duration > 0:
-                GLib.timeout_add(duration, self._clear_status)
+                GLib.timeout_add(duration, self._clear_status,
+                                 self._status_seq)
         else:
             self._clear_status()
 
-    def _clear_status(self):
+    def _clear_status(self, seq=None):
+        if seq is not None and seq != getattr(self, "_status_seq", 0):
+            return False   # replaced by a newer status in the meantime
         self.status.set_text("")
         self.status.set_visible(False)
+        # Showing the status grew the window; GTK4 never shrinks it back by
+        # itself, so nudge it back to its natural size once nothing transient
+        # is visible any more.
+        if not self.progress.get_visible():
+            self._fit_to_content(keep_width=True)
         return False
 
     def set_progress(self, fraction, label=None):
@@ -1707,7 +1838,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         return False
 
     def hide_progress(self):
-        return _hide_progress_bar(self.progress)
+        r = _hide_progress_bar(self.progress)
+        if not self.status.get_visible():
+            self._fit_to_content(keep_width=True)
+        return r
 
     def refresh_setup_bar(self):
         self.setup_bar.set_visible(not os.path.exists(vf.PIPER_BIN))
@@ -1937,6 +2071,97 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         dialog.connect("response", on_response)
         dialog.show()
 
+    def do_read_page(self):
+        """Experimental: read a web page aloud. Preferred route: the user
+        selects the page's URL (Ctrl+L in the address bar) and VoxFox fetches
+        it — bus-independent and always explicit about which page is read
+        (the title lands in the status line). Fallback: AT-SPI extraction of
+        the focused browser tab. Stage 2 (Ollama) per Settings → Web page."""
+        wr = self.state.get("webread", {})
+        sel_url = vf.url_from_text(vf.get_selection())
+
+        def refine_and_speak(text, title=""):
+            if wr.get("use_ollama"):
+                mode = wr.get("mode", "filter")
+                msg = (_("Summarizing page with AI...") if mode == "summary"
+                       else _("Filtering page with AI..."))
+                GLib.idle_add(self.set_status, msg, 0)
+                refined = vf.ollama_refine(
+                    text, mode=mode,
+                    url=wr.get("url") or vf.DEFAULT_OLLAMA_URL,
+                    model=wr.get("model") or vf.DEFAULT_OLLAMA_MODEL,
+                    api_key=wr.get("api_key") or None,
+                    progress=lambda i, n: GLib.idle_add(
+                        self.set_status, f"{msg} {i}/{n}", 0))
+                if refined is None:
+                    GLib.idle_add(self.set_status,
+                                  _("Ollama not reachable — reading the "
+                                    "unfiltered text"), 4000)
+                elif not refined.strip():
+                    GLib.idle_add(self.set_status,
+                                  _("Nothing left to read after filtering"))
+                    return
+                else:
+                    text = refined
+            GLib.idle_add(self._after_page_text, text, title)
+
+        if sel_url:
+            self.set_status(f"{_('Fetching page...')} {sel_url[:70]}",
+                            duration=0)
+
+            def worker_url():
+                text, title, err = vf.fetch_page_text(sel_url)
+                if not text and vf.headless_available():
+                    # JS-rendered page or bot wall: retry with a real
+                    # (headless) browser before giving up.
+                    GLib.idle_add(self.set_status,
+                                  _("Opening the page in a background "
+                                    "browser..."), 0)
+                    text, title, err2 = vf.fetch_page_text_headless(sel_url)
+                    if not text and err2 != "no-browser":
+                        err = f"{err}, {err2}"
+                if not text:
+                    detail = f" ({err})" if err else ""
+                    GLib.idle_add(self.set_status,
+                                  _("Could not fetch a readable page from "
+                                    "the selected address") + detail, 6000)
+                    return
+                refine_and_speak(text, title)
+            threading.Thread(target=worker_url, daemon=True).start()
+            return
+
+        # No URL selected → AT-SPI fallback (needs a working bus).
+        if not vf.a11y_bus_reachable():
+            self.set_status(
+                _("Select the page's address first (Ctrl+L in the browser), "
+                  "then press the shortcut again"), duration=6000)
+            return
+        self.set_status(_("Extracting page text..."), duration=0)
+
+        def worker_atspi():
+            text, err = vf.extract_page_text()
+            if not text:
+                GLib.idle_add(
+                    self.set_status,
+                    _("No web page found — focus a browser tab and make sure "
+                      "accessibility is on (Chromium needs "
+                      "--force-renderer-accessibility)"), 6000)
+                return
+            refine_and_speak(text)
+        threading.Thread(target=worker_atspi, daemon=True).start()
+
+    def _after_page_text(self, text, title=""):
+        if vf.merge_enabled():
+            text = vf.merge_wrapped_lines(text)
+        vf.add_history("read", text)
+        threading.Thread(target=vf.speak, args=(text, self._active_cfg()),
+                         daemon=True).start()
+        self._sync_pause_btn()
+        status = _("Reading...")
+        if title:
+            status = f"{status} — {title[:60]}"
+        self.set_status(status, 4000)
+
     def do_ocr_select(self):
         tess = vf._tess_lang(self._active_cfg().get("lang", ""))
         self.set_status(_("Select a region..."), duration=0)
@@ -2089,7 +2314,7 @@ class SetupDialog(Gtk.Window):
         outer.append(self._make_step(
             "shortcuts",
             _("Keyboard shortcuts"),
-            _("Registers the five VoxFox shortcuts on your desktop. Change the "
+            _("Registers the six VoxFox shortcuts on your desktop. Change the "
               "keys first under Settings → Shortcuts if you like."),
             self._sc_btn))
 
@@ -2304,6 +2529,7 @@ class VoxFoxApplication(Gtk.Application):
             ("voxfox --hover-toggle",   _("Toggle hover reading")),
             ("voxfox --whisper-toggle", _("Dictate (speech to text)")),
             ("voxfox --ocr-select",     _("Read a screen region (OCR)")),
+            ("voxfox --read-page",      _("Read web page (experimental)")),
         ]
         shortcuts = [
             ("Super+Z", _("Read selected text")),
@@ -2311,6 +2537,7 @@ class VoxFoxApplication(Gtk.Application):
             ("Super+C", _("Switch language slot")),
             ("Super+W", _("Dictation")),
             ("Super+A", _("OCR region select")),
+            ("Super+V", _("Read web page (experimental)")),
         ]
         cmd_block = "\n".join(f"{cmd}  —  {desc}" for cmd, desc in commands)
         sc_block  = "\n".join(f"{key}  —  {desc}" for key, desc in shortcuts)
@@ -2360,6 +2587,8 @@ def _build_arg_parser():
     g.add_argument("--hover-toggle",  dest="hover_toggle",  action="store_true")
     g.add_argument("--whisper-toggle", dest="whisper_toggle", action="store_true")
     g.add_argument("--ocr-select",    dest="ocr_select",    action="store_true")
+    g.add_argument("--read-page",     dest="read_page",     action="store_true",
+                   help="Read the focused browser page aloud (experimental)")
     g.add_argument("--ocr",           dest="ocr",           metavar="FILE")
     g.add_argument("--status",        dest="status",        action="store_true")
     g.add_argument("--quit",          dest="quit",          action="store_true")
@@ -2405,9 +2634,10 @@ _SHORTCUT_ACTIONS = [
     ("voice",   "VoxFox: switch voice", "voxfox --toggle-slot",    "<Super>c"),
     ("whisper", "VoxFox: dictation",    "voxfox --whisper-toggle", "<Super>w"),
     ("ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
+    ("page",    "VoxFox: read web page", "voxfox --read-page",     "<Super>v"),
 ]
 
-# Short, translatable names for the five actions, shown in the settings
+# Short, translatable names for the actions, shown in the settings
 # Shortcuts tab. Keyed by the action id from _SHORTCUT_ACTIONS.
 _SHORTCUT_LABELS = {
     "read":    "Read",
@@ -2415,6 +2645,7 @@ _SHORTCUT_LABELS = {
     "voice":   "Switch language",
     "whisper": "Dictate",
     "ocr":     "OCR select",
+    "page":    "Read web page",
 }
 
 
@@ -2540,7 +2771,7 @@ def _install_cinnamon_shortcuts(src, state):
                 log.debug(f"clear voxfox slot {slot}: {e}")
             names.remove(slot)
 
-    # 2.5 Allocate fresh numeric slots for the five actions.
+    # 2.5 Allocate fresh numeric slots for the six actions.
     name_set = set(names)
     keys = [a[0] for a in _SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(name_set, len(keys))
@@ -2612,7 +2843,7 @@ def _install_gnome_shortcuts(src, state):
                 log.debug(f"clear voxfox slot {slot_of(p)}: {e}")
             paths.remove(p)
 
-    # 2.5 Allocate fresh numeric slots for the five actions.
+    # 2.5 Allocate fresh numeric slots for the six actions.
     slot_set = {slot_of(p) for p in paths}
     keys = [a[0] for a in _SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(slot_set, len(keys))
@@ -2643,7 +2874,7 @@ def _install_lxqt_shortcuts(src, state):
     named '<KeySeq>.<N>', with '+' encoded as %2B and N a unique index, holding
     Comment / Enabled / Exec — where Exec is comma-separated ('voxfox, --read')
     and the Super key is spelled 'Meta'. On each install we drop our own old
-    sections (matched by Exec) and write the current five, preserving any
+    sections (matched by Exec) and write the current six, preserving any
     sections the user added themselves, then let the daemon's file-watcher
     reload. This makes changing a shortcut replace its old key. No-op outside
     LXQt. `src` is unused (LXQt doesn't use GSettings); kept for a uniform
@@ -2724,7 +2955,7 @@ def _install_xfce_shortcuts(state):
     The `state` parameter is unused (no numeric-slot tracking needed here);
     kept for a uniform installer signature. On each install we first remove any
     existing custom binding that runs one of our commands (whatever key it is
-    on), then write the current five — so changing a shortcut replaces the old
+    on), then write the current six — so changing a shortcut replaces the old
     key instead of leaving it bound. No-op when not on XFCE or xfconf-query is
     unavailable."""
     desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
@@ -2762,7 +2993,7 @@ def _install_xfce_shortcuts(state):
         except Exception:
             pass
 
-    # Write the current five.
+    # Write the current six.
     written = 0
     for key, _label, cmd, binding in _SHORTCUT_ACTIONS:
         # XFCE uses the same accelerator format as the stored binding.
@@ -2810,6 +3041,7 @@ def _install_shortcuts(state):
         Super+C  switch voice  (voxfox --toggle-slot)
         Super+W  dictation     (voxfox --whisper-toggle)
         Super+A  OCR select    (voxfox --ocr-select)
+        Super+V  read web page (voxfox --read-page)
 
     On GNOME and Cinnamon these are written as custom keybindings via GSettings
     (numeric customN slots tracked in `state`, legacy voxfox-* names migrated,
@@ -2932,7 +3164,7 @@ def main():
     # Action flags → forward to the running instance and exit (no GUI).
     if any([args.read, args.stop, args.pause, args.toggle_slot,
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
-            args.ocr, args.status, args.quit]):
+            args.read_page, args.ocr, args.status, args.quit]):
         vf.run_cli(args)
         return
 

@@ -18,7 +18,7 @@ mistake.
 ## Installation
 
 ```bash
-sudo apt install ./voxfox_3.4_all.deb
+sudo apt install ./voxfox_3.5_all.deb
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
@@ -313,7 +313,7 @@ voxfox --verbose          # Enable debug logging
 
 ## Keyboard shortcuts
 
-VoxFox can register five global shortcuts for you, but never does so
+VoxFox can register six global shortcuts for you, but never does so
 automatically — some desktops already use these keys for other things. Open
 **Settings → Shortcuts**, optionally change any combination (click it and press
 the keys you want), then choose **Install shortcuts**. They are written to your
@@ -322,7 +322,7 @@ briefly reloaded so the new keys take effect immediately). **Reset to defaults**
 restores the originals, and you can always change or remove them later in your
 desktop's own keyboard settings.
 
-The five installable actions and their defaults:
+The six installable actions and their defaults:
 
 | Action          | Command                   | Default   |
 |-----------------|---------------------------|-----------|
@@ -331,11 +331,44 @@ The five installable actions and their defaults:
 | Switch language | `voxfox --toggle-slot`    | `Super+C` |
 | Dictate         | `voxfox --whisper-toggle` | `Super+W` |
 | OCR select      | `voxfox --ocr-select`     | `Super+A` |
+| Read web page   | `voxfox --read-page`      | `Super+V` |
 
 You can also run `voxfox --install-shortcuts` from a terminal. Other commands
 (`voxfox --pause`, `voxfox --hover-toggle`) aren't in the installer but can be
 bound by hand in your desktop's keyboard settings — every press calls the
 running instance via the CLI flags above.
+
+## Reading a web page (experimental)
+
+Select the page's address — `Ctrl+L` in the browser highlights the address
+bar — and press `Super+V` (or run `voxfox --read-page`). VoxFox fetches the
+page itself and reads the article aloud; the page title appears in the status
+line so it is always clear which page is being read. Any selected text
+containing a URL works, so a link in an e-mail or document is fine too.
+
+Extraction happens in two stages:
+
+1. The main content is extracted structurally: menus, banners, sidebars,
+   footers and scripts are skipped, and a `<main>`/`<article>` section wins
+   when the page marks one up. No AI involved, nothing is ever invented.
+2. Optionally an **AI (Ollama)** refines what is left, configured under
+   **Settings → Web page**: *Filter only* keeps the original sentences and
+   strips leftover adverts and snippets of other articles; *Summarize* reads
+   a spoken-friendly summary instead.
+
+Stage 2 needs a running [Ollama](https://ollama.com) with a downloaded model
+(for example `ollama pull llama3.2`). The URL, an optional **API key** (sent
+as a Bearer token, for Ollama behind a reverse proxy on another machine) and
+the model name are configurable; *Test connection* lists the models it finds.
+If Ollama is unreachable, VoxFox falls back to the stage-1 text.
+
+Notes: the fetch sees the page as an anonymous visitor, so content behind a
+login can differ from what the browser shows. Pages that only render with
+JavaScript are retried automatically in a headless (invisible) Chromium when
+one is installed — Chromium, Chrome, Brave and Edge are detected.
+Without a selected URL, VoxFox falls back to reading the focused tab over
+AT-SPI (needs the accessibility bus; Chromium needs
+`--force-renderer-accessibility`).
 
 ## Adjusting speed
 
@@ -348,10 +381,11 @@ speed-listening for most people once you're used to the voice.
 The interface follows **Slot 1's language**: set it to German and the buttons,
 tooltips, menus and status messages switch to German; set it to French and
 everything switches to French. English, Dutch, German, French, Spanish, Italian,
-Portuguese, Chinese and Arabic ship out of the box. Choosing Arabic also flips
-the whole interface to right-to-left. Chinese and Arabic have Piper speech
-voices and work for dictation and OCR too — for OCR install the matching
-Tesseract pack (`tesseract-ocr-chi-sim` or `tesseract-ocr-ara`).
+Portuguese, Chinese, Arabic and Greek ship out of the box. Choosing Arabic also flips
+the whole interface to right-to-left. Chinese, Arabic and Greek have Piper
+speech voices and work for dictation and OCR too — for OCR install the
+matching Tesseract pack (`tesseract-ocr-chi-sim`, `tesseract-ocr-ara` or
+`tesseract-ocr-ell`).
 
 Translation files live in `~/.piper/locales/`, one JSON per language. To improve
 a translation or add a language: copy `en.json` to `<code>.json`, set

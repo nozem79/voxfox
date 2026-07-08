@@ -27,4 +27,5 @@ from .tts import *  # noqa: F401,F403
 from .stt import *  # noqa: F401,F403
 from .ocr import *  # noqa: F401,F403
 from .a11y import *  # noqa: F401,F403
+from .webread import *  # noqa: F401,F403
 from .ipc import *  # noqa: F401,F403

@@ -205,6 +205,7 @@ PIPER_LANG_TO_CODE = {
     "Portuguese": "pt",
     "Chinese":    "zh",
     "Arabic":     "ar",
+    "Greek":      "el",
 }
 
 
@@ -223,6 +224,7 @@ PIPER_LANG_NATIVE = {
     "Portuguese": "Português",
     "Chinese":    "中文",
     "Arabic":     "العربية",
+    "Greek":      "Ελληνικά",
 }
 
 
@@ -321,6 +323,7 @@ DEFAULT_VOICE_FOR_LANG = {
     "Portuguese": "pt_BR-faber-medium",
     "Chinese":    "zh_CN-huayan-medium",
     "Arabic":     "ar_JO-kareem-medium",
+    "Greek":      "el_GR-rapunzelina-low",
 }
 
 

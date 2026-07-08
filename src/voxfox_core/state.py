@@ -79,6 +79,15 @@ DEFAULT_STATE = {
     # default" (see _SHORTCUT_ACTIONS in the GTK layer). Shortcuts are no longer
     # auto-installed; the user picks keys and installs them from the settings.
     "shortcut_bindings": {},
+    # Experimental "read web page" (webread.py): stage 2 (Ollama) is off by
+    # default; mode is "filter" (keep original sentences) or "summary".
+    "webread": {
+        "use_ollama": False,
+        "mode": "filter",
+        "url": "http://localhost:11434",
+        "model": "llama3.2",
+        "api_key": "",
+    },
 }
 
 
@@ -146,6 +155,10 @@ def load_state():
             s.setdefault("ui_layout",
                          copy.deepcopy(DEFAULT_STATE["ui_layout"]))
             s.setdefault("shortcut_bindings", {})
+            s.setdefault("webread",
+                         copy.deepcopy(DEFAULT_STATE["webread"]))
+            for k, v in DEFAULT_STATE["webread"].items():
+                s["webread"].setdefault(k, v)
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).

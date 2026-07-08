@@ -15,7 +15,7 @@ nette labels voor schermlezers.
 ## Installatie
 
 ```bash
-sudo apt install ./voxfox_3.4_all.deb
+sudo apt install ./voxfox_3.5_all.deb
 ```
 
 `apt` haalt de afhankelijkheden automatisch op. Start VoxFox daarna via het
@@ -25,8 +25,8 @@ toepassingenmenu, of met het commando `voxfox` in een terminal.
 > de download "door root en niet in een sandbox gebeurt, omdat `_apt` het
 > bestand niet kon benaderen". Dit is onschuldig — de installatie wordt gewoon
 > voltooid. Wil je de melding voorkomen, installeer dan vanaf een map die voor
-> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_3.4_all.deb /tmp/ &&
-> sudo apt install /tmp/voxfox_3.4_all.deb`.
+> iedereen leesbaar is, bijvoorbeeld `sudo cp voxfox_3.5_all.deb /tmp/ &&
+> sudo apt install /tmp/voxfox_3.5_all.deb`.
 
 ### Wat het pakket installeert
 
@@ -185,7 +185,7 @@ daar kan het zonder effect blijven.
 
 ## Sneltoetsen
 
-VoxFox kan vijf globale sneltoetsen voor je installeren — open
+VoxFox kan zes globale sneltoetsen voor je installeren — open
 **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie door erop te
 klikken en de toetsen in te drukken, en kies dan **Sneltoetsen installeren**.
 Dit werkt op Cinnamon, GNOME, LXQt en XFCE; er wordt niets automatisch
@@ -198,6 +198,7 @@ geïnstalleerd. Standaardtoetsen:
 | `voxfox --toggle-slot`     | Taal wisselen                | `Super+C` |
 | `voxfox --whisper-toggle`  | Dicteren (spraak naar tekst) | `Super+W` |
 | `voxfox --ocr-select`      | Schermgebied voorlezen (OCR) | `Super+A` |
+| `voxfox --read-page`       | Webpagina voorlezen (experimenteel) | `Super+V` |
 
 `voxfox --install-shortcuts` doet hetzelfde vanuit een terminal. Overige
 commando's (`voxfox --pause`, `voxfox --hover-toggle`) kun je handmatig koppelen
