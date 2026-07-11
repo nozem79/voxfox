@@ -15,8 +15,16 @@ horen.
 
 ## Installatie
 
+**Debian, Ubuntu, Linux Mint** (en andere Debian-gebaseerde distributies):
+
 ```bash
 sudo apt install ./voxfox_3.5_all.deb
+```
+
+**Fedora** (en andere RPM-gebaseerde distributies):
+
+```bash
+sudo dnf install ./voxfox-3.5-1.noarch.rpm
 ```
 
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
@@ -445,11 +453,13 @@ Per gebruiker bij het eerste gebruik gedownload: de Piper-engine en -stemmen, en
 
 ## Ondersteunde systemen
 
-Debian, Ubuntu, Linux Mint en afgeleiden met GTK4. X11 geeft het volledige
-pakket aan functies (zweven, altijd-bovenop, schermgebied kiezen via
-`xdotool`/schermafdruktools). Wayland werkt voor het kern-voorlezen en dicteren,
-maar altijd-bovenop en delen van zweven hangen af van de compositor en kunnen
-beperkt zijn.
+Debian, Ubuntu, Linux Mint en afgeleiden met GTK4 (via de `.deb`), en Fedora
+(via de `.rpm`, getest op Fedora Workstation; andere RPM-distributies zoals
+openSUSE kunnen andere pakketnamen nodig hebben en zijn niet getest). X11 geeft
+het volledige pakket aan functies (zweven, altijd-bovenop, schermgebied kiezen
+via `xdotool`/schermafdruktools). Wayland werkt voor het kern-voorlezen en
+dicteren, maar altijd-bovenop en delen van zweven hangen af van de compositor en
+kunnen beperkt zijn.
 
 ## Voor ontwikkelaars
 

@@ -17,8 +17,16 @@ mistake.
 
 ## Installation
 
+**Debian, Ubuntu, Linux Mint** (and other Debian-based distributions):
+
 ```bash
 sudo apt install ./voxfox_3.5_all.deb
+```
+
+**Fedora** (and other RPM-based distributions):
+
+```bash
+sudo dnf install ./voxfox-3.5-1.noarch.rpm
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
@@ -430,7 +438,10 @@ Downloaded per user on first use: the Piper engine and voices, and
 
 ## Supported systems
 
-Debian, Ubuntu, Linux Mint and derivatives with GTK4. X11 gives the full
+Debian, Ubuntu, Linux Mint and derivatives with GTK4 (via the `.deb`), and
+Fedora (via the `.rpm`, tested on Fedora Workstation; other RPM-based
+distributions such as openSUSE may need different dependency names and are
+untested). X11 gives the full
 feature set (hover, always-on-top, region select via `xdotool`/screenshot
 tools). Wayland works for the core reading and dictation, but always-on-top and
 parts of hover depend on the compositor and may be limited.

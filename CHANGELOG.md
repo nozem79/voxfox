@@ -1,5 +1,8 @@
 ## 3.5
 
+- An experimental RPM package (voxfox-x.y-1.noarch.rpm, built with
+  packaging/build-rpm.sh) brings VoxFox to Fedora; tested on Fedora
+  Workstation. The .deb remains the primary package.
 - Added Greek as the tenth interface language, with Piper speech
   (el_GR-rapunzelina), dictation and OCR support (install the
   tesseract-ocr-ell pack for OCR).
