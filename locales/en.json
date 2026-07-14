@@ -228,5 +228,21 @@
   "Fetching page...": "Fetching page...",
   "Could not fetch a readable page from the selected address": "Could not fetch a readable page from the selected address",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "Select the page's address first (Ctrl+L in the browser), then press the shortcut again",
-  "Opening the page in a background browser...": "Opening the page in a background browser..."
+  "Opening the page in a background browser...": "Opening the page in a background browser...",
+  "Import dictionary…": "Import dictionary…",
+  "Export dictionary…": "Export dictionary…",
+  "Load bundled dictionary": "Load bundled dictionary",
+  "Dictionary loaded: %s new, %s updated": "Dictionary loaded: %s new, %s updated",
+  "Dictionary exported": "Dictionary exported",
+  "Not a valid VoxFox dictionary file": "Not a valid VoxFox dictionary file",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "Export your dictionary to share it, or import one from another user or from voxfox.nl.",
+  "Setup incomplete: %s": "Setup incomplete: %s",
+  "Confirm transcription": "Confirm transcription",
+  "Review the text before it is typed:": "Review the text before it is typed:",
+  "Insert": "Insert",
+  "Cancel": "Cancel",
+  "Cancelled": "Cancelled",
+  "Previous microphone not found — using the default": "Previous microphone not found — using the default",
+  "Transcription copied — press Ctrl+V to paste": "Transcription copied — press Ctrl+V to paste",
+  "Review the text, then copy it and paste with Ctrl+V:": "Review the text, then copy it and paste with Ctrl+V:"
 }

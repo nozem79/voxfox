@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import platform
+import hashlib
 import tarfile
 import argparse
 import threading
@@ -53,9 +54,24 @@ SYSTEM_DATA_DIR = "/usr/share/voxfox"
 SYSTEM_LOCALES  = os.path.join(SYSTEM_DATA_DIR, "locales")
 SYSTEM_ICON     = "/usr/share/icons/hicolor/256x256/apps/voxfox.png"
 
-PIPER_RELEASE = "https://github.com/rhasspy/piper/releases/latest/download"
+PIPER_VERSION = "2023.11.14-2"
+PIPER_RELEASE = ("https://github.com/rhasspy/piper/releases/download/"
+                 + PIPER_VERSION)
+# SHA-256 per asset, verified before extraction when present. Fill these in
+# once (they never change for a pinned release) by running, on a machine that
+# can reach GitHub:
+#   packaging/pin_piper_hashes.py
+# An empty dict means "download without checksum verification" — extraction is
+# still hardened against tar-slip, so this is safe but not supply-chain-proof.
+PIPER_SHA256 = {
+    "piper_linux_x86_64.tar.gz":  "a50cb45f355b7af1f6d758c1b360717877ba0a398cc8cbe6d2a7a3a26e225992",
+    "piper_linux_aarch64.tar.gz": "fea0fd2d87c54dbc7078d0f878289f404bd4d6eea6e7444a77835d1537ab88eb",
+    "piper_linux_armv7l.tar.gz":  "c6946fcd57c705ed1d4666ea880f80ba0bbbd14de62ecbdd13460baf3bac8e37",
+}
+
+
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.5"
+APP_VERSION = "3.6"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -152,8 +168,40 @@ def _piper_asset():
     }.get(m)
 
 
+def _safe_extract_piper(tar, dest):
+    """Extract the Piper tarball safely, stripping the leading 'piper/' dir.
+
+    Guards against tar-slip: rejects absolute paths, '..' traversal, symlinks,
+    hardlinks and device/special members. Only regular files and directories
+    are written, and every destination is confirmed to stay within `dest`."""
+    dest = os.path.realpath(dest)
+    for member in tar.getmembers():
+        parts = member.name.split("/", 1)
+        if len(parts) < 2 or not parts[1]:
+            continue
+        name = parts[1]
+        # No absolute paths or parent-directory traversal.
+        if name.startswith("/") or os.path.isabs(name) \
+                or ".." in name.split("/"):
+            raise ValueError(f"unsafe path in archive: {member.name!r}")
+        # No links or device/special files — only plain files and dirs.
+        if member.issym() or member.islnk():
+            raise ValueError(f"link member not allowed: {member.name!r}")
+        if not (member.isfile() or member.isdir()):
+            raise ValueError(f"special member not allowed: {member.name!r}")
+        target = os.path.realpath(os.path.join(dest, name))
+        if target != dest and not target.startswith(dest + os.sep):
+            raise ValueError(f"path escapes destination: {member.name!r}")
+        member.name = name
+        tar.extract(member, dest)
+
+
 def install_piper(progress=lambda m: None, frac=lambda *_a: None):
-    """Download the Piper binary for this architecture into ~/.piper."""
+    """Download the Piper binary for this architecture into ~/.piper.
+
+    The download is pinned to PIPER_VERSION. When a SHA-256 is known for the
+    architecture (PIPER_SHA256), it is verified before extraction; extraction
+    itself is always hardened against tar-slip (see _safe_extract_piper)."""
     if os.path.exists(vf.PIPER_BIN):
         progress(_("Piper already installed"))
         return True, "ok"
@@ -163,9 +211,13 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
     os.makedirs(vf.PIPER_DIR, exist_ok=True)
     url = f"{PIPER_RELEASE}/{asset}"
     progress(_("Downloading Piper engine..."))
+    tmp = None
     try:
-        tmp = os.path.join(tempfile.gettempdir(), asset)
-        with urllib.request.urlopen(url, timeout=60) as r, open(tmp, "wb") as f:
+        # Unique temp file in a private dir, never a predictable name.
+        fd, tmp = tempfile.mkstemp(prefix="voxfox-piper-", suffix=".tar.gz")
+        hasher = hashlib.sha256()
+        with urllib.request.urlopen(url, timeout=60) as r, \
+                os.fdopen(fd, "wb") as f:
             total = int(r.headers.get("Content-Length") or 0)
             done = 0
             while True:
@@ -173,30 +225,42 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
                 if not chunk:
                     break
                 f.write(chunk)
+                hasher.update(chunk)
                 done += len(chunk)
                 if total:
                     frac(done / total, "Piper")
+
+        # Verify the checksum when we have one pinned for this asset.
+        expected = PIPER_SHA256.get(asset)
+        if expected:
+            got = hasher.hexdigest()
+            if got != expected:
+                return False, (f"checksum mismatch for {asset}: "
+                               f"expected {expected[:12]}…, got {got[:12]}…")
+
         progress(_("Extracting Piper..."))
-        # The tarball has a leading "piper/" directory; strip it.
         with tarfile.open(tmp, "r:gz") as tar:
-            for member in tar.getmembers():
-                parts = member.name.split("/", 1)
-                if len(parts) < 2 or not parts[1]:
-                    continue
-                member.name = parts[1]
-                tar.extract(member, vf.PIPER_DIR)
-        os.unlink(tmp)
-        if os.path.exists(vf.PIPER_BIN):
-            try:
-                os.chmod(vf.PIPER_BIN, 0o755)
-            except OSError:
-                # Some filesystems can't store the Unix exec bit (e.g. FAT32 on
-                # removable media); such mounts usually expose files as
-                # executable already, so don't fail the whole install over it.
-                pass
+            _safe_extract_piper(tar, vf.PIPER_DIR)
+
+        # Confirm we actually got a real, regular Piper binary.
+        if not os.path.isfile(vf.PIPER_BIN) or os.path.islink(vf.PIPER_BIN):
+            return False, "Piper binary missing after extraction"
+        try:
+            os.chmod(vf.PIPER_BIN, 0o755)
+        except OSError:
+            # Some filesystems can't store the Unix exec bit (e.g. FAT32 on
+            # removable media); such mounts usually expose files as
+            # executable already, so don't fail the whole install over it.
+            pass
         return True, "ok"
     except Exception as e:
         return False, str(e)
+    finally:
+        if tmp and os.path.exists(tmp):
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
@@ -212,6 +276,7 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
                 keys.append(v)
     except Exception as e:
         log.debug(f"slot voice lookup skipped: {e}")
+    failed = []
     for key in keys:
         if key in vf.get_local_voices():
             continue
@@ -219,6 +284,9 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
         ok, msg = vf.download_voice(key, progress_cb=progress, frac_cb=frac)
         if not ok:
             log.warning(f"Voice {key} failed: {msg}")
+            failed.append(key)
+    if failed:
+        return False, "voices failed: " + ", ".join(failed)
     return True, "ok"
 
 
@@ -246,9 +314,11 @@ def install_python_extras(progress=lambda m: None):
         except Exception:
             return False
 
+    problems = []
     if not have("faster_whisper"):
         if not _pip_install(["faster-whisper"], progress):
             progress(_("faster-whisper install failed (dictation disabled)"))
+            problems.append("faster-whisper")
     # Pillow usually comes from apt (python3-pil); pip-install only if missing.
     ocr_pkgs = []
     if not have("pytesseract"):
@@ -257,17 +327,30 @@ def install_python_extras(progress=lambda m: None):
         ocr_pkgs.append("pillow")
     if ocr_pkgs and not _pip_install(ocr_pkgs, progress):
         progress(_("OCR Python packages failed to install"))
+        problems.append("OCR (" + ", ".join(ocr_pkgs) + ")")
+    if problems:
+        return False, "extras failed: " + "; ".join(problems)
     return True, "ok"
 
 
 def run_setup(progress=lambda m: None, want_extras=True, frac=lambda *_a: None):
-    """Install everything needed on a fresh machine. Safe to re-run."""
+    """Install everything needed on a fresh machine. Safe to re-run.
+    Returns (ok, msg): ok is False when any component failed, with msg naming
+    the components so the GUI and CLI can report a real result."""
+    problems = []
     ok, msg = install_piper(progress, frac)
     if not ok:
+        # Without the engine the rest is pointless — report and stop.
         return False, f"Piper: {msg}"
-    install_default_voices(progress, frac)
+    ok, msg = install_default_voices(progress, frac)
+    if not ok:
+        problems.append(msg)
     if want_extras:
-        install_python_extras(progress)
+        ok, msg = install_python_extras(progress)
+        if not ok:
+            problems.append(msg)
+    if problems:
+        return False, "; ".join(problems)
     progress(_("Setup complete"))
     return True, "ok"
 
@@ -631,14 +714,14 @@ class PreferencesWindow(Gtk.Window):
                              Gtk.Label(label=_("Dictation")))
         notebook.append_page(_page(self._pronunciation_group()),
                              Gtk.Label(label=_("Pronunciation")))
-        notebook.append_page(_page(self._misc_group()),
-                             Gtk.Label(label=_("Misc")))
-        notebook.append_page(_page(self._interface_group()),
-                             Gtk.Label(label=_("Interface")))
         notebook.append_page(_page(self._shortcuts_group()),
                              Gtk.Label(label=_("Shortcuts")))
         notebook.append_page(_page(self._webread_group()),
                              Gtk.Label(label=_("Web page")))
+        notebook.append_page(_page(self._interface_group()),
+                             Gtk.Label(label=_("Interface")))
+        notebook.append_page(_page(self._misc_group()),
+                             Gtk.Label(label=_("Misc")))
         self.set_child(notebook)
 
         self.connect("close-request", self._on_close)
@@ -1195,8 +1278,121 @@ class PreferencesWindow(Gtk.Window):
         add_btn = Gtk.Button(label=_("Add rule"))
         add_btn.connect("clicked", lambda *_a: self._add_pron_row("", ""))
         btnrow.append(add_btn)
+        imp = Gtk.Button(label=_("Import dictionary…"))
+        imp.connect("clicked", self._on_dict_import)
+        btnrow.append(imp)
+        exp = Gtk.Button(label=_("Export dictionary…"))
+        exp.connect("clicked", self._on_dict_export)
+        btnrow.append(exp)
+        if self._bundled_dict_path():
+            bnd = Gtk.Button(label=_("Load bundled dictionary"))
+            bnd.connect("clicked", self._on_dict_bundled)
+            btnrow.append(bnd)
         box.append(btnrow)
+
+        share = Gtk.Label(xalign=0.0)
+        share.set_wrap(True)
+        share.add_css_class("dim-label")
+        share.set_text(_("Export your dictionary to share it, or import one "
+                         "from another user or from voxfox.nl."))
+        box.append(share)
         return frame
+
+    # ── dictionary files: import / export / bundled ──────────────────────────
+    def _bundled_dict_path(self):
+        """Path of the bundled community dictionary for slot 1's language,
+        or None when there is none."""
+        d = vf.system_dicts_dir()
+        if not d:
+            return None
+        code = vf.ui_code_for_piper_lang(self._pron_lang)
+        p = os.path.join(d, f"{code}.json")
+        return p if os.path.isfile(p) else None
+
+    def _on_dict_export(self, _btn):
+        dlg = Gtk.FileChooserNative.new(
+            _("Export dictionary…"), self, Gtk.FileChooserAction.SAVE,
+            None, None)
+        code = vf.ui_code_for_piper_lang(self._pron_lang)
+        dlg.set_current_name(f"voxfox-dict-{code}.json")
+        dlg.set_modal(True)
+        dlg.connect("response", self._dict_export_response)
+        self._file_dlg = dlg
+        dlg.show()
+
+    def _dict_export_response(self, dlg, resp):
+        if resp == Gtk.ResponseType.ACCEPT and dlg.get_file():
+            path = dlg.get_file().get_path()
+            try:
+                self._save_pron()
+                rules = self.state.get("pronunciations", {}).get(
+                    self._pron_lang, {})
+                vf.save_dict_file(path, self._pron_lang, rules)
+                self.win.set_status(_("Dictionary exported"))
+            except Exception as e:
+                self.win.set_status(f"{_('Export failed')}: {e}")
+        dlg.destroy()
+
+    def _on_dict_import(self, _btn):
+        dlg = Gtk.FileChooserNative.new(
+            _("Import dictionary…"), self, Gtk.FileChooserAction.OPEN,
+            None, None)
+        dlg.set_modal(True)
+        dlg.connect("response", self._dict_import_response)
+        self._file_dlg = dlg
+        dlg.show()
+
+    def _dict_import_response(self, dlg, resp):
+        if resp == Gtk.ResponseType.ACCEPT and dlg.get_file():
+            self._merge_dict_file(dlg.get_file().get_path())
+        dlg.destroy()
+
+    def _on_dict_bundled(self, _btn):
+        path = self._bundled_dict_path()
+        if path:
+            self._merge_dict_file(path)
+
+    def _merge_dict_file(self, path):
+        """Merge a dictionary file into the state. Rules land under the
+        language named in the file (falling back to slot 1's language); new
+        words are added and existing words are updated, and the visible list
+        refreshes when the current language was affected."""
+        try:
+            file_lang, rules = vf.load_dict_file(path)
+        except Exception:
+            self.win.set_status(_("Not a valid VoxFox dictionary file"))
+            return
+        # Capture unsaved edits in the visible rows first.
+        self._save_pron()
+        target = file_lang if file_lang in vf.PIPER_LANG_TO_CODE \
+            else self._pron_lang
+        pron = self.state.setdefault("pronunciations", {})
+        cur = pron.setdefault(target, {})
+        new = sum(1 for k in rules if k not in cur)
+        upd = sum(1 for k in rules if k in cur and cur[k] != rules[k])
+        cur.update(rules)
+        if not cur:
+            del pron[target]
+        vf.save_state(self.state)
+        vf.set_pronunciations(pron)
+        if target == self._pron_lang:
+            self._reload_pron_rows()
+        self.win.set_status(
+            _("Dictionary loaded: %s new, %s updated") % (new, upd))
+
+    def _reload_pron_rows(self):
+        """Rebuild the rule list from the state (after an import)."""
+        while True:
+            row = self.pron_list.get_row_at_index(0)
+            if row is None:
+                break
+            self.pron_list.remove(row)
+        self._pron_rows = []
+        existing = self.state.get("pronunciations", {}).get(self._pron_lang, {})
+        for word, repl in existing.items():
+            self._add_pron_row(word, repl)
+        if not self._pron_rows:
+            self._add_pron_row("", "")
 
     def _add_pron_row(self, word, repl):
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -1517,10 +1713,24 @@ class PreferencesWindow(Gtk.Window):
             self._save_w("mic_id", self._mic_options[idx][0])
 
     def _on_mic_refresh(self, _btn):
+        cur_id = self.state["whisper"].get("mic_id", "")
         self._mic_options = vf.list_microphones()
         self._mic_labels  = [lbl for (_id, lbl) in self._mic_options]
+        # Keep the current mic selected if it's still present; otherwise fall
+        # back to the first entry and tell the user it's gone.
+        keep = None
+        for _id, lbl in self._mic_options:
+            if _id == cur_id and cur_id:
+                keep = lbl
+                break
         _set_dropdown_items(self.mic_dd, self._mic_labels,
-                            self._mic_labels[0] if self._mic_labels else None)
+                            keep or (self._mic_labels[0]
+                                     if self._mic_labels else None))
+        if cur_id and keep is None:
+            self._save_w("mic_id", self._mic_options[0][0]
+                         if self._mic_options else "")
+            self.win.set_status(
+                _("Previous microphone not found — using the default"))
 
     def _on_confirm_toggled(self, btn):
         self._save_w("confirm_before_typing", btn.get_active())
@@ -1569,7 +1779,7 @@ class PreferencesWindow(Gtk.Window):
                 msg = f"✓ {_('Connection OK')} — {ok_text}"
             def _show(m=msg):
                 self.test_result_lbl.set_text(m)
-                self.win.set_status(m, 8)
+                self.win.set_status(m, 8000)
             GLib.idle_add(_show)
         threading.Thread(target=worker, daemon=True).start()
 
@@ -1933,13 +2143,18 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self.set_status(_("Setting up..."), duration=0)
 
         def worker():
-            run_setup(progress=lambda m: GLib.idle_add(self.set_status, m, 0),
-                      frac=lambda fr, lbl=None: GLib.idle_add(
-                          self.set_progress, fr, lbl))
+            ok, msg = run_setup(
+                progress=lambda m: GLib.idle_add(self.set_status, m, 0),
+                frac=lambda fr, lbl=None: GLib.idle_add(
+                    self.set_progress, fr, lbl))
             def done():
                 self.reload_active_controls()
                 self.hide_progress()
-                self.set_status(_("Setup complete"))
+                if ok:
+                    self.set_status(_("Setup complete"))
+                else:
+                    self.set_status(
+                        _("Setup incomplete: %s") % msg, duration=8000)
                 self.refresh_setup_bar()
                 if on_done:
                     on_done()
@@ -2024,13 +2239,12 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             if not text:
                 self.root.after(0, self.set_status, _("No speech detected"))
                 return
-            ok2, msg2 = vf.type_or_paste_text(text)
-            if not ok2:
-                self.root.after(0, self.set_status, f"{_('Type failed')}: {msg2}")
-                return
-            vf.add_history("dictate", text)
-            preview = text if len(text) <= 40 else text[:40] + "..."
-            self.root.after(0, self.set_status, f"✓ {preview}")
+            if w.get("confirm_before_typing", False):
+                # Show the transcription for review before it is typed. The
+                # dialog must run on the GUI thread.
+                self.root.after(0, self._confirm_transcription, text)
+            else:
+                self._deliver_transcription(text)
         except Exception as e:
             log.error(f"Whisper worker: {e}")
             self.root.after(0, self.set_status, f"{_('Error')}: {e}")
@@ -2042,6 +2256,75 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                     pass
             self.root.after(0, self.hide_progress)
             self.root.after(0, self._whisper_reset_btn)
+
+    def _deliver_transcription(self, text):
+        """Type or paste the (possibly edited) transcription and record it."""
+        if not text:
+            return
+        ok2, msg2 = vf.type_or_paste_text(text)
+        if not ok2:
+            self.root.after(0, self.set_status,
+                            f"{_('Type failed')}: {msg2}")
+            return
+        vf.add_history("dictate", text)
+        preview = text if len(text) <= 40 else text[:40] + "..."
+        self.root.after(0, self.set_status, f"✓ {preview}")
+
+    def _confirm_transcription(self, text):
+        """Preview dialog shown after dictation when 'Confirm transcription
+        before typing' is on. The user can edit the text and copy it to the
+        clipboard, then paste it wherever they want with Ctrl+V. Copying
+        (rather than typing) avoids the window-focus problem where the text
+        would otherwise land in VoxFox's own window."""
+        dlg = Gtk.Dialog(title=_("Confirm transcription"), modal=True)
+        try:
+            dlg.set_transient_for(self)
+        except Exception:
+            pass
+        dlg.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+        cp = dlg.add_button(_("Copy"), Gtk.ResponseType.OK)
+        cp.add_css_class("suggested-action")
+        dlg.set_default_response(Gtk.ResponseType.OK)
+
+        box = dlg.get_content_area()
+        box.set_margin_top(12)
+        box.set_margin_bottom(12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+        box.set_spacing(8)
+        box.append(Gtk.Label(
+            label=_("Review the text, then copy it and paste with Ctrl+V:"),
+            xalign=0.0))
+        tv = Gtk.TextView(wrap_mode=Gtk.WrapMode.WORD_CHAR)
+        tv.get_buffer().set_text(text)
+        tv.set_size_request(360, 120)
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_child(tv)
+        scroller.set_min_content_height(120)
+        box.append(scroller)
+
+        def on_response(d, resp):
+            if resp == Gtk.ResponseType.OK:
+                buf = tv.get_buffer()
+                edited = buf.get_text(buf.get_start_iter(),
+                                      buf.get_end_iter(), False).strip()
+                d.destroy()
+                if edited:
+                    if vf._clipboard_set(edited):
+                        vf.add_history("dictate", edited)
+                        self.set_status(
+                            _("Transcription copied — press Ctrl+V to paste"),
+                            8000)
+                    else:
+                        self.set_status(_("Copy failed"))
+                else:
+                    self.set_status(_("Cancelled"))
+            else:
+                d.destroy()
+                self.set_status(_("Cancelled"))
+        dlg.connect("response", on_response)
+        dlg.present()
+        return False
 
     def _whisper_reset_btn(self):
         self.whisper_on = False
@@ -2055,7 +2338,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         flt = Gtk.FileFilter()
         flt.set_name(_("Documents and images"))
         for pat in ("*.pdf", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff",
-                    "*.gif", "*.webp"):
+                    "*.webp"):
             flt.add_pattern(pat)
         dialog.add_filter(flt)
 
@@ -3145,7 +3428,7 @@ def main():
     if args.setup:
         ok, msg = run_setup(progress=lambda m: print(f"  {m}"))
         print("Setup complete." if ok else f"Setup failed: {msg}")
-        return
+        return 0 if ok else 1
 
     # Manual (re)install of the desktop keyboard shortcuts.
     if args.install_shortcuts:
@@ -3159,22 +3442,22 @@ def main():
         print("Shortcuts installed." if ok
               else "Could not install shortcuts on this desktop "
                    "(no supported method found).")
-        return
+        return 0 if ok else 1
 
     # Action flags → forward to the running instance and exit (no GUI).
     if any([args.read, args.stop, args.pause, args.toggle_slot,
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
             args.read_page, args.ocr, args.status, args.quit]):
         vf.run_cli(args)
-        return
+        return 0
 
     if vf.is_instance_running():
         vf.send_command("ping")
         print("VoxFox is already running.")
-        return
+        return 0
     if not vf.acquire_singleton_lock():
         print("VoxFox is already running.")
-        return
+        return 0
 
     # Shortcuts are no longer auto-installed on first start: some desktops ship
     # their own bindings for these keys, and silently overwriting them is rude.
@@ -3195,7 +3478,8 @@ def main():
                   "this process to avoid a libatspi abort.")
 
     VoxFoxApplication().run(None)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

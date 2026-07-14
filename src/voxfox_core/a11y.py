@@ -654,21 +654,21 @@ def type_or_paste_text(text):
             return False, "Could not set clipboard"
         pasted = _send_paste_shortcut()
 
-        # Restore previous clipboard quickly so the transcription doesn't
-        # linger in clipboard memory and risk being pasted elsewhere.
-        def _restore():
-            time.sleep(0.1)
-            try:
-                _clipboard_set(old)
-            except Exception:
-                pass
-        threading.Thread(target=_restore, daemon=True).start()
-
         if pasted:
+            # Restore the previous clipboard shortly after the paste so the
+            # transcription doesn't linger and get pasted elsewhere later.
+            def _restore():
+                time.sleep(0.1)
+                try:
+                    _clipboard_set(old)
+                except Exception:
+                    pass
+            threading.Thread(target=_restore, daemon=True).start()
             return True, "ok"
-        # Couldn't trigger paste either — clipboard is set, user can paste manually.
-        # In this case we DO NOT restore: the user explicitly needs the
-        # transcription there. Cancel the restore thread by overwriting old.
+        # Couldn't trigger the paste — leave the transcription on the
+        # clipboard so the user can paste it manually. Deliberately do NOT
+        # restore the old clipboard here; that would wipe the text the user
+        # still needs.
         return True, "in clipboard (press Ctrl+V)"
     except Exception as e:
         return False, str(e)

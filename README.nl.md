@@ -183,7 +183,7 @@ De instellingen staan op het tabblad *Dicteren*:
 - **Compute** — *Auto* gebruikt een NVIDIA-GPU als die wordt gevonden (CUDA +
   cuDNN), anders de CPU, en valt terug op de CPU als de GPU niet start
 - **Microfoon** — kies een specifiek invoerapparaat of laat op *Standaard*
-- **Transcriptie bevestigen voor het typen** — toon eerst een voorbeeld
+- **Transcriptie bevestigen voor het typen** — toon eerst een voorbeeldvenster met de transcriptie, zodat je die kunt nakijken en bewerken, en kopieer die daarna naar het klembord om zelf te plakken met Ctrl+V (in plaats van dat VoxFox het typt)
 - **Backend** — *Lokaal* (draait faster-whisper hier) of *Remote API* (zie onder)
 
 De taal van het actieve slot wordt als hint aan Whisper meegegeven, wat veel
@@ -465,11 +465,24 @@ kunnen beperkt zijn.
 
 De code is gesplitst in een UI-onafhankelijke backend (het `voxfox_core/`-pakket
 — `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) en
-een GTK4-frontend (`voxfox_gtk.py`, die ook de CLI bevat). Het pakket wordt
-gebouwd met `packaging/build-deb.sh`
-(`VERSION=x.y.z bash packaging/build-deb.sh`). Vertalingen zijn gewone
-JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen. Zie
-`CHANGELOG.md` voor de versiegeschiedenis.
+een GTK4-frontend (`voxfox_gtk.py`, die ook de CLI bevat). Vertalingen zijn
+gewone JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen.
+Zie `CHANGELOG.md` voor de versiegeschiedenis.
+
+Scripts voor verpakken en uitbrengen staan in `packaging/`:
+
+- `VERSION=x.y bash packaging/build-deb.sh` bouwt het Debian-pakket en
+  `VERSION=x.y bash packaging/build-rpm.sh` het RPM-pakket (Fedora). Beide
+  spiegelen dezelfde bestandsindeling en bundelen `locales/` en, indien
+  aanwezig, `dicts/`.
+- De download van de Piper-engine is vastgezet op `PIPER_VERSION` in
+  `voxfox_gtk.py` en wordt vóór het uitpakken gecontroleerd tegen de
+  SHA-256-sommen in `PIPER_SHA256`. Bij het ophogen van `PIPER_VERSION`
+  genereer je die sommen opnieuw met `python3 packaging/pin_piper_hashes.py`
+  op een machine met internet, en plak je de uitvoer over het
+  `PIPER_SHA256`-blok.
+- `packaging/merge_dict.py` voegt aangedragen uitspraakwoorden (een CSV van
+  `taal;woord;uitspraak`) samen in de meegeleverde woordenboeken in `dicts/`.
 
 ## Probleemoplossing
 

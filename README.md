@@ -178,7 +178,7 @@ Settings live on the *Dictation* tab:
 - **Compute** — *Auto* uses an NVIDIA GPU when detected (CUDA + cuDNN),
   otherwise the CPU, and falls back to CPU if GPU init fails
 - **Mic** — choose a specific input device, or leave at *Default*
-- **Confirm transcription before typing** — show a preview popup first
+- **Confirm transcription before typing** — show a preview popup with the transcription so you can review and edit it, then copy it to the clipboard and paste it yourself with Ctrl+V (rather than having VoxFox type it)
 - **Backend** — *Local* (runs faster-whisper here) or *Remote API* (see below)
 
 The active slot's language is used as a hint for Whisper, which is far more
@@ -450,10 +450,22 @@ parts of hover depend on the compositor and may be limited.
 
 The code is split into a UI-agnostic backend (the `voxfox_core/` package —
 `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) and
-a GTK4 front-end (`voxfox_gtk.py`, which also holds the CLI). The package is
-built with `packaging/build-deb.sh` (`VERSION=x.y.z bash packaging/build-deb.sh`).
-Translations are plain JSON files under `locales/`, key-aligned across all
-languages. See `CHANGELOG.md` for the version history.
+a GTK4 front-end (`voxfox_gtk.py`, which also holds the CLI). Translations are
+plain JSON files under `locales/`, key-aligned across all languages. See
+`CHANGELOG.md` for the version history.
+
+Packaging and release helpers live in `packaging/`:
+
+- `VERSION=x.y bash packaging/build-deb.sh` builds the Debian package, and
+  `VERSION=x.y bash packaging/build-rpm.sh` the RPM (Fedora). Both mirror the
+  same file layout and bundle `locales/` and, when present, `dicts/`.
+- The Piper engine download is pinned to `PIPER_VERSION` in `voxfox_gtk.py`
+  and verified against the SHA-256 sums in `PIPER_SHA256` before extraction.
+  When bumping `PIPER_VERSION`, regenerate those sums by running
+  `python3 packaging/pin_piper_hashes.py` on a machine with internet access
+  and pasting its output over the `PIPER_SHA256` block.
+- `packaging/merge_dict.py` merges community pronunciation submissions (a CSV
+  of `taal;woord;uitspraak`) into the bundled dictionaries in `dicts/`.
 
 ## Troubleshooting
 

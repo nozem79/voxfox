@@ -297,6 +297,55 @@ def reconcile_toolbar_layout(layout, default_order):
     }
 
 
+# ── Pronunciation dictionary files ───────────────────────────────────────────
+# Shareable dictionaries: a JSON file with the language and the word→respelling
+# rules. Users export/import these under Settings → Pronunciation; community
+# dictionaries collected via voxfox.nl ship with the package in
+# /usr/share/voxfox/dicts and can be merged with one click.
+
+DICT_FORMAT = 1
+
+
+def system_dicts_dir():
+    """Directory holding the bundled pronunciation dictionaries, or None.
+    Installed packages ship them in /usr/share/voxfox/dicts; a development
+    checkout falls back to the repo's dicts/ folder (next to locales/)."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in ("/usr/share/voxfox/dicts",
+                 os.path.join(here, "..", "..", "dicts")):
+        if os.path.isdir(cand):
+            return os.path.abspath(cand)
+    return None
+
+
+def load_dict_file(path):
+    """Read a VoxFox dictionary file. Returns (language, rules); language may
+    be "" when the file doesn't name one. Raises ValueError for files that are
+    not VoxFox dictionaries, so callers can show a friendly message."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict) or not isinstance(data.get("rules"), dict):
+        raise ValueError("not a VoxFox dictionary file")
+    rules = {}
+    for k, v in data["rules"].items():
+        k, v = str(k).strip(), str(v).strip()
+        if k and v:
+            rules[k] = v
+    meta = data.get("_meta") or {}
+    language = str(meta.get("language") or "").strip()
+    return language, rules
+
+
+def save_dict_file(path, language, rules):
+    """Write a dictionary file (sorted, human-editable)."""
+    data = {
+        "_meta": {"format": DICT_FORMAT, "language": language,
+                  "generator": "VoxFox"},
+        "rules": dict(sorted(rules.items(), key=lambda kv: kv[0].lower())),
+    }
+    _atomic_write_json(path, data)
+
+
 __all__ = [
     "DEFAULT_STATE",
     "load_state",
@@ -308,4 +357,8 @@ __all__ = [
     "UI_SCALES",
     "DEFAULT_UI_SCALE",
     "reconcile_toolbar_layout",
+    "DICT_FORMAT",
+    "system_dicts_dir",
+    "load_dict_file",
+    "save_dict_file",
 ]

@@ -227,5 +227,21 @@
   "Fetching page...": "جارٍ جلب الصفحة…",
   "Could not fetch a readable page from the selected address": "تعذّر جلب صفحة قابلة للقراءة من العنوان المحدد",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "حدّد عنوان الصفحة أولًا (Ctrl+L في المتصفح)، ثم اضغط الاختصار مرة أخرى",
-  "Opening the page in a background browser...": "جارٍ فتح الصفحة في متصفح بالخلفية…"
+  "Opening the page in a background browser...": "جارٍ فتح الصفحة في متصفح بالخلفية…",
+  "Import dictionary…": "استيراد قاموس…",
+  "Export dictionary…": "تصدير القاموس…",
+  "Load bundled dictionary": "تحميل القاموس المرفق",
+  "Dictionary loaded: %s new, %s updated": "تم تحميل القاموس: %s جديد، %s محدّث",
+  "Dictionary exported": "تم تصدير القاموس",
+  "Not a valid VoxFox dictionary file": "ليس ملف قاموس VoxFox صالحًا",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "صدّر قاموسك لمشاركته، أو استورد قاموسًا من مستخدم آخر أو من voxfox.nl.",
+  "Setup incomplete: %s": "الإعداد غير مكتمل: %s",
+  "Confirm transcription": "تأكيد النسخ",
+  "Review the text before it is typed:": "راجع النص قبل كتابته:",
+  "Insert": "إدراج",
+  "Cancel": "إلغاء",
+  "Cancelled": "أُلغي",
+  "Previous microphone not found — using the default": "لم يُعثر على الميكروفون السابق — سيُستخدم الافتراضي",
+  "Transcription copied — press Ctrl+V to paste": "تم نسخ النسخ — اضغط Ctrl+V للصق",
+  "Review the text, then copy it and paste with Ctrl+V:": "راجع النص وانسخه ثم الصقه باستخدام Ctrl+V:"
 }

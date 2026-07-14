@@ -227,5 +227,21 @@
   "Fetching page...": "Pagina ophalen…",
   "Could not fetch a readable page from the selected address": "Kon geen leesbare pagina ophalen van het geselecteerde adres",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "Selecteer eerst het adres van de pagina (Ctrl+L in de browser) en druk dan opnieuw op de sneltoets",
-  "Opening the page in a background browser...": "Pagina wordt geopend in een achtergrondbrowser…"
+  "Opening the page in a background browser...": "Pagina wordt geopend in een achtergrondbrowser…",
+  "Import dictionary…": "Woordenboek importeren…",
+  "Export dictionary…": "Woordenboek exporteren…",
+  "Load bundled dictionary": "Meegeleverd woordenboek laden",
+  "Dictionary loaded: %s new, %s updated": "Woordenboek geladen: %s nieuw, %s bijgewerkt",
+  "Dictionary exported": "Woordenboek geëxporteerd",
+  "Not a valid VoxFox dictionary file": "Geen geldig VoxFox-woordenboekbestand",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "Exporteer je woordenboek om het te delen, of importeer er een van een andere gebruiker of van voxfox.nl.",
+  "Setup incomplete: %s": "Installatie onvolledig: %s",
+  "Confirm transcription": "Transcriptie bevestigen",
+  "Review the text before it is typed:": "Controleer de tekst voordat die getypt wordt:",
+  "Insert": "Invoegen",
+  "Cancel": "Annuleren",
+  "Cancelled": "Geannuleerd",
+  "Previous microphone not found — using the default": "Vorige microfoon niet gevonden — de standaard wordt gebruikt",
+  "Transcription copied — press Ctrl+V to paste": "Transcriptie gekopieerd — druk Ctrl+V om te plakken",
+  "Review the text, then copy it and paste with Ctrl+V:": "Controleer de tekst, kopieer die en plak met Ctrl+V:"
 }

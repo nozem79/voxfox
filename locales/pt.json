@@ -227,5 +227,21 @@
   "Fetching page...": "A obter a página…",
   "Could not fetch a readable page from the selected address": "Não foi possível obter uma página legível do endereço selecionado",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "Seleciona primeiro o endereço da página (Ctrl+L no navegador) e volta a premir o atalho",
-  "Opening the page in a background browser...": "A abrir a página num navegador em segundo plano…"
+  "Opening the page in a background browser...": "A abrir a página num navegador em segundo plano…",
+  "Import dictionary…": "Importar dicionário…",
+  "Export dictionary…": "Exportar dicionário…",
+  "Load bundled dictionary": "Carregar o dicionário incluído",
+  "Dictionary loaded: %s new, %s updated": "Dicionário carregado: %s novos, %s atualizados",
+  "Dictionary exported": "Dicionário exportado",
+  "Not a valid VoxFox dictionary file": "Ficheiro de dicionário VoxFox inválido",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "Exporta o teu dicionário para o partilhar, ou importa um de outro utilizador ou de voxfox.nl.",
+  "Setup incomplete: %s": "Configuração incompleta: %s",
+  "Confirm transcription": "Confirmar a transcrição",
+  "Review the text before it is typed:": "Revê o texto antes de ser escrito:",
+  "Insert": "Inserir",
+  "Cancel": "Cancelar",
+  "Cancelled": "Cancelado",
+  "Previous microphone not found — using the default": "Microfone anterior não encontrado — a usar o predefinido",
+  "Transcription copied — press Ctrl+V to paste": "Transcrição copiada — prime Ctrl+V para colar",
+  "Review the text, then copy it and paste with Ctrl+V:": "Revê o texto, copia-o e cola com Ctrl+V:"
 }

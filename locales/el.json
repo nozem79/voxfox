@@ -227,5 +227,21 @@
   "Fetching page...": "Λήψη της σελίδας…",
   "Could not fetch a readable page from the selected address": "Δεν ήταν δυνατή η λήψη αναγνώσιμης σελίδας από την επιλεγμένη διεύθυνση",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "Επιλέξτε πρώτα τη διεύθυνση της σελίδας (Ctrl+L στο πρόγραμμα περιήγησης) και πατήστε ξανά τη συντόμευση",
-  "Opening the page in a background browser...": "Άνοιγμα της σελίδας σε πρόγραμμα περιήγησης στο παρασκήνιο…"
+  "Opening the page in a background browser...": "Άνοιγμα της σελίδας σε πρόγραμμα περιήγησης στο παρασκήνιο…",
+  "Import dictionary…": "Εισαγωγή λεξικού…",
+  "Export dictionary…": "Εξαγωγή λεξικού…",
+  "Load bundled dictionary": "Φόρτωση ενσωματωμένου λεξικού",
+  "Dictionary loaded: %s new, %s updated": "Το λεξικό φορτώθηκε: %s νέα, %s ενημερωμένα",
+  "Dictionary exported": "Το λεξικό εξήχθη",
+  "Not a valid VoxFox dictionary file": "Δεν είναι έγκυρο αρχείο λεξικού VoxFox",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "Εξαγάγετε το λεξικό σας για να το μοιραστείτε, ή εισαγάγετε ένα από άλλον χρήστη ή από το voxfox.nl.",
+  "Setup incomplete: %s": "Η εγκατάσταση δεν ολοκληρώθηκε: %s",
+  "Confirm transcription": "Επιβεβαίωση μεταγραφής",
+  "Review the text before it is typed:": "Ελέγξτε το κείμενο πριν πληκτρολογηθεί:",
+  "Insert": "Εισαγωγή",
+  "Cancel": "Άκυρο",
+  "Cancelled": "Ακυρώθηκε",
+  "Previous microphone not found — using the default": "Δεν βρέθηκε το προηγούμενο μικρόφωνο — χρήση του προεπιλεγμένου",
+  "Transcription copied — press Ctrl+V to paste": "Η μεταγραφή αντιγράφηκε — πατήστε Ctrl+V για επικόλληση",
+  "Review the text, then copy it and paste with Ctrl+V:": "Ελέγξτε το κείμενο, αντιγράψτε το και επικολλήστε με Ctrl+V:"
 }

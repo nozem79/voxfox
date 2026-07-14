@@ -227,5 +227,21 @@
   "Fetching page...": "正在获取页面…",
   "Could not fetch a readable page from the selected address": "无法从选中的地址获取可读的页面",
   "Select the page's address first (Ctrl+L in the browser), then press the shortcut again": "请先选中页面地址（在浏览器中按 Ctrl+L），然后再次按快捷键",
-  "Opening the page in a background browser...": "正在后台浏览器中打开页面…"
+  "Opening the page in a background browser...": "正在后台浏览器中打开页面…",
+  "Import dictionary…": "导入词典…",
+  "Export dictionary…": "导出词典…",
+  "Load bundled dictionary": "加载随附词典",
+  "Dictionary loaded: %s new, %s updated": "词典已加载：新增 %s 个，更新 %s 个",
+  "Dictionary exported": "词典已导出",
+  "Not a valid VoxFox dictionary file": "不是有效的 VoxFox 词典文件",
+  "Export your dictionary to share it, or import one from another user or from voxfox.nl.": "导出你的词典以便分享，或从其他用户或 voxfox.nl 导入词典。",
+  "Setup incomplete: %s": "设置未完成：%s",
+  "Confirm transcription": "确认转写",
+  "Review the text before it is typed:": "在输入前检查文本：",
+  "Insert": "插入",
+  "Cancel": "取消",
+  "Cancelled": "已取消",
+  "Previous microphone not found — using the default": "未找到之前的麦克风——使用默认设备",
+  "Transcription copied — press Ctrl+V to paste": "转写已复制——按 Ctrl+V 粘贴",
+  "Review the text, then copy it and paste with Ctrl+V:": "检查文本，复制后按 Ctrl+V 粘贴："
 }

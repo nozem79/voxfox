@@ -1,3 +1,26 @@
+## 3.6
+
+- Security and reliability fixes from an external code review: the Piper
+  download now extracts safely (no path traversal) with a pinned version and
+  optional checksum verification, and setup failures are reported honestly
+  with a non-zero exit code instead of always claiming success.
+
+- Fixed the manual clipboard fallback so a dictated text you need to paste by
+  hand is no longer overwritten; fixed a remote-test status that vanished
+  after 8 ms; the web-page reader now enforces its own chunk-size limit and
+  bounds gzip decompression; the OCR file picker no longer offers GIF (the
+  backend can't read it); refreshing the microphone list keeps your current
+  selection.
+- Pronunciation dictionaries can now be exported and imported as files
+  (Settings → Pronunciation), so users can share their word lists. Imports
+  merge: new words are added, existing ones updated, and the file's own
+  language is respected.
+- VoxFox ships community pronunciation dictionaries (collected via the form
+  on voxfox.nl) in /usr/share/voxfox/dicts; a "Load bundled dictionary"
+  button merges the one for the current language with one click.
+- The settings tabs are reordered: Shortcuts, Web page and Interface moved
+  forward and Misc is now the last tab.
+
 ## 3.5
 
 - An experimental RPM package (voxfox-x.y-1.noarch.rpm, built with

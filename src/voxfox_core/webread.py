@@ -474,8 +474,15 @@ def fetch_page_text(url, timeout=20):
             if (resp.headers.get("Content-Encoding") or "").lower() == "gzip" \
                     or raw[:2] == b"\x1f\x8b":
                 import gzip as _gzip
+                import io as _io
                 try:
-                    raw = _gzip.decompress(raw)
+                    # Bounded decompression: stop at 4x the fetch cap so a
+                    # small gzip bomb can't blow up memory.
+                    limit = _FETCH_MAX_BYTES * 4
+                    with _gzip.GzipFile(fileobj=_io.BytesIO(raw)) as gz:
+                        raw = gz.read(limit + 1)
+                    if len(raw) > limit:
+                        raw = raw[:limit]
                 except Exception:
                     pass
             m = re.search(r"charset=([\w-]+)", ctype)
@@ -586,6 +593,21 @@ _CHUNK_CHARS = 7000       # per filter-request payload
 _SUMMARY_MAX_CHARS = 24000
 
 
+def _hard_slice(s, limit):
+    """Last-resort split of an oversized single block on whitespace near the
+    limit, falling back to a hard character cut so no piece exceeds `limit`."""
+    out = []
+    while len(s) > limit:
+        cut = s.rfind(" ", 0, limit)
+        if cut <= 0:
+            cut = limit
+        out.append(s[:cut])
+        s = s[cut:].lstrip()
+    if s:
+        out.append(s)
+    return out
+
+
 def _split_paragraph_chunks(text, limit):
     chunks, cur = [], ""
     for para in text.split("\n"):
@@ -597,7 +619,11 @@ def _split_paragraph_chunks(text, limit):
             cur = candidate
     if cur.strip():
         chunks.append(cur)
-    return chunks
+    # Enforce the limit even when a single paragraph exceeds it on its own.
+    result = []
+    for c in chunks:
+        result.extend(_hard_slice(c, limit) if len(c) > limit else [c])
+    return result
 
 
 def _ollama_headers(api_key=None):

@@ -23,6 +23,12 @@ cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
 
+# Bundled community pronunciation dictionaries (optional).
+if [ -d "$ROOT/dicts" ]; then
+    mkdir -p "$INST/usr/share/voxfox/dicts"
+    cp "$ROOT/dicts/"*.json "$INST/usr/share/voxfox/dicts/" 2>/dev/null || true
+fi
+
 # Application icon. The source PNG lives in the repo root (NOT in src/), so
 # look there first, then fall back to $SRC for unusual layouts. Install it as
 # the themed icon "voxfox" so the .desktop's Icon=voxfox resolves in the menu
