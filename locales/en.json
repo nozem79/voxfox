@@ -244,5 +244,9 @@
   "Cancelled": "Cancelled",
   "Previous microphone not found — using the default": "Previous microphone not found — using the default",
   "Transcription copied — press Ctrl+V to paste": "Transcription copied — press Ctrl+V to paste",
-  "Review the text, then copy it and paste with Ctrl+V:": "Review the text, then copy it and paste with Ctrl+V:"
+  "Review the text, then copy it and paste with Ctrl+V:": "Review the text, then copy it and paste with Ctrl+V:",
+  "Installing speech engine...": "Installing speech engine...",
+  "Downloading voices...": "Downloading voices...",
+  "Installing dictation and OCR support...": "Installing dictation and OCR support...",
+  "Voices": "Voices"
 }

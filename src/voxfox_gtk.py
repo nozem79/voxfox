@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.6"
+APP_VERSION = "3.7"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -184,14 +184,20 @@ def _safe_extract_piper(tar, dest):
         if name.startswith("/") or os.path.isabs(name) \
                 or ".." in name.split("/"):
             raise ValueError(f"unsafe path in archive: {member.name!r}")
-        # No links or device/special files — only plain files and dirs.
-        if member.issym() or member.islnk():
-            raise ValueError(f"link member not allowed: {member.name!r}")
-        if not (member.isfile() or member.isdir()):
-            raise ValueError(f"special member not allowed: {member.name!r}")
         target = os.path.realpath(os.path.join(dest, name))
         if target != dest and not target.startswith(dest + os.sep):
             raise ValueError(f"path escapes destination: {member.name!r}")
+        # Links are allowed only when they resolve inside dest — Piper ships
+        # libpiper_phonemize.so -> libpiper_phonemize.so.1, which is fine.
+        if member.issym() or member.islnk():
+            base = os.path.dirname(os.path.join(dest, name))
+            link_target = os.path.realpath(
+                os.path.join(base, member.linkname))
+            if link_target != dest \
+                    and not link_target.startswith(dest + os.sep):
+                raise ValueError(f"link escapes destination: {member.name!r}")
+        elif not (member.isfile() or member.isdir()):
+            raise ValueError(f"special member not allowed: {member.name!r}")
         member.name = name
         tar.extract(member, dest)
 
@@ -277,11 +283,14 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
     except Exception as e:
         log.debug(f"slot voice lookup skipped: {e}")
     failed = []
-    for key in keys:
-        if key in vf.get_local_voices():
-            continue
+    todo = [k for k in keys if k not in vf.get_local_voices()]
+    n = max(1, len(todo))
+    for i, key in enumerate(todo):
         progress(f"{_('Downloading voice')}: {key}...")
-        ok, msg = vf.download_voice(key, progress_cb=progress, frac_cb=frac)
+        def slice_frac(fr, _lbl=None, i=i):
+            frac((i + max(0.0, min(1.0, fr))) / n, _("Voices"))
+        ok, msg = vf.download_voice(key, progress_cb=progress,
+                                    frac_cb=slice_frac)
         if not ok:
             log.warning(f"Voice {key} failed: {msg}")
             failed.append(key)
@@ -290,20 +299,24 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
     return True, "ok"
 
 
-def _pip_install(pkgs, progress=lambda m: None):
+def _pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
     progress(f"{_('Installing')}: {', '.join(pkgs)}...")
     base = [sys.executable, "-m", "pip", "install", "--user"]
     for cmd in (base + ["--break-system-packages", *pkgs], base + [*pkgs]):
         try:
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
-            if r.returncode == 0:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, text=True)
+            while proc.poll() is None:
+                pulse()
+                time.sleep(0.4)
+            if proc.returncode == 0:
                 return True
         except Exception as e:
             log.debug(f"pip attempt failed: {e}")
     return False
 
 
-def install_python_extras(progress=lambda m: None):
+def install_python_extras(progress=lambda m: None, pulse=lambda: None):
     """Install the pip-only Python deps that aren't reliably packaged in Debian:
     faster-whisper (dictation) and pytesseract + Pillow (OCR). Each is skipped
     when already importable, so this is safe to re-run."""
@@ -316,7 +329,7 @@ def install_python_extras(progress=lambda m: None):
 
     problems = []
     if not have("faster_whisper"):
-        if not _pip_install(["faster-whisper"], progress):
+        if not _pip_install(["faster-whisper"], progress, pulse):
             progress(_("faster-whisper install failed (dictation disabled)"))
             problems.append("faster-whisper")
     # Pillow usually comes from apt (python3-pil); pip-install only if missing.
@@ -325,7 +338,7 @@ def install_python_extras(progress=lambda m: None):
         ocr_pkgs.append("pytesseract")
     if not have("PIL"):
         ocr_pkgs.append("pillow")
-    if ocr_pkgs and not _pip_install(ocr_pkgs, progress):
+    if ocr_pkgs and not _pip_install(ocr_pkgs, progress, pulse):
         progress(_("OCR Python packages failed to install"))
         problems.append("OCR (" + ", ".join(ocr_pkgs) + ")")
     if problems:
@@ -338,15 +351,30 @@ def run_setup(progress=lambda m: None, want_extras=True, frac=lambda *_a: None):
     Returns (ok, msg): ok is False when any component failed, with msg naming
     the components so the GUI and CLI can report a real result."""
     problems = []
+    total = 2 + (1 if want_extras else 0)
+    step = [0]
+
+    def phase(msg):
+        step[0] += 1
+        progress(f"[{step[0]}/{total}] {msg}")
+
+    pulse_state = [0.0]
+
+    def pulse():
+        pulse_state[0] = (pulse_state[0] + 0.05) % 1.0
+        frac(pulse_state[0], _("Installing"))
+
+    phase(_("Installing speech engine..."))
     ok, msg = install_piper(progress, frac)
     if not ok:
-        # Without the engine the rest is pointless — report and stop.
         return False, f"Piper: {msg}"
+    phase(_("Downloading voices..."))
     ok, msg = install_default_voices(progress, frac)
     if not ok:
         problems.append(msg)
     if want_extras:
-        ok, msg = install_python_extras(progress)
+        phase(_("Installing dictation and OCR support..."))
+        ok, msg = install_python_extras(progress, pulse=pulse)
         if not ok:
             problems.append(msg)
     if problems:
@@ -2609,6 +2637,10 @@ class SetupDialog(Gtk.Window):
         info.add_css_class("dim-label")
         outer.append(info)
 
+        self._progress = Gtk.ProgressBar(show_text=True)
+        self._progress.set_visible(False)
+        outer.append(self._progress)
+
         self._result = Gtk.Label(label="", xalign=0, wrap=True)
         outer.append(self._result)
 
@@ -2657,7 +2689,28 @@ class SetupDialog(Gtk.Window):
 
     def _on_install_components(self, _btn):
         self._result.set_text(_("Setting up..."))
-        self.parent.run_setup_async(on_done=self._refresh_states)
+        self._comp_btn.set_sensitive(False)
+
+        def on_progress(msg):
+            self._result.set_text(msg)
+
+        def on_frac(fr, label=None):
+            _set_progress_bar(self._progress, fr, label)
+
+        def on_done(ok, msg):
+            _hide_progress_bar(self._progress)
+            self._comp_btn.set_sensitive(True)
+            self._result.set_text(
+                _("Setup complete") if ok
+                else _("Setup incomplete: %s") % msg)
+            self._refresh_states()
+
+        def worker():
+            ok, msg = run_setup(
+                progress=lambda m: GLib.idle_add(on_progress, m),
+                frac=lambda fr, lbl=None: GLib.idle_add(on_frac, fr, lbl))
+            GLib.idle_add(on_done, ok, msg)
+        threading.Thread(target=worker, daemon=True).start()
 
     def _on_enable_a11y(self, _btn):
         ok, msg = enable_accessibility()

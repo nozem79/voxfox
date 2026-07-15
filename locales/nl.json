@@ -243,5 +243,9 @@
   "Cancelled": "Geannuleerd",
   "Previous microphone not found — using the default": "Vorige microfoon niet gevonden — de standaard wordt gebruikt",
   "Transcription copied — press Ctrl+V to paste": "Transcriptie gekopieerd — druk Ctrl+V om te plakken",
-  "Review the text, then copy it and paste with Ctrl+V:": "Controleer de tekst, kopieer die en plak met Ctrl+V:"
+  "Review the text, then copy it and paste with Ctrl+V:": "Controleer de tekst, kopieer die en plak met Ctrl+V:",
+  "Installing speech engine...": "Spraakengine installeren…",
+  "Downloading voices...": "Stemmen downloaden…",
+  "Installing dictation and OCR support...": "Ondersteuning voor dicteren en OCR installeren…",
+  "Voices": "Stemmen"
 }

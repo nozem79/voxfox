@@ -243,5 +243,9 @@
   "Cancelled": "已取消",
   "Previous microphone not found — using the default": "未找到之前的麦克风——使用默认设备",
   "Transcription copied — press Ctrl+V to paste": "转写已复制——按 Ctrl+V 粘贴",
-  "Review the text, then copy it and paste with Ctrl+V:": "检查文本，复制后按 Ctrl+V 粘贴："
+  "Review the text, then copy it and paste with Ctrl+V:": "检查文本，复制后按 Ctrl+V 粘贴：",
+  "Installing speech engine...": "正在安装语音引擎…",
+  "Downloading voices...": "正在下载语音…",
+  "Installing dictation and OCR support...": "正在安装听写和 OCR 支持…",
+  "Voices": "语音"
 }

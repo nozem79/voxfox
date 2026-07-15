@@ -243,5 +243,9 @@
   "Cancelled": "أُلغي",
   "Previous microphone not found — using the default": "لم يُعثر على الميكروفون السابق — سيُستخدم الافتراضي",
   "Transcription copied — press Ctrl+V to paste": "تم نسخ النسخ — اضغط Ctrl+V للصق",
-  "Review the text, then copy it and paste with Ctrl+V:": "راجع النص وانسخه ثم الصقه باستخدام Ctrl+V:"
+  "Review the text, then copy it and paste with Ctrl+V:": "راجع النص وانسخه ثم الصقه باستخدام Ctrl+V:",
+  "Installing speech engine...": "جارٍ تثبيت محرك النطق…",
+  "Downloading voices...": "جارٍ تنزيل الأصوات…",
+  "Installing dictation and OCR support...": "جارٍ تثبيت دعم الإملاء وOCR…",
+  "Voices": "الأصوات"
 }

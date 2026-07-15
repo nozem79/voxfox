@@ -1,8 +1,4 @@
-## 3.6
 
-- Security and reliability fixes from an external code review: the Piper
-  download now extracts safely (no path traversal) with a pinned version and
-  optional checksum verification, and setup failures are reported honestly
   with a non-zero exit code instead of always claiming success.
 
 - Fixed the manual clipboard fallback so a dictated text you need to paste by

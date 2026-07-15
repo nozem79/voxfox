@@ -243,5 +243,9 @@
   "Cancelled": "Annullato",
   "Previous microphone not found — using the default": "Microfono precedente non trovato — si usa quello predefinito",
   "Transcription copied — press Ctrl+V to paste": "Trascrizione copiata — premi Ctrl+V per incollare",
-  "Review the text, then copy it and paste with Ctrl+V:": "Controlla il testo, copialo e incollalo con Ctrl+V:"
+  "Review the text, then copy it and paste with Ctrl+V:": "Controlla il testo, copialo e incollalo con Ctrl+V:",
+  "Installing speech engine...": "Installazione del motore vocale…",
+  "Downloading voices...": "Download delle voci…",
+  "Installing dictation and OCR support...": "Installazione di dettatura e OCR…",
+  "Voices": "Voci"
 }
