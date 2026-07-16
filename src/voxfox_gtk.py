@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.7"
+APP_VERSION = "3.8.1"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -3280,6 +3280,132 @@ def _install_lxqt_shortcuts(src, state):
     return True
 
 
+def _install_kde_shortcuts(state):
+    """Install VoxFox's global shortcuts on KDE Plasma.
+
+    KDE stores global shortcuts in ~/.config/kglobalshortcutsrc, keyed per
+    component. We register each VoxFox command as its own component there via
+    kwriteconfig, which is what actually binds (and rebinds) the key — writing
+    a .desktop file alone only registers a shortcut the first time KDE indexes
+    it and never updates an existing binding. Each install overwrites the
+    stored value, so changing a key in Settings replaces the old one.
+
+    We also drop a matching .desktop launcher so the command has a name in the
+    KDE shortcuts UI. No-op when not on KDE. A change may need kglobalaccel to
+    reload (handled below) or, worst case, a re-login. Returns True on success.
+    """
+    desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
+               + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
+    if "kde" not in desktop and "plasma" not in desktop:
+        return False
+
+    kwriteconfig = None
+    for tool in ("kwriteconfig6", "kwriteconfig5"):
+        if vf._have(tool):
+            kwriteconfig = tool
+            break
+    if not kwriteconfig:
+        log.debug("KDE: no kwriteconfig tool found")
+        return False
+
+    cfg = os.path.join(
+        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+        "kglobalshortcutsrc")
+
+    written = 0
+    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+        combo = _binding_to_kde(_binding_for(state, key, binding))
+        if not combo:
+            continue
+        component = f"voxfox-{key}.desktop"
+        # kglobalshortcutsrc format per action:
+        #   [component][_k_friendly_name]=...
+        #   ActionName=<key>,<default>,<friendly text>
+        # The "_launch" action name is what a .desktop launcher uses.
+        value = f"{combo},none,{label}"
+        try:
+            subprocess.run(
+                [kwriteconfig, "--file", cfg, "--group", component,
+                 "--key", "_launch", value],
+                capture_output=True, timeout=15)
+            subprocess.run(
+                [kwriteconfig, "--file", cfg, "--group", component,
+                 "--key", "_k_friendly_name", label],
+                capture_output=True, timeout=15)
+            written += 1
+        except Exception as e:
+            log.debug(f"KDE: kwriteconfig failed for {key}: {e}")
+
+    if not written:
+        return False
+
+    # A matching launcher so the command exists and has a name in the UI.
+    appdir = os.path.join(
+        os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share")),
+        "applications")
+    try:
+        os.makedirs(appdir, exist_ok=True)
+        for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+            path = os.path.join(appdir, f"voxfox-{key}.desktop")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("[Desktop Entry]\n"
+                        "Type=Application\n"
+                        f"Name={label}\n"
+                        f"Exec={cmd}\n"
+                        "NoDisplay=true\n"
+                        "Terminal=false\n"
+                        "StartupNotify=false\n")
+    except Exception as e:
+        log.debug(f"KDE: cannot write launcher: {e}")
+
+    # Ask kglobalaccel to reload so the new/changed bindings take effect
+    # without a full re-login where possible.
+    for tool in ("kquitapp6", "kquitapp5"):
+        if vf._have(tool):
+            try:
+                subprocess.run([tool, "kglobalaccel"],
+                               capture_output=True, timeout=10)
+                time.sleep(0.5)
+            except Exception:
+                pass
+            break
+    for tool in ("kglobalaccel6", "kglobalaccel5"):
+        if vf._have(tool):
+            try:
+                subprocess.Popen([tool],
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+            except Exception:
+                pass
+            break
+
+    log.info(f"Installed {written} KDE keyboard shortcuts")
+    return True
+
+
+def _binding_to_kde(binding):
+    """Convert a stored accelerator ('<Super>z') to the KDE X-KDE-Shortcuts
+    spelling ('Meta+Z'). Returns '' when it can't be parsed."""
+    if not binding:
+        return ""
+    mods = {"<Super>": "Meta+", "<Primary>": "Ctrl+", "<Ctrl>": "Ctrl+",
+            "<Control>": "Ctrl+", "<Shift>": "Shift+", "<Alt>": "Alt+"}
+    rest = binding
+    out = ""
+    changed = True
+    while changed:
+        changed = False
+        for token, kde in mods.items():
+            if rest.startswith(token):
+                out += kde
+                rest = rest[len(token):]
+                changed = True
+    key = rest.strip()
+    if not key:
+        return ""
+    return out + key.upper()
+
+
 def _install_xfce_shortcuts(state):
     """Install VoxFox's global shortcuts on XFCE via xfconf-query.
 
@@ -3383,7 +3509,9 @@ def _install_shortcuts(state):
     (numeric customN slots tracked in `state`, legacy voxfox-* names migrated,
     idempotent). On LXQt they are appended to globalkeyshortcuts.conf as Meta+
     command entries. On XFCE they are written via xfconf-query into the
-    xfce4-keyboard-shortcuts channel. Writing for several desktops is harmless;
+    xfce4-keyboard-shortcuts channel. On KDE Plasma they are registered as
+    .desktop files with X-KDE-Shortcuts lines. Writing for several desktops is
+    harmless;
     each installer is a no-op where its desktop isn't present. Mutates `state`
     (the caller persists it) and returns True if at least one desktop accepted
     them. Users can change or remove them in the system keyboard settings."""
@@ -3400,6 +3528,11 @@ def _install_shortcuts(state):
             installed = True
     except Exception as e:
         log.debug(f"_install_xfce_shortcuts failed: {e}")
+    try:
+        if _install_kde_shortcuts(state):
+            installed = True
+    except Exception as e:
+        log.debug(f"_install_kde_shortcuts failed: {e}")
     try:
         src = Gio.SettingsSchemaSource.get_default()
         if src is not None:

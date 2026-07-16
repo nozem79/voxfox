@@ -1,6 +1,39 @@
+## 3.8.1
 
+- Fixed KDE Plasma shortcuts so they now correctly overwrite an existing
+  binding. VoxFox writes the bindings straight into kglobalshortcutsrc via
+  kwriteconfig (the previous .desktop-only method never updated an existing
+  shortcut) and asks kglobalaccel to reload so the change usually takes
+  effect without a re-login.
+- Documentation: the install examples use version-independent file names, and
+  the shortcut docs list KDE Plasma alongside GNOME, Cinnamon, XFCE and LXQt.
+
+## 3.8
+
+- Added global keyboard shortcut support for KDE Plasma. VoxFox registers its
+  six shortcuts as .desktop files with X-KDE-Shortcuts lines (the stable route
+  on Plasma 5 and 6); the Super key maps to Meta. A newly installed shortcut
+  may only become active after logging out and back in. This adds to the
+  existing GNOME, Cinnamon, XFCE and LXQt support.
+
+## 3.7
+
+- The first-run setup now shows clear progress: a step counter ("[2/3]
+  Downloading voices…") and a progress bar that fills during the Piper and
+  voice downloads and pulses during the dictation install, so it is obvious
+  the installation is working and how far along it is. The progress bar also
+  appears in the "Set up VoxFox" window itself.
+- Fixed installation on some systems (e.g. Kubuntu 26.04) where the hardened
+  Piper extraction wrongly rejected Piper's own internal symlink
+  (libpiper_phonemize.so). Internal links are now allowed; only links that
+  point outside the target directory are refused.
+- Security and reliability fixes from an external code review: the Piper
+  download now extracts safely (no path traversal) with a pinned version and
+  optional checksum verification, and setup failures are reported honestly
   with a non-zero exit code instead of always claiming success.
-
+- "Confirm transcription before typing" now actually works: when enabled, a
+  preview dialog lets you review and edit the text, then copy it to the
+  clipboard to paste yourself with Ctrl+V.
 - Fixed the manual clipboard fallback so a dictated text you need to paste by
   hand is no longer overwritten; fixed a remote-test status that vanished
   after 8 ms; the web-page reader now enforces its own chunk-size limit and
@@ -16,6 +49,10 @@
   button merges the one for the current language with one click.
 - The settings tabs are reordered: Shortcuts, Web page and Interface moved
   forward and Misc is now the last tab.
+
+## 3.6
+
+- Development version; its changes were released together with 3.7.
 
 ## 3.5
 

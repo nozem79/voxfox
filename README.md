@@ -20,13 +20,13 @@ mistake.
 **Debian, Ubuntu, Linux Mint** (and other Debian-based distributions):
 
 ```bash
-sudo apt install ./voxfox_3.5_all.deb
+sudo apt install ./voxfox_*_all.deb
 ```
 
 **Fedora** (and other RPM-based distributions):
 
 ```bash
-sudo dnf install ./voxfox-3.5-1.noarch.rpm
+sudo dnf install ./voxfox-*.noarch.rpm
 ```
 
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
@@ -325,7 +325,7 @@ VoxFox can register six global shortcuts for you, but never does so
 automatically — some desktops already use these keys for other things. Open
 **Settings → Shortcuts**, optionally change any combination (click it and press
 the keys you want), then choose **Install shortcuts**. They are written to your
-desktop on **Cinnamon, GNOME, LXQt and XFCE** (on Cinnamon the desktop is
+desktop on **Cinnamon, GNOME, LXQt, XFCE and KDE Plasma** (on Cinnamon the desktop is
 briefly reloaded so the new keys take effect immediately). **Reset to defaults**
 restores the originals, and you can always change or remove them later in your
 desktop's own keyboard settings.

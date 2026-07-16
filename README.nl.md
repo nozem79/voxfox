@@ -18,13 +18,13 @@ horen.
 **Debian, Ubuntu, Linux Mint** (en andere Debian-gebaseerde distributies):
 
 ```bash
-sudo apt install ./voxfox_3.5_all.deb
+sudo apt install ./voxfox_*_all.deb
 ```
 
 **Fedora** (en andere RPM-gebaseerde distributies):
 
 ```bash
-sudo dnf install ./voxfox-3.5-1.noarch.rpm
+sudo dnf install ./voxfox-*.noarch.rpm
 ```
 
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
@@ -335,7 +335,7 @@ VoxFox kan zes globale sneltoetsen voor je instellen, maar doet dat nooit
 automatisch — sommige bureaubladen gebruiken deze toetsen al voor iets anders.
 Open **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie (klik erop
 en druk de gewenste toetsen in) en kies dan **Sneltoetsen installeren**. Ze
-worden geschreven naar je bureaublad op **Cinnamon, GNOME, LXQt en XFCE** (op
+worden geschreven naar je bureaublad op **Cinnamon, GNOME, LXQt, XFCE en KDE Plasma** (op
 Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
 werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
 later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
