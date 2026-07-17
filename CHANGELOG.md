@@ -1,3 +1,18 @@
+## 3.9
+
+- After installing the speech engine from the "Set up VoxFox" window, the
+  main window now refreshes itself: the "Piper is not installed" notice
+  disappears and the voice lists reload, so no restart is needed.
+- Fixed the main window becoming invisible on a first install under KDE: an
+  early size measurement could come back near-zero and the auto-shrink then
+  resized the window to a few pixels. Suspicious measurements are now skipped
+  and the window never shrinks below a sane minimum size.
+- Remaining fixes from the external code review: a settings file with one
+  corrupted section now keeps all other settings (only the broken section is
+  reset); settings export no longer includes API keys; and the fallback
+  runtime directory in /tmp is created with strict permissions and verified
+  against symlink tricks.
+
 ## 3.8.1
 
 - Fixed KDE Plasma shortcuts so they now correctly overwrite an existing

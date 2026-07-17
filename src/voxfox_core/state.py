@@ -133,6 +133,16 @@ def load_state():
     try:
         with open(path) as f:
             s = json.load(f)
+            if not isinstance(s, dict):
+                raise ValueError("state root is not an object")
+            # Normalise section types: when a single section is corrupted
+            # (wrong type), replace just that section with its default rather
+            # than discarding every setting the user has.
+            for sect in ("slot1", "slot2", "whisper", "webread", "ui_layout",
+                         "pronunciations", "shortcut_bindings",
+                         "cinnamon_shortcut_slots", "gnome_shortcut_slots"):
+                if sect in s and not isinstance(s[sect], dict):
+                    s[sect] = copy.deepcopy(DEFAULT_STATE.get(sect, {}))
             for slot in ["slot1", "slot2"]:
                 if slot not in s:
                     s[slot] = copy.deepcopy(DEFAULT_STATE[slot])

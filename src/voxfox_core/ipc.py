@@ -28,7 +28,13 @@ from .state import load_state
 # ── IPC ────────────────────────────────────────────────────────────────────────
 def _ensure_runtime_dir():
     try:
-        os.makedirs(RUNTIME_DIR, exist_ok=True)
+        os.makedirs(RUNTIME_DIR, mode=0o700, exist_ok=True)
+        # The /tmp fallback path is predictable; make sure nobody planted a
+        # symlink or foreign directory there before we put our socket in it.
+        st_ = os.lstat(RUNTIME_DIR)
+        if stat.S_ISLNK(st_.st_mode) or st_.st_uid != os.getuid():
+            raise RuntimeError("runtime dir is a symlink or not ours")
+        os.chmod(RUNTIME_DIR, 0o700)
     except Exception as e:
         log.warning(f"Could not create runtime dir {RUNTIME_DIR}: {e}")
 

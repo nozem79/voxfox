@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.8.1"
+APP_VERSION = "3.9"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -1656,9 +1656,17 @@ class PreferencesWindow(Gtk.Window):
         if resp == Gtk.ResponseType.ACCEPT and dlg.get_file():
             path = dlg.get_file().get_path()
             try:
+                import copy as _copy
                 import json
+                # Never write secrets into an export: exports get shared and
+                # end up on other machines and in support mails.
+                clean = _copy.deepcopy(self.state)
+                if isinstance(clean.get("whisper"), dict):
+                    clean["whisper"]["remote_api_key"] = ""
+                if isinstance(clean.get("webread"), dict):
+                    clean["webread"]["api_key"] = ""
                 with open(path, "w", encoding="utf-8") as f:
-                    json.dump(self.state, f, ensure_ascii=False, indent=2)
+                    json.dump(clean, f, ensure_ascii=False, indent=2)
                 self.win.set_status(_("Settings exported"))
             except Exception as e:
                 self.win.set_status(f"{_('Export failed')}: {e}")
@@ -1894,7 +1902,16 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         def do_fit():
             try:
                 _min, nat = self.get_preferred_size()
-                w, h = max(1, nat.width), max(1, nat.height)
+                # A measurement taken before the widgets are fully realized
+                # (seen on KDE/KWin during the very first start) can come back
+                # near-zero; resizing to that makes the window invisible.
+                # Skip suspicious measurements and never shrink below a sane
+                # floor, so the window always stays visible and grabbable.
+                if nat.width < 120 or nat.height < 50:
+                    log.debug(f"fit skipped: suspicious size "
+                              f"{nat.width}x{nat.height}")
+                    return False
+                w, h = max(220, nat.width), max(80, nat.height)
                 if keep_width:
                     w = max(w, self.get_width())
             except Exception as e:
@@ -2704,6 +2721,14 @@ class SetupDialog(Gtk.Window):
                 _("Setup complete") if ok
                 else _("Setup incomplete: %s") % msg)
             self._refresh_states()
+            # Also refresh the main window behind us: reload the voice
+            # dropdowns and re-check the "Piper not installed" banner, so
+            # the user doesn't need to restart VoxFox after installing.
+            try:
+                self.parent.reload_active_controls()
+                self.parent.refresh_setup_bar()
+            except Exception as e:
+                log.debug(f"parent refresh after setup failed: {e}")
 
         def worker():
             ok, msg = run_setup(
