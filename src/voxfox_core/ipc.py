@@ -17,7 +17,8 @@
 
 """voxfox_core.ipc — Single-instance IPC, the socket server, and the CLI dispatcher."""
 
-import fcntl, os, socket, sys, threading
+
+import fcntl, os, socket, stat, sys, threading
 from .a11y import _clipboard_set
 from .common import APP_NAME, LOCK_FILE, PID_FILE, RUNTIME_DIR, SOCKET_PATH, _, load_translations, log
 from .ocr import OCR_SUPPORTED_EXTS, _tess_lang, ocr_file

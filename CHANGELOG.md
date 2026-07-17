@@ -1,3 +1,8 @@
+## 3.9.1
+
+- Hotfix: 3.9 was missing an import in the IPC module (caught by CI), which
+  could crash VoxFox at startup when creating the fallback runtime directory.
+
 ## 3.9
 
 - After installing the speech engine from the "Set up VoxFox" window, the
