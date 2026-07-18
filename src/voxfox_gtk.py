@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.9.1"
+APP_VERSION = "3.10"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -119,6 +119,53 @@ TOOLBAR_BUTTONS = [
      "Open a PDF or image to read via OCR", "do_ocr_file", None),
 ]
 TOOLBAR_IDS = [b[0] for b in TOOLBAR_BUTTONS] + ["switch"]
+
+# Button view modes (Settings -> Interface -> Button display).
+UI_VIEWS = ["icons", "both", "text"]
+UI_ORIENTS = ["horizontal", "vertical"]
+
+def _register_icon_path():
+    """Make the bundled voxfox-*-symbolic icons findable. Installed packages
+    ship them under /usr/share/voxfox/icons; a git checkout has them in
+    ./icons next to src/. Symbolic SVGs are recoloured by GTK to match the
+    theme, so they work in light and dark themes alike."""
+    try:
+        theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+    except Exception as e:
+        log.debug(f"icon theme unavailable: {e}")
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    for base in ("/usr/share/voxfox/icons",
+                 os.path.join(here, "..", "icons")):
+        if os.path.isdir(base):
+            try:
+                theme.add_search_path(os.path.abspath(base))
+            except Exception as e:
+                log.debug(f"add_search_path {base}: {e}")
+
+
+def _btn_make_content(btn, icon_id, text):
+    """Give a toolbar button an icon+label child. The parts are kept on the
+    button (btn._icon / btn._lbl) so the view mode can toggle visibility and
+    dynamic labels can be updated without Gtk.Button.set_label (which would
+    replace our custom child with a plain label again)."""
+    box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=7)
+    box.set_halign(Gtk.Align.CENTER)
+    img = Gtk.Image.new_from_icon_name(f"voxfox-{icon_id}-symbolic")
+    img.set_pixel_size(20)
+    lbl = Gtk.Label(label=text)
+    box.append(img)
+    box.append(lbl)
+    btn.set_child(box)
+    btn._icon, btn._lbl = img, lbl
+
+
+def _btn_set_text(btn, text):
+    """Update the label of a toolbar button built by _btn_make_content."""
+    if getattr(btn, "_lbl", None) is not None:
+        btn._lbl.set_text(text)
+    else:
+        btn.set_label(text)
 
 
 def _scale_css(scale):
@@ -790,6 +837,47 @@ class PreferencesWindow(Gtk.Window):
         size_frame.set_child(srow)
         box.append(size_frame)
 
+        # Button display: icons only / icon + text / text only.
+        view_frame = Gtk.Frame(label=_("Button display"))
+        vrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(vrow, f"set_margin_{m}")(10)
+        view_labels = [("icons", _("Icon only")), ("both", _("Icon and text")),
+                       ("text", _("Text only"))]
+        vleader = None
+        cur_view = self.state.get("ui_view", "both")
+        for val, lbl in view_labels:
+            rb = Gtk.CheckButton(label=lbl)
+            if vleader is None:
+                vleader = rb
+            else:
+                rb.set_group(vleader)
+            rb.set_active(val == cur_view)
+            rb.connect("toggled", self._on_view_toggled, val)
+            vrow.append(rb)
+        view_frame.set_child(vrow)
+        box.append(view_frame)
+
+        # Orientation: horizontal (rows) or vertical (a narrow column).
+        or_frame = Gtk.Frame(label=_("Orientation"))
+        orow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(orow, f"set_margin_{m}")(10)
+        cur_or = self.state.get("ui_orientation", "horizontal")
+        oleader = None
+        for val, lbl in [("horizontal", _("Horizontal")),
+                         ("vertical", _("Vertical"))]:
+            rb = Gtk.CheckButton(label=lbl)
+            if oleader is None:
+                oleader = rb
+            else:
+                rb.set_group(oleader)
+            rb.set_active(val == cur_or)
+            rb.connect("toggled", self._on_orient_toggled, val)
+            orow.append(rb)
+        or_frame.set_child(orow)
+        box.append(or_frame)
+
         # Buttons: per-button visibility toggle + up/down reordering.
         btn_frame = Gtk.Frame(label=_("Buttons"))
         self._iface_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
@@ -800,6 +888,20 @@ class PreferencesWindow(Gtk.Window):
         btn_frame.set_child(self._iface_list)
         box.append(btn_frame)
         return box
+
+    def _on_orient_toggled(self, rb, val):
+        if not rb.get_active():
+            return
+        self.state["ui_orientation"] = val
+        vf.save_state(self.state)
+        self.win._apply_ui_mode()
+
+    def _on_view_toggled(self, rb, val):
+        if not rb.get_active():
+            return
+        self.state["ui_view"] = val
+        vf.save_state(self.state)
+        self.win._apply_ui_mode()
 
     def _on_scale_toggled(self, rb, scale):
         if rb.get_active():
@@ -1888,6 +1990,101 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self._load_scale_css()
         self._fit_to_content()
 
+    def _apply_ui_mode(self, fit=True):
+        """Apply the ui_view and ui_orientation settings: rebuild the button
+        rows (horizontal: up to 5 per row; vertical: one per row), toggle the
+        icon/label parts of every button, align content (left in vertical
+        with text, centred otherwise), and switch the header to its slim
+        logo-only form in the narrow vertical+icons mode. Tooltips and
+        accessibility labels are unaffected in every mode, so screen readers
+        keep announcing the button names."""
+        mode = self.state.get("ui_view", "both")
+        if mode not in UI_VIEWS:
+            mode = "both"
+        orient = self.state.get("ui_orientation", "horizontal")
+        if orient not in UI_ORIENTS:
+            orient = "horizontal"
+        vertical = orient == "vertical"
+        slim = vertical and mode == "icons"
+
+        # 1. Per-button parts + alignment.
+        for btn in self._toolbar_btns.values():
+            if getattr(btn, "_icon", None) is None:
+                continue
+            btn._icon.set_visible(mode != "text")
+            btn._lbl.set_visible(mode != "icons")
+            box = btn._icon.get_parent()
+            if box is not None:
+                box.set_halign(Gtk.Align.START if vertical and mode != "icons"
+                               else Gtk.Align.CENTER)
+
+        # 2. Rebuild the rows.
+        cont = self._toolbar_container
+        child = cont.get_first_child()
+        while child is not None:
+            nxt = child.get_next_sibling()
+            if isinstance(child, Gtk.Box):
+                inner = child.get_first_child()
+                while inner is not None:
+                    inxt = inner.get_next_sibling()
+                    child.remove(inner)
+                    inner = inxt
+            cont.remove(child)
+            child = nxt
+
+        layout = vf.reconcile_toolbar_layout(self.state.get("ui_layout"),
+                                             TOOLBAR_IDS)
+        visible_ids = [e["id"] for e in layout["buttons"] if e["visible"]]
+        if vertical:
+            rows = [[bid] for bid in visible_ids]
+        else:
+            n = len(visible_ids)
+            if n <= 5:
+                rows = [visible_ids] if visible_ids else []
+            else:
+                half = (n + 1) // 2
+                rows = [visible_ids[:half], visible_ids[half:]]
+        for row_ids in rows:
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0,
+                          homogeneous=True)
+            row.set_halign(Gtk.Align.FILL)
+            row.set_hexpand(True)
+            for bid in row_ids:
+                btn = self._toolbar_btns[bid]
+                btn.set_hexpand(True)
+                row.append(btn)
+            cont.append(row)
+
+        # 3. Column gear/menu at the bottom (only in slim mode), stacked
+        # vertically so they never force the column wider than one button.
+        cont.append(self._col_sep)
+        cont.append(self._col_gear)
+        cont.append(self._col_menu)
+        self._col_sep.set_visible(slim)
+        self._col_gear.set_visible(slim)
+        self._col_menu.set_visible(slim)
+
+        # 4. Slim header: only the logo (keeps the drag area), no name; the
+        # normal header returns as soon as we leave the slim mode.
+        try:
+            if slim:
+                # An empty title collapses the title area; only the close
+                # button remains, so the header adds no width of its own.
+                self._header.set_title_widget(Gtk.Label(label=""))
+                self._header.set_decoration_layout(":close")
+                self._header_gear.set_visible(False)
+                self._header_menu.set_visible(False)
+            else:
+                self._header.set_title_widget(None)
+                self._header.set_decoration_layout(":minimize,close")
+                self._header_gear.set_visible(True)
+                self._header_menu.set_visible(True)
+        except Exception as e:
+            log.debug(f"slim header failed: {e}")
+
+        if fit:
+            self._fit_to_content()
+
     def _fit_to_content(self, keep_width=False):
         """Shrink the window to the toolbar's current natural size (X11, best-
         effort). GTK4 doesn't auto-shrink a window when its content gets smaller
@@ -1907,13 +2104,27 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 # near-zero; resizing to that makes the window invisible.
                 # Skip suspicious measurements and never shrink below a sane
                 # floor, so the window always stays visible and grabbable.
-                if nat.width < 120 or nat.height < 50:
+                vertical = self.state.get("ui_orientation") == "vertical"
+                if nat.height < 50 or nat.width < (40 if vertical else 120):
                     log.debug(f"fit skipped: suspicious size "
                               f"{nat.width}x{nat.height}")
                     return False
-                w, h = max(220, nat.width), max(80, nat.height)
-                if keep_width:
-                    w = max(w, self.get_width())
+                if vertical:
+                    # Pin the width to the button column and stay there: the
+                    # natural width of the whole window includes status text,
+                    # which would widen the narrow sidebar every time a
+                    # status appears (e.g. toggling hover). Wrapping labels
+                    # are fine with a narrow width, so cap on the column.
+                    try:
+                        _cm, cnat = self._toolbar_container.get_preferred_size()
+                        w = max(64, cnat.width + 20)
+                    except Exception:
+                        w = max(64, self.get_width())
+                    h = max(80, nat.height)
+                else:
+                    w, h = max(220, nat.width), max(80, nat.height)
+                    if keep_width:
+                        w = max(w, self.get_width())
             except Exception as e:
                 log.debug(f"fit measure failed: {e}")
                 return False
@@ -1941,6 +2152,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # (added below), not in the header — that frees the title bar to show
         # the program name.
         self.switch_btn = Gtk.Button()
+        _btn_make_content(self.switch_btn, "switch", "")
         self.switch_btn.set_tooltip_text(_("Switch language slot"))
         _a11y(self.switch_btn, _("Switch language slot"))
         self.switch_btn.connect("clicked", lambda *_a: self.do_toggle_slot())
@@ -1950,6 +2162,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         _a11y(gear, _("Settings"))
         gear.connect("clicked", lambda *_a: self.open_preferences())
         header.pack_end(gear)
+        self._header = header
+        self._header_gear = gear
 
         menu = Gio.Menu()
         menu.append(_("Set up VoxFox…"), "app.first_run")
@@ -1960,6 +2174,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         menu_btn.set_tooltip_text(_("Menu"))
         _a11y(menu_btn, _("Menu"))
         header.pack_end(menu_btn)
+        self._header_menu = menu_btn
+        self._menu_model = menu
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         outer.add_css_class("voxfox-root")   # scopes the 3.0 UI-scale CSS
@@ -1984,9 +2200,11 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # All seven are always instantiated (other code refers to self.read_btn,
         # self.whisper_btn, ...), but only the enabled ones are packed, in the
         # chosen order. The language switcher is fixed and always shown last.
+        _register_icon_path()
         self._toolbar_btns = {}
         for bid, attr, label, tip, a11y_lbl, handler, css in TOOLBAR_BUTTONS:
-            btn = Gtk.Button(label=_(label))
+            btn = Gtk.Button()
+            _btn_make_content(btn, bid, _(label))
             btn.set_tooltip_text(_(tip))
             _a11y(btn, _(a11y_lbl))
             if css:
@@ -2013,28 +2231,27 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # might stack in one column — which left empty vertical space the window
         # could not be shrunk below. Explicit rows give a predictable, compact
         # size: up to 5 buttons on one row, 6+ split evenly over two rows.
-        visible_ids = [e["id"] for e in layout["buttons"] if e["visible"]]
-        n = len(visible_ids)
-        if n <= 5:
-            rows = [visible_ids] if visible_ids else []
-        else:
-            half = (n + 1) // 2
-            rows = [visible_ids[:half], visible_ids[half:]]
         toolbar = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         toolbar.add_css_class("voxfox-toolbar")
         toolbar.set_halign(Gtk.Align.FILL)
         toolbar.set_hexpand(True)
-        for row_ids in rows:
-            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0,
-                          homogeneous=True)
-            row.set_halign(Gtk.Align.FILL)
-            row.set_hexpand(True)
-            for bid in row_ids:
-                btn = self._toolbar_btns[bid]
-                btn.set_hexpand(True)
-                row.append(btn)
-            toolbar.append(row)
+        self._toolbar_container = toolbar
+
+        # Column-mode settings/menu buttons: in the narrow vertical+icons
+        # sidebar the header shows only the logo, so gear + menu move to the
+        # bottom of the button column (hidden in every other mode).
+        self._col_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self._col_gear = Gtk.Button(icon_name="emblem-system-symbolic")
+        self._col_gear.set_tooltip_text(_("Settings"))
+        _a11y(self._col_gear, _("Settings"))
+        self._col_gear.connect("clicked", lambda *_a: self.open_preferences())
+        self._col_menu = Gtk.MenuButton(icon_name="open-menu-symbolic",
+                                        menu_model=self._menu_model)
+        self._col_menu.set_tooltip_text(_("Menu"))
+        _a11y(self._col_menu, _("Menu"))
+
         outer.append(toolbar)
+        self._apply_ui_mode(fit=False)
 
         # STATUS role makes screen readers announce status changes (a live
         # region), so blind users hear "Reading...", errors, etc.
@@ -2171,13 +2388,14 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def _sync_switch_btn(self):
         try:
-            self.switch_btn.set_label(
+            _btn_set_text(self.switch_btn, 
                 vf.piper_lang_short(self._active_cfg().get("lang", "")))
         except Exception:
-            self.switch_btn.set_label("•")
+            _btn_set_text(self.switch_btn, "•")
 
     def _sync_pause_btn(self):
-        self.pause_btn.set_label(_("Resume") if vf.is_paused() else _("Pause"))
+        _btn_set_text(self.pause_btn,
+                      _("Resume") if vf.is_paused() else _("Pause"))
 
     def open_preferences(self):
         self._prefs = PreferencesWindow(self)
@@ -2253,7 +2471,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             self.set_status(_("Stopping..."), duration=0)
             return
         self.whisper_on = True
-        self.whisper_btn.set_label(_("Stop"))
+        _btn_set_text(self.whisper_btn, _("Stop"))
         self.whisper_btn.add_css_class("destructive-action")
         self.set_status(_("Recording..."), duration=0)
         self._record_stop_event = threading.Event()
@@ -2373,7 +2591,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def _whisper_reset_btn(self):
         self.whisper_on = False
-        self.whisper_btn.set_label(_("Speak"))
+        _btn_set_text(self.whisper_btn, _("Speak"))
         self.whisper_btn.remove_css_class("destructive-action")
 
     def do_ocr_file(self):

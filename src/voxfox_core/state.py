@@ -27,6 +27,8 @@ DEFAULT_STATE = {
     "slot1": {"lang": "English", "voice": "en_GB-alba-medium", "speed": 1.0, "pitch": 0.0},
     "slot2": {"lang": "Dutch",   "voice": "nl_NL-pim-medium",  "speed": 1.0, "pitch": 0.0},
     "active_slot": "slot1",
+    "ui_view": "both",         # toolbar buttons: icons / both / text
+    "ui_orientation": "horizontal",  # toolbar layout: horizontal / vertical
     "whisper": {
         "model": "small",          # tiny / base / small / medium / large-v3
         "mic_id": "",              # PulseAudio source name; "" = system default

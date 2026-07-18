@@ -247,5 +247,12 @@
   "Installing speech engine...": "Spraakengine installeren…",
   "Downloading voices...": "Stemmen downloaden…",
   "Installing dictation and OCR support...": "Ondersteuning voor dicteren en OCR installeren…",
-  "Voices": "Stemmen"
+  "Voices": "Stemmen",
+  "Button display": "Knopweergave",
+  "Icon only": "Alleen icoon",
+  "Icon and text": "Icoon en tekst",
+  "Text only": "Alleen tekst",
+  "Orientation": "Oriëntatie",
+  "Horizontal": "Horizontaal",
+  "Vertical": "Verticaal"
 }

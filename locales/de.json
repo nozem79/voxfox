@@ -247,5 +247,12 @@
   "Installing speech engine...": "Sprachmodul wird installiert…",
   "Downloading voices...": "Stimmen werden heruntergeladen…",
   "Installing dictation and OCR support...": "Unterstützung für Diktat und OCR wird installiert…",
-  "Voices": "Stimmen"
+  "Voices": "Stimmen",
+  "Button display": "Schaltflächenanzeige",
+  "Icon only": "Nur Symbol",
+  "Icon and text": "Symbol und Text",
+  "Text only": "Nur Text",
+  "Orientation": "Ausrichtung",
+  "Horizontal": "Horizontal",
+  "Vertical": "Vertikal"
 }

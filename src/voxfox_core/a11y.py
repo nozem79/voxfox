@@ -318,7 +318,29 @@ def _node_text(node) -> str:
     except Exception:
         pass
 
-    # 6. Last resort: name the control TYPE for interactive, nameless nodes
+    # 6. Climb to a named interactive ancestor: composite buttons (an icon
+    # plus a label in a box) hit-test on their inner parts, which have no
+    # name of their own. Reading the parent button's name makes the whole
+    # button announce as one unit wherever the pointer is.
+    try:
+        import pyatspi
+        parent = node.parent
+        hops = 0
+        while parent is not None and hops < 3:
+            role = parent.getRole()
+            if role in (pyatspi.ROLE_PUSH_BUTTON, pyatspi.ROLE_TOGGLE_BUTTON,
+                        pyatspi.ROLE_CHECK_BOX, pyatspi.ROLE_RADIO_BUTTON,
+                        pyatspi.ROLE_MENU_ITEM):
+                pname = (parent.name or "").strip()
+                if pname and len(pname) > 1 and not _is_daemon(pname):
+                    return pname
+                break
+            parent = parent.parent
+            hops += 1
+    except Exception:
+        pass
+
+    # 7. Last resort: name the control TYPE for interactive, nameless nodes
     return _label_for_role(node)
 
 

@@ -247,5 +247,12 @@
   "Installing speech engine...": "正在安装语音引擎…",
   "Downloading voices...": "正在下载语音…",
   "Installing dictation and OCR support...": "正在安装听写和 OCR 支持…",
-  "Voices": "语音"
+  "Voices": "语音",
+  "Button display": "按钮显示",
+  "Icon only": "仅图标",
+  "Icon and text": "图标和文字",
+  "Text only": "仅文字",
+  "Orientation": "方向",
+  "Horizontal": "水平",
+  "Vertical": "垂直"
 }

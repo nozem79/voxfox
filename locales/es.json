@@ -247,5 +247,12 @@
   "Installing speech engine...": "Instalando el motor de voz…",
   "Downloading voices...": "Descargando voces…",
   "Installing dictation and OCR support...": "Instalando dictado y OCR…",
-  "Voices": "Voces"
+  "Voices": "Voces",
+  "Button display": "Vista de botones",
+  "Icon only": "Solo icono",
+  "Icon and text": "Icono y texto",
+  "Text only": "Solo texto",
+  "Orientation": "Orientación",
+  "Horizontal": "Horizontal",
+  "Vertical": "Vertical"
 }

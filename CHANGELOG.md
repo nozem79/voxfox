@@ -1,3 +1,19 @@
+## 3.10
+
+- The toolbar buttons now have icons. Eight bundled symbolic icons (speaker,
+  filled stop square, solid pause bars, a mouth for dictation, pointer,
+  dashed selection frame, document with text lines, and a two-arrow language
+  switch) recolour automatically with light and dark themes.
+- New in Settings -> Interface: **Button display** (icon only / icon and
+  text / text only) and **Orientation** (horizontal rows or a narrow vertical
+  column). In the narrowest form (vertical + icon only) the title bar shrinks
+  to just a close button, the Settings and Menu buttons move to the bottom of
+  the column, and the window pins its width to the button column so status
+  messages never widen it.
+- Hover reading now announces a whole button as one unit wherever the pointer
+  is (icon or text), in VoxFox and in other applications with composite
+  buttons.
+
 ## 3.9.1
 
 - Hotfix: 3.9 was missing an import in the IPC module (caught by CI), which

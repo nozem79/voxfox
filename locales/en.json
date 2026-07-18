@@ -248,5 +248,12 @@
   "Installing speech engine...": "Installing speech engine...",
   "Downloading voices...": "Downloading voices...",
   "Installing dictation and OCR support...": "Installing dictation and OCR support...",
-  "Voices": "Voices"
+  "Voices": "Voices",
+  "Button display": "Button display",
+  "Icon only": "Icon only",
+  "Icon and text": "Icon and text",
+  "Text only": "Text only",
+  "Orientation": "Orientation",
+  "Horizontal": "Horizontal",
+  "Vertical": "Vertical"
 }

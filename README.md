@@ -155,6 +155,14 @@ The *Interface* tab lets you tailor the toolbar and overall size:
 
 - **Interface size** — scale the whole window to 75 %, 100 % or 125 %. Useful
   on high-DPI screens or when you want larger hit targets.
+- **Button display** — show the toolbar buttons as *icon only*, *icon and
+  text*, or *text only*. With icon-only buttons the text stays available as a
+  tooltip, and screen readers keep announcing the button names in every mode.
+- **Orientation** — lay the buttons out *horizontally* (rows, the default) or
+  *vertically* (a narrow column you can park at the edge of your screen).
+  Vertical with icon-only gives the narrowest form: the title bar shrinks to
+  just a close button and the Settings and Menu buttons move to the bottom of
+  the column.
 - **Buttons** — show or hide each toolbar button with a checkbox, and reorder
   them with the up/down arrows. Hide the ones you never use (for example *Pause*
   or *OCR*) to keep the window compact; the layout is remembered.

@@ -247,5 +247,12 @@
   "Installing speech engine...": "جارٍ تثبيت محرك النطق…",
   "Downloading voices...": "جارٍ تنزيل الأصوات…",
   "Installing dictation and OCR support...": "جارٍ تثبيت دعم الإملاء وOCR…",
-  "Voices": "الأصوات"
+  "Voices": "الأصوات",
+  "Button display": "عرض الأزرار",
+  "Icon only": "أيقونة فقط",
+  "Icon and text": "أيقونة ونص",
+  "Text only": "نص فقط",
+  "Orientation": "الاتجاه",
+  "Horizontal": "أفقي",
+  "Vertical": "عمودي"
 }

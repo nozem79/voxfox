@@ -158,6 +158,14 @@ Met het tabblad *Interface* pas je de toolbar en de algehele grootte aan:
 
 - **Interfacegrootte** — schaal het hele venster naar 75 %, 100 % of 125 %.
   Handig op high-DPI-schermen of als je grotere klikdoelen wilt.
+- **Knopweergave** — toon de toolbarknoppen als *alleen icoon*, *icoon en
+  tekst* of *alleen tekst*. Bij alleen-icoon blijft de tekst beschikbaar als
+  tooltip, en schermlezers blijven in elke stand de knopnamen aankondigen.
+- **Oriëntatie** — zet de knoppen *horizontaal* (rijen, de standaard) of
+  *verticaal* (een smalle kolom die je aan de rand van je scherm kunt
+  parkeren). Verticaal met alleen-icoon geeft de smalste vorm: de titelbalk
+  krimpt tot alleen een sluitknop en de knoppen Instellingen en Menu
+  verhuizen naar onderin de kolom.
 - **Knoppen** — toon of verberg elke toolbarknop met een vinkje en wijzig de
   volgorde met de pijltjes omhoog/omlaag. Verberg de knoppen die je nooit
   gebruikt (bijvoorbeeld *Pauzeren* of *OCR*) om het venster compact te houden;

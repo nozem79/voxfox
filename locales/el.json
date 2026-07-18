@@ -247,5 +247,12 @@
   "Installing speech engine...": "Εγκατάσταση μηχανής ομιλίας…",
   "Downloading voices...": "Λήψη φωνών…",
   "Installing dictation and OCR support...": "Εγκατάσταση υποστήριξης υπαγόρευσης και OCR…",
-  "Voices": "Φωνές"
+  "Voices": "Φωνές",
+  "Button display": "Εμφάνιση κουμπιών",
+  "Icon only": "Μόνο εικονίδιο",
+  "Icon and text": "Εικονίδιο και κείμενο",
+  "Text only": "Μόνο κείμενο",
+  "Orientation": "Προσανατολισμός",
+  "Horizontal": "Οριζόντια",
+  "Vertical": "Κατακόρυφα"
 }
