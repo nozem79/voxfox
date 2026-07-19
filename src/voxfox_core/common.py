@@ -71,6 +71,31 @@ SOCKET_PATH = os.path.join(RUNTIME_DIR, "voxfox.sock")
 PID_FILE    = os.path.join(RUNTIME_DIR, "voxfox.pid")
 LOCK_FILE   = os.path.join(RUNTIME_DIR, "voxfox.lock")
 
+
+def ram_tmpdir():
+    """A RAM-backed directory for short-lived audio and scratch files.
+
+    Reading aloud writes every synthesised sentence as a WAV; on a slow SSD
+    that costs real time and needless wear. XDG_RUNTIME_DIR and /dev/shm are
+    tmpfs (RAM) on modern Linux, so temp files there never touch the disk.
+    Falls back to the ordinary temp dir when neither is usable."""
+    import tempfile
+    cands = []
+    xdg = os.environ.get("XDG_RUNTIME_DIR", "")
+    if xdg:
+        cands.append(xdg)
+    cands.append("/dev/shm")
+    for base in cands:
+        try:
+            if os.path.isdir(base) and os.access(base, os.W_OK):
+                d = os.path.join(base, "voxfox-tmp")
+                os.makedirs(d, mode=0o700, exist_ok=True)
+                return d
+        except Exception:
+            continue
+    return tempfile.gettempdir()
+
+
 STATE_FILE   = os.path.join(CONFIG_DIR, "state.json")
 HISTORY_FILE = os.path.join(CONFIG_DIR, "history.json")
 LOG_FILE     = os.path.join(CACHE_DIR, "voxfox.log")
@@ -442,6 +467,7 @@ def _have(cmd):
 
 
 __all__ = [
+    "ram_tmpdir",
     "log",
     "APP_NAME",
     "PIPER_DIR",

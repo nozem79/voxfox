@@ -18,7 +18,7 @@
 """voxfox_core.ocr — OCR for images and PDFs, plus wrapped-line/paragraph merging."""
 
 import os, re, subprocess, tempfile
-from .common import _, _have, app, log
+from .common import _, _have, app, log, ram_tmpdir
 
 
 
@@ -181,7 +181,7 @@ def ocr_pdf(pdf_path, tess_lang="eng", progress_cb=None):
     if progress_cb:
         progress_cb(_("Scanned PDF — running OCR (this can take a while)..."))
 
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir=ram_tmpdir()) as tmpdir:
         # Converteer alle pagina's naar PNG op 300 DPI (optimaal voor Tesseract)
         prefix = os.path.join(tmpdir, "page")
         try:

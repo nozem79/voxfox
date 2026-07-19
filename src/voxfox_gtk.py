@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.10"
+APP_VERSION = "3.11"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -1890,7 +1890,7 @@ class PreferencesWindow(Gtk.Window):
 
         def worker():
             import wave
-            tmp = os.path.join(tempfile.gettempdir(), "voxfox_test.wav")
+            tmp = os.path.join(vf.ram_tmpdir(), "voxfox_test.wav")
             ok_text = ""
             err = ""
             try:
@@ -2482,7 +2482,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         lang_hint = vf._whisper_lang_code(self._active_cfg().get("lang", ""))
         wav_path = None
         try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False,
+                                             dir=vf.ram_tmpdir()) as f:
                 wav_path = f.name
             ok, msg = vf.record_audio(wav_path, mic_id=w.get("mic_id", ""),
                                       stop_evt=self._record_stop_event)

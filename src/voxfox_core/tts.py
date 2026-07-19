@@ -18,7 +18,7 @@
 """voxfox_core.tts — Text-to-speech: Piper voices, chunking, the speaking worker."""
 
 import json, os, re, subprocess, tempfile, threading, time, urllib.request
-from .common import BASE_URL, CHUNK_SIZE, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log
+from .common import BASE_URL, CHUNK_SIZE, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
 
 
 
@@ -366,7 +366,8 @@ class _PiperServer:
 
     def _start(self, model, length_scale, sentence_silence):
         self._stop()
-        self._outdir = tempfile.mkdtemp(prefix="voxfox_piper_")
+        self._outdir = tempfile.mkdtemp(prefix="voxfox_piper_",
+                                        dir=ram_tmpdir())
         key = (model, length_scale, sentence_silence)
         cmd = [
             PIPER_BIN,

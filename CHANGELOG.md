@@ -1,3 +1,11 @@
+## 3.11
+
+- Temporary audio now lives in RAM instead of on disk: synthesised sentences
+  from the speech engine, dictation recordings, the microphone test and OCR
+  scratch files are written to a tmpfs location (XDG_RUNTIME_DIR or
+  /dev/shm) with a plain temp-dir fallback. This makes reading aloud
+  noticeably smoother on slow SSDs/eMMC and avoids needless disk writes.
+
 ## 3.10
 
 - The toolbar buttons now have icons. Eight bundled symbolic icons (speaker,
