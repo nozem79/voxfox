@@ -254,5 +254,17 @@
   "Text only": "نص فقط",
   "Orientation": "الاتجاه",
   "Horizontal": "أفقي",
-  "Vertical": "عمودي"
+  "Vertical": "عمودي",
+  "Live transcription": "النسخ المباشر",
+  "Listening...": "يستمع…",
+  "Clear": "مسح",
+  "Smaller text": "نص أصغر",
+  "Larger text": "نص أكبر",
+  "Falling behind — a sentence was skipped": "متأخر — تم تخطي جملة",
+  "Sensitivity": "الحساسية",
+  "High": "عالية",
+  "Medium": "متوسطة",
+  "Low": "منخفضة",
+  "How easily speech is detected. High suits quiet laptop microphones.": "مدى سهولة اكتشاف الكلام. «عالية» تناسب ميكروفونات الحواسيب المحمولة الهادئة.",
+  "Toggle live transcription": "تبديل النسخ المباشر"
 }

@@ -248,6 +248,34 @@ docker run --gpus all -p 8000:8000 fedirz/faster-whisper-server:latest-cuda
 | Model   | `Systran/faster-whisper-large-v3` |
 | API key | (leave blank)                     |
 
+## Live transcription
+
+VoxFox can show what's being said around you as large, continuously updating
+text — useful as personal captions for anyone who follows written language
+more easily than spoken language, including some forms of aphasia or hearing
+loss. Turn it on from the **VoxFox menu → Live transcription**; a separate
+window opens and starts listening straight away.
+
+The window is freely resizable and independent of the main VoxFox window, so
+you can park it wherever suits you. It has its own controls:
+
+- **A− / A+** in the title bar change the text size (14–56 px), remembered
+  between sessions.
+- **Sensitivity** (High / Medium / Low) controls how easily speech is
+  detected — High suits quiet laptop microphones, Low suits noisy places
+  with a good microphone.
+- A pause of about 2.5 seconds or more starts a new paragraph, so the
+  transcript reads like natural conversation rather than one long line.
+- **Clear** empties the window; **Copy** puts everything currently shown on
+  the clipboard.
+
+Nothing here is saved: the text is not added to History, and closing the
+window discards it. Use Copy first if you want to keep something.
+
+A keyboard shortcut can be set for it in **Settings → Shortcuts** (see
+below) — unlike the other actions it has no default key, so assign one
+yourself before installing.
+
 ## OCR — read PDFs, images, and screen regions
 
 VoxFox can extract text from documents and images and read it aloud:
@@ -319,6 +347,7 @@ voxfox --stop             # Stop speaking
 voxfox --toggle-slot      # Switch between Language 1 and Language 2
 voxfox --hover-toggle     # Toggle hover mode on/off
 voxfox --whisper-toggle   # Start/stop dictation (speech-to-text)
+voxfox --live-toggle      # Open/close the live transcription window
 voxfox --ocr-select       # Select a screen region and read its text (OCR)
 voxfox --ocr <file>       # OCR a PDF or image and read aloud (works without GUI)
 voxfox --status           # Print whether VoxFox is running
@@ -329,8 +358,10 @@ voxfox --verbose          # Enable debug logging
 
 ## Keyboard shortcuts
 
-VoxFox can register six global shortcuts for you, but never does so
-automatically — some desktops already use these keys for other things. Open
+VoxFox can register seven global shortcuts for you, but never does so
+automatically — some desktops already use these keys for other things. Six
+of them ship with a suggested default; Live transcription has no default, so
+give it a key of your own before installing. Open
 **Settings → Shortcuts**, optionally change any combination (click it and press
 the keys you want), then choose **Install shortcuts**. They are written to your
 desktop on **Cinnamon, GNOME, LXQt, XFCE and KDE Plasma** (on Cinnamon the desktop is
@@ -338,7 +369,7 @@ briefly reloaded so the new keys take effect immediately). **Reset to defaults**
 restores the originals, and you can always change or remove them later in your
 desktop's own keyboard settings.
 
-The six installable actions and their defaults:
+The seven installable actions and their defaults:
 
 | Action          | Command                   | Default   |
 |-----------------|---------------------------|-----------|
@@ -348,6 +379,7 @@ The six installable actions and their defaults:
 | Dictate         | `voxfox --whisper-toggle` | `Super+W` |
 | OCR select      | `voxfox --ocr-select`     | `Super+A` |
 | Read web page   | `voxfox --read-page`      | `Super+V` |
+| Live transcription | `voxfox --live-toggle` | *(none)*  |
 
 You can also run `voxfox --install-shortcuts` from a terminal. Other commands
 (`voxfox --pause`, `voxfox --hover-toggle`) aren't in the installer but can be

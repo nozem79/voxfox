@@ -254,5 +254,17 @@
   "Text only": "Alleen tekst",
   "Orientation": "Oriëntatie",
   "Horizontal": "Horizontaal",
-  "Vertical": "Verticaal"
+  "Vertical": "Verticaal",
+  "Live transcription": "Live transcriptie",
+  "Listening...": "Luistert…",
+  "Clear": "Wissen",
+  "Smaller text": "Kleinere tekst",
+  "Larger text": "Grotere tekst",
+  "Falling behind — a sentence was skipped": "Loopt achter — een zin is overgeslagen",
+  "Sensitivity": "Gevoeligheid",
+  "High": "Hoog",
+  "Medium": "Middel",
+  "Low": "Laag",
+  "How easily speech is detected. High suits quiet laptop microphones.": "Hoe makkelijk spraak wordt herkend. Hoog past bij zachte laptopmicrofoons.",
+  "Toggle live transcription": "Live transcriptie aan/uit"
 }

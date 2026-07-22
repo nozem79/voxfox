@@ -254,5 +254,17 @@
   "Text only": "仅文字",
   "Orientation": "方向",
   "Horizontal": "水平",
-  "Vertical": "垂直"
+  "Vertical": "垂直",
+  "Live transcription": "实时转写",
+  "Listening...": "正在聆听…",
+  "Clear": "清除",
+  "Smaller text": "缩小文字",
+  "Larger text": "放大文字",
+  "Falling behind — a sentence was skipped": "处理滞后 — 已跳过一句",
+  "Sensitivity": "灵敏度",
+  "High": "高",
+  "Medium": "中",
+  "Low": "低",
+  "How easily speech is detected. High suits quiet laptop microphones.": "语音检测的灵敏程度。「高」适合声音较小的笔记本麦克风。",
+  "Toggle live transcription": "切换实时转写"
 }

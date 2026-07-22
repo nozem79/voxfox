@@ -71,7 +71,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "3.11"
+APP_VERSION = "3.12"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -1922,6 +1922,172 @@ class PreferencesWindow(Gtk.Window):
         threading.Thread(target=worker, daemon=True).start()
 
 
+class LiveTranscribeWindow(Gtk.Window):
+    """A freely resizable window that shows live speech transcription in
+    large, adjustable text — usable as personal captions for people who
+    understand written language better than spoken language (e.g. some
+    forms of aphasia, or hearing loss). Content is ephemeral: nothing is
+    saved to the history, and closing the window discards the text."""
+
+    def __init__(self, parent):
+        super().__init__(title=_("Live transcription"))
+        self.parent = parent
+        self.state = parent.state
+        self.set_default_size(560, 340)
+        self._stop_evt = threading.Event()
+
+        header = Gtk.HeaderBar()
+        smaller = Gtk.Button(label="A\u2212")
+        smaller.set_tooltip_text(_("Smaller text"))
+        _a11y(smaller, _("Smaller text"))
+        smaller.connect("clicked", lambda *_a: self._change_font(-2))
+        larger = Gtk.Button(label="A+")
+        larger.set_tooltip_text(_("Larger text"))
+        _a11y(larger, _("Larger text"))
+        larger.connect("clicked", lambda *_a: self._change_font(+2))
+        header.pack_end(larger)
+        header.pack_end(smaller)
+        self.set_titlebar(header)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.tv = Gtk.TextView(editable=False, cursor_visible=False,
+                               wrap_mode=Gtk.WrapMode.WORD_CHAR)
+        for m in ("top", "bottom", "left", "right"):
+            getattr(self.tv, f"set_{m}_margin")(14)
+        self._css = Gtk.CssProvider()
+        self.tv.get_style_context().add_provider(
+            self._css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self._apply_font()
+        scroller = Gtk.ScrolledWindow(vexpand=True)
+        scroller.set_child(self.tv)
+        outer.append(scroller)
+
+        foot = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(foot, f"set_margin_{m}")(8)
+        sens_lbl = Gtk.Label(label=_("Sensitivity"))
+        sens_lbl.add_css_class("dim-label")
+        self._sens = Gtk.DropDown.new_from_strings(
+            [_("High"), _("Medium"), _("Low")])
+        self._sens_keys = ["high", "medium", "low"]
+        cur = self.state.get("live_sensitivity", "high")
+        self._sens.set_selected(self._sens_keys.index(cur)
+                                if cur in self._sens_keys else 0)
+        self._sens.set_tooltip_text(
+            _("How easily speech is detected. High suits quiet laptop "
+              "microphones."))
+        self._sens.connect("notify::selected", self._on_sensitivity)
+        clear = Gtk.Button(label=_("Clear"))
+        clear.connect("clicked",
+                      lambda *_a: self.tv.get_buffer().set_text(""))
+        copy = Gtk.Button(label=_("Copy"))
+        copy.connect("clicked", self._on_copy)
+        self.status = Gtk.Label(label=_("Listening..."), xalign=1.0)
+        self.status.set_hexpand(True)
+        self.status.add_css_class("dim-label")
+        foot.append(clear)
+        foot.append(copy)
+        foot.append(sens_lbl)
+        foot.append(self._sens)
+        foot.append(self.status)
+        outer.append(foot)
+        self.set_child(outer)
+
+        self.connect("close-request", self._on_close)
+        threading.Thread(target=self._worker, daemon=True).start()
+
+    # ── font ──
+    def _apply_font(self):
+        px = int(self.state.get("live_font_px", 22))
+        px = max(14, min(56, px))
+        self._css.load_from_data(
+            f"textview, textview text {{ font-size: {px}px; }}".encode())
+
+    def _change_font(self, delta):
+        px = int(self.state.get("live_font_px", 22)) + delta
+        self.state["live_font_px"] = max(14, min(56, px))
+        vf.save_state(self.state)
+        self._apply_font()
+
+    def _on_sensitivity(self, *_a):
+        key = self._sens_keys[self._sens.get_selected()]
+        self.state["live_sensitivity"] = key
+        vf.save_state(self.state)
+        # Restart the listening loop so the new sensitivity applies at once.
+        self._stop_evt.set()
+        self._stop_evt = threading.Event()
+        threading.Thread(target=self._worker, daemon=True).start()
+
+    # ── worker ──
+    def _worker(self):
+        w = self.state.get("whisper", {})
+        lang_hint = vf._whisper_lang_code(
+            self.state.get(self.state.get("active_slot", "slot1"), {})
+            .get("lang", ""))
+        try:
+            ok, msg = vf.live_transcribe_loop(
+                on_text=lambda t, pause: GLib.idle_add(
+                    self._append, t, pause),
+                mic_id=w.get("mic_id", ""),
+                model_name=w.get("model", "small"),
+                language_hint=lang_hint,
+                whisper_cfg=w,
+                stop_evt=self._stop_evt,
+                status_cb=lambda st: GLib.idle_add(self._set_state_label,
+                                                   st),
+                sensitivity=self.state.get("live_sensitivity", "high"))
+        except Exception as e:
+            # Never die silently: a crashed loop must be visible, not an
+            # eternal "Listening..." with a dead microphone behind it.
+            log.error(f"live transcription loop crashed: {e}")
+            ok, msg = False, f"{_('Error')}: {e}"
+        if not ok and not self._stop_evt.is_set():
+            GLib.idle_add(self.status.set_text, msg)
+
+    # Silence longer than this before a sentence starts a new paragraph,
+    # so a long pause in speech reads like one in the transcript too.
+    PARAGRAPH_PAUSE_S = 2.5
+
+    def _append(self, text, pause_before=0.0):
+        buf = self.tv.get_buffer()
+        end = buf.get_end_iter()
+        prefix = ""
+        if buf.get_char_count() > 0:
+            prefix = ("\n\n" if pause_before >= self.PARAGRAPH_PAUSE_S
+                      else "")
+        buf.insert(end, prefix + text + "\n")
+        mark = buf.create_mark(None, buf.get_end_iter(), False)
+        self.tv.scroll_to_mark(mark, 0.0, False, 0.0, 1.0)
+        buf.delete_mark(mark)
+        return False
+
+    def _set_state_label(self, st):
+        if st == "skipped":
+            self.status.set_text(_("Falling behind — a sentence was skipped"))
+        elif st == "listening":
+            self.status.set_text(_("Listening..."))
+        else:
+            self.status.set_text(_("Transcribing..."))
+        return False
+
+    def _on_copy(self, *_a):
+        buf = self.tv.get_buffer()
+        text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
+        if text.strip():
+            vf._clipboard_set(text)
+
+    # ── lifecycle ──
+    def _on_close(self, *_a):
+        self._stop_evt.set()
+        self.parent._live_window_closed()
+        return False
+
+    def shutdown(self):
+        """Programmatic close (menu toggled off)."""
+        self._stop_evt.set()
+        self.destroy()
+
+
 class VoxFoxWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app, title=vf.APP_NAME)
@@ -1989,6 +2155,46 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         vf.save_state(self.state)
         self._load_scale_css()
         self._fit_to_content()
+
+    def do_live_toggle(self):
+        """Toggle live transcription from a shortcut/CLI command; keeps the
+        menu checkbox in sync either way."""
+        try:
+            app = self.get_application()
+            act = app.lookup_action("live_transcribe") if app else None
+            if act is None:
+                log.info("do_live_toggle: 'live_transcribe' action not "
+                         "found on the application")
+                return
+            cur = act.get_state().get_boolean()
+            log.info(f"do_live_toggle: {cur} -> {not cur}")
+            act.change_state(GLib.Variant.new_boolean(not cur))
+        except Exception as e:
+            log.debug(f"do_live_toggle failed: {e}")
+
+    def open_live_window(self):
+        """Open (or focus) the live transcription window and start listening."""
+        if getattr(self, "_live_win", None) is not None:
+            self._live_win.present()
+            return
+        self._live_win = LiveTranscribeWindow(self)
+        self._live_win.present()
+
+    def close_live_window(self):
+        if getattr(self, "_live_win", None) is not None:
+            self._live_win.shutdown()
+            self._live_win = None
+
+    def _live_window_closed(self):
+        """Called by the window itself; sync the menu toggle back to off."""
+        self._live_win = None
+        try:
+            app = self.get_application()
+            act = app.lookup_action("live_transcribe") if app else None
+            if act:
+                act.set_state(GLib.Variant.new_boolean(False))
+        except Exception:
+            pass
 
     def _apply_ui_mode(self, fit=True):
         """Apply the ui_view and ui_orientation settings: rebuild the button
@@ -2157,7 +2363,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         _a11y(self.switch_btn, _("Switch language slot"))
         self.switch_btn.connect("clicked", lambda *_a: self.do_toggle_slot())
 
-        gear = Gtk.Button(icon_name="emblem-system-symbolic")
+        gear = Gtk.Button(icon_name="voxfox-gear-symbolic")
         gear.set_tooltip_text(_("Settings"))
         _a11y(gear, _("Settings"))
         gear.connect("clicked", lambda *_a: self.open_preferences())
@@ -2168,6 +2374,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         menu = Gio.Menu()
         menu.append(_("Set up VoxFox…"), "app.first_run")
         menu.append(_("History"), "app.history")
+        menu.append(_("Live transcription"), "app.live_transcribe")
         menu.append(_("About"), "app.about")
         menu.append(_("Quit"),  "app.quit")
         menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
@@ -2241,7 +2448,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # sidebar the header shows only the logo, so gear + menu move to the
         # bottom of the button column (hidden in every other mode).
         self._col_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        self._col_gear = Gtk.Button(icon_name="emblem-system-symbolic")
+        self._col_gear = Gtk.Button(icon_name="voxfox-gear-symbolic")
         self._col_gear.set_tooltip_text(_("Settings"))
         _a11y(self._col_gear, _("Settings"))
         self._col_gear.connect("clicked", lambda *_a: self.open_preferences())
@@ -3005,6 +3212,21 @@ class VoxFoxApplication(Gtk.Application):
             act = Gio.SimpleAction.new(name, None)
             act.connect("activate", cb)
             self.add_action(act)
+        live = Gio.SimpleAction.new_stateful(
+            "live_transcribe", None, GLib.Variant.new_boolean(False))
+        live.connect("change-state", self._on_live_toggle)
+        self.add_action(live)
+
+    def _on_live_toggle(self, action, value):
+        log.info(f"_on_live_toggle: new state={value.get_boolean()}, "
+                 f"window present={self.win is not None}")
+        action.set_state(value)
+        if not self.win:
+            return
+        if value.get_boolean():
+            self.win.open_live_window()
+        else:
+            self.win.close_live_window()
 
     def do_activate(self):
         if not self.win:
@@ -3110,6 +3332,7 @@ class VoxFoxApplication(Gtk.Application):
             ("voxfox --whisper-toggle", _("Dictate (speech to text)")),
             ("voxfox --ocr-select",     _("Read a screen region (OCR)")),
             ("voxfox --read-page",      _("Read web page (experimental)")),
+            ("voxfox --live-toggle",    _("Toggle live transcription")),
         ]
         shortcuts = [
             ("Super+Z", _("Read selected text")),
@@ -3167,6 +3390,7 @@ def _build_arg_parser():
     g.add_argument("--hover-toggle",  dest="hover_toggle",  action="store_true")
     g.add_argument("--whisper-toggle", dest="whisper_toggle", action="store_true")
     g.add_argument("--ocr-select",    dest="ocr_select",    action="store_true")
+    g.add_argument("--live-toggle",   dest="live_toggle",   action="store_true")
     g.add_argument("--read-page",     dest="read_page",     action="store_true",
                    help="Read the focused browser page aloud (experimental)")
     g.add_argument("--ocr",           dest="ocr",           metavar="FILE")
@@ -3215,6 +3439,7 @@ _SHORTCUT_ACTIONS = [
     ("whisper", "VoxFox: dictation",    "voxfox --whisper-toggle", "<Super>w"),
     ("ocr",     "VoxFox: OCR select",   "voxfox --ocr-select",     "<Super>a"),
     ("page",    "VoxFox: read web page", "voxfox --read-page",     "<Super>v"),
+    ("live",    "VoxFox: live transcription", "voxfox --live-toggle", ""),
 ]
 
 # Short, translatable names for the actions, shown in the settings
@@ -3226,6 +3451,7 @@ _SHORTCUT_LABELS = {
     "whisper": "Dictate",
     "ocr":     "OCR select",
     "page":    "Read web page",
+    "live":    "Live transcription",
 }
 
 
@@ -3535,8 +3761,11 @@ def _install_kde_shortcuts(state):
     stored value, so changing a key in Settings replaces the old one.
 
     We also drop a matching .desktop launcher so the command has a name in the
-    KDE shortcuts UI. No-op when not on KDE. A change may need kglobalaccel to
-    reload (handled below) or, worst case, a re-login. Returns True on success.
+    KDE shortcuts UI and so kglobalaccel can resolve the key to a runnable
+    command; a brand-new launcher needs a sycoca rebuild (done below) before
+    KDE recognises it, or the key gets bound with no command behind it.
+    No-op when not on KDE. A change may need a re-login in the worst case.
+    Returns True on success.
     """
     desktop = (os.environ.get("XDG_CURRENT_DESKTOP", "") + " "
                + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
@@ -3601,6 +3830,21 @@ def _install_kde_shortcuts(state):
                         "StartupNotify=false\n")
     except Exception as e:
         log.debug(f"KDE: cannot write launcher: {e}")
+
+    # A key only actually launches its command once KDE's service database
+    # (sycoca) knows the .desktop file — existing shortcuts survive a
+    # kglobalaccel restart alone, but a *brand-new* one (like a shortcut a
+    # user just assigned to an action that never had a key before) needs an
+    # explicit rebuild, or the binding is registered with no command behind
+    # it and the key silently does nothing.
+    for tool in ("kbuildsycoca6", "kbuildsycoca5"):
+        if vf._have(tool):
+            try:
+                subprocess.run([tool, "--noincremental"],
+                               capture_output=True, timeout=15)
+            except Exception as e:
+                log.debug(f"KDE: kbuildsycoca failed: {e}")
+            break
 
     # Ask kglobalaccel to reload so the new/changed bindings take effect
     # without a full re-login where possible.
@@ -3877,7 +4121,8 @@ def main():
     # Action flags → forward to the running instance and exit (no GUI).
     if any([args.read, args.stop, args.pause, args.toggle_slot,
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
-            args.read_page, args.ocr, args.status, args.quit]):
+            args.read_page, args.live_toggle, args.ocr, args.status,
+            args.quit]):
         vf.run_cli(args)
         return 0
 

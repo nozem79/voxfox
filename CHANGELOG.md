@@ -1,5 +1,23 @@
-## 3.11
+## 3.12
 
+- New: live transcription. A separate, freely resizable window shows speech
+  transcribed sentence by sentence in large, adjustable text (14-56 px) —
+  useful as personal captions for anyone who follows written language more
+  easily than spoken, including some forms of aphasia or hearing loss.
+  Speech detection uses a self-recovering noise floor (the minimum level
+  over the last few seconds) with hysteresis and an adjustable Sensitivity
+  (High/Medium/Low), so it copes with quiet laptop microphones as well as
+  noisy places (tested against a moving train). A pause of 2.5s or more
+  starts a new paragraph. Content is ephemeral — not saved to History — with
+  Copy provided for anyone who wants to keep it. A CLI flag
+  (`voxfox --live-toggle`) and an installable keyboard shortcut (no default
+  key, assign your own) toggle it.
+- Fixed KDE Plasma shortcuts not actually launching their command when
+  assigned to a brand-new action: a shortcut only works once KDE's service
+  database (sycoca) knows the underlying .desktop file, which now gets an
+  explicit rebuild after installing.
+- Fixed `voxfox --live-toggle` (and any future CLI-forwarded action) being
+  silently swallowed instead of reaching the running instance.
 - Temporary audio now lives in RAM instead of on disk: synthesised sentences
   from the speech engine, dictation recordings, the microphone test and OCR
   scratch files are written to a tmpfs location (XDG_RUNTIME_DIR or

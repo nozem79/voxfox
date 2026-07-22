@@ -254,5 +254,17 @@
   "Text only": "Μόνο κείμενο",
   "Orientation": "Προσανατολισμός",
   "Horizontal": "Οριζόντια",
-  "Vertical": "Κατακόρυφα"
+  "Vertical": "Κατακόρυφα",
+  "Live transcription": "Ζωντανή απομαγνητοφώνηση",
+  "Listening...": "Ακούει…",
+  "Clear": "Καθαρισμός",
+  "Smaller text": "Μικρότερο κείμενο",
+  "Larger text": "Μεγαλύτερο κείμενο",
+  "Falling behind — a sentence was skipped": "Καθυστερεί — μία πρόταση παραλείφθηκε",
+  "Sensitivity": "Ευαισθησία",
+  "High": "Υψηλή",
+  "Medium": "Μέτρια",
+  "Low": "Χαμηλή",
+  "How easily speech is detected. High suits quiet laptop microphones.": "Πόσο εύκολα ανιχνεύεται η ομιλία. Η Υψηλή ταιριάζει σε αδύναμα μικρόφωνα φορητών.",
+  "Toggle live transcription": "Εναλλαγή ζωντανής απομαγνητοφώνησης"
 }

@@ -255,5 +255,17 @@
   "Text only": "Text only",
   "Orientation": "Orientation",
   "Horizontal": "Horizontal",
-  "Vertical": "Vertical"
+  "Vertical": "Vertical",
+  "Live transcription": "Live transcription",
+  "Listening...": "Listening...",
+  "Clear": "Clear",
+  "Smaller text": "Smaller text",
+  "Larger text": "Larger text",
+  "Falling behind — a sentence was skipped": "Falling behind — a sentence was skipped",
+  "Sensitivity": "Sensitivity",
+  "High": "High",
+  "Medium": "Medium",
+  "Low": "Low",
+  "How easily speech is detected. High suits quiet laptop microphones.": "How easily speech is detected. High suits quiet laptop microphones.",
+  "Toggle live transcription": "Toggle live transcription"
 }

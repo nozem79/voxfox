@@ -29,6 +29,8 @@ DEFAULT_STATE = {
     "active_slot": "slot1",
     "ui_view": "both",         # toolbar buttons: icons / both / text
     "ui_orientation": "horizontal",  # toolbar layout: horizontal / vertical
+    "live_font_px": 22,        # live transcription text size
+    "live_sensitivity": "high",  # live transcription speech detection
     "whisper": {
         "model": "small",          # tiny / base / small / medium / large-v3
         "mic_id": "",              # PulseAudio source name; "" = system default

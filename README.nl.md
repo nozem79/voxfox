@@ -255,6 +255,35 @@ docker run --gpus all -p 8000:8000 fedirz/faster-whisper-server:latest-cuda
 | Model        | `Systran/faster-whisper-large-v3` |
 | API-sleutel  | (laat leeg)                       |
 
+## Live transcriptie
+
+VoxFox kan laten zien wat er om je heen gezegd wordt, als grote, doorlopend
+bijgewerkte tekst — bruikbaar als persoonlijke ondertiteling voor iedereen
+die geschreven taal makkelijker volgt dan gesproken taal, bijvoorbeeld bij
+een vorm van afasie of gehoorverlies. Zet het aan via **VoxFox-menu → Live
+transcriptie**; er opent dan een apart venster dat meteen begint te luisteren.
+
+Het venster is vrij te schalen en staat los van het hoofdvenster, zodat je
+het kunt neerzetten waar het jou uitkomt. Het heeft eigen bediening:
+
+- **A− / A+** in de titelbalk passen de tekstgrootte aan (14–56 px), en die
+  keuze wordt tussen sessies onthouden.
+- **Gevoeligheid** (Hoog / Middel / Laag) bepaalt hoe makkelijk spraak wordt
+  herkend — Hoog past bij zachte laptopmicrofoons, Laag bij een luidruchtige
+  omgeving met een goede microfoon.
+- Een pauze van ongeveer 2,5 seconde of langer begint een nieuwe alinea,
+  zodat de tekst leest als een normaal gesprek in plaats van één lange regel.
+- **Wissen** maakt het venster leeg; **Kopiëren** zet alle zichtbare tekst op
+  het klembord.
+
+Er wordt niets bewaard: de tekst komt niet in de Geschiedenis terecht, en het
+venster sluiten gooit hem weg. Gebruik Kopiëren eerst als je iets wilt
+bewaren.
+
+Er kan een sneltoets voor worden ingesteld bij **Instellingen → Sneltoetsen**
+(zie verderop) — in tegenstelling tot de andere acties heeft deze geen
+standaardtoets, dus wijs er zelf een toe voordat je installeert.
+
 ## OCR — pdf's, afbeeldingen en schermgebieden voorlezen
 
 VoxFox kan tekst uit documenten en afbeeldingen halen en voorlezen:
@@ -329,6 +358,7 @@ voxfox --stop             # Stop met voorlezen
 voxfox --toggle-slot      # Wissel tussen Taal 1 en Taal 2
 voxfox --hover-toggle     # Hover-modus aan/uit
 voxfox --whisper-toggle   # Dicteren starten/stoppen (spraak-naar-tekst)
+voxfox --live-toggle      # Live-transcriptievenster openen/sluiten
 voxfox --ocr-select       # Kies een schermgebied en lees de tekst voor (OCR)
 voxfox --ocr <bestand>    # OCR een pdf of afbeelding en lees voor (werkt zonder GUI)
 voxfox --status           # Print of VoxFox draait
@@ -339,8 +369,10 @@ voxfox --verbose          # Debug-logging aanzetten
 
 ## Sneltoetsen
 
-VoxFox kan zes globale sneltoetsen voor je instellen, maar doet dat nooit
+VoxFox kan zeven globale sneltoetsen voor je instellen, maar doet dat nooit
 automatisch — sommige bureaubladen gebruiken deze toetsen al voor iets anders.
+Zes ervan hebben een voorgestelde standaardtoets; Live transcriptie heeft
+geen standaard, dus geef die zelf een toets voordat je installeert.
 Open **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie (klik erop
 en druk de gewenste toetsen in) en kies dan **Sneltoetsen installeren**. Ze
 worden geschreven naar je bureaublad op **Cinnamon, GNOME, LXQt, XFCE en KDE Plasma** (op
@@ -348,7 +380,7 @@ Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
 werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
 later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
 
-De zes installeerbare acties en hun standaardtoetsen:
+De zeven installeerbare acties en hun standaardtoetsen:
 
 | Actie           | Opdracht                  | Standaard |
 |-----------------|---------------------------|-----------|
@@ -358,6 +390,7 @@ De zes installeerbare acties en hun standaardtoetsen:
 | Dicteren        | `voxfox --whisper-toggle` | `Super+W` |
 | OCR-selectie    | `voxfox --ocr-select`     | `Super+A` |
 | Webpagina voorlezen | `voxfox --read-page`  | `Super+V` |
+| Live transcriptie | `voxfox --live-toggle` | *(geen)*  |
 
 Je kunt ook `voxfox --install-shortcuts` in een terminal draaien. Andere
 opdrachten (`voxfox --pause`, `voxfox --hover-toggle`) zitten niet in de

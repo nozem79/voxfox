@@ -398,6 +398,224 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
     return True, "ok"
 
 
+LIVE_SENSITIVITY = {
+    # (start_mult, start_margin, end_mult, end_margin) applied to the noise
+    # floor. "high" suits quiet laptop mics where speech barely rises above
+    # the floor; "low" suits good mics in noisy places.
+    "high":   (1.02, 90, 1.00, 30),
+    "medium": (1.30, 260, 1.08, 120),
+    "low":    (1.60, 400, 1.18, 200),
+}
+
+
+def live_transcribe_loop(on_text, mic_id="", model_name="small",
+                         language_hint=None, whisper_cfg=None,
+                         stop_evt=None, status_cb=None, sensitivity="high"):
+    """Continuously listen and transcribe speech sentence by sentence.
+
+    Streams raw 16 kHz mono PCM from parec/arecord and detects sentence
+    boundaries by silence. Design notes, learned from real testing:
+
+    * The noise floor is the *minimum* level over the last ~3 seconds of
+      audio: that's where the signal settles between words, whatever the
+      microphone gain or background noise (a moving train, a fan) is doing.
+      No learning phase, nothing to lock up, self-recovering by
+      construction.
+    * Hysteresis: a segment *starts* above a higher threshold and only
+      *ends* once the level drops below a lower one, so quiet speech close
+      to the noise floor is neither missed nor chopped mid-sentence.
+    * Transcription runs in its own worker fed by a bounded queue. When the
+      machine can't keep up, the oldest waiting segment is dropped (with a
+      status notice) instead of piling up work and memory.
+    * `on_text(text, pause_before)` receives, alongside the recognised text,
+      how long it stayed quiet before this segment started (seconds). The
+      caller uses this to start a new paragraph after a long pause.
+
+    Runs until stop_evt is set. Returns (ok, message)."""
+    import array, queue, wave
+    from .common import ram_tmpdir
+
+    RATE = WHISPER_SAMPLE_RATE
+    CHUNK_S = 0.1
+    CHUNK_BYTES = int(RATE * 2 * CHUNK_S)      # s16 mono
+    SILENCE_END_S = 0.8                        # pause that ends a sentence
+    MIN_SPEECH_S = 0.4                         # ignore shorter blips
+    MAX_SEGMENT_S = 12.0                       # force flush safety cap
+    FLOOR_MIN = 450                            # absolute minimum threshold
+    sm, sa, em, ea = LIVE_SENSITIVITY.get(sensitivity,
+                                          LIVE_SENSITIVITY["high"])
+
+    def _rms(buf):
+        a = array.array("h")
+        a.frombytes(buf[: len(buf) - (len(buf) % 2)])
+        if not a:
+            return 0
+        return int((sum(x * x for x in a) / len(a)) ** 0.5)
+
+    proc = None
+    parec_cmd = ["parec", "--rate", str(RATE), "--channels", "1",
+                 "--format", "s16le"]
+    if mic_id:
+        parec_cmd += ["--device", mic_id]
+    arecord_cmd = ["arecord", "-q", "-r", str(RATE), "-c", "1",
+                   "-f", "S16_LE", "-t", "raw"]
+    if mic_id:
+        arecord_cmd += ["-D", mic_id]
+    for cmd in (parec_cmd, arecord_cmd):
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.DEVNULL)
+            break
+        except FileNotFoundError:
+            continue
+    if proc is None:
+        return False, "No recorder found (parec or arecord)"
+
+    tmpdir = ram_tmpdir()
+    work = queue.Queue(maxsize=2)
+    n = [0]
+
+    def transcriber():
+        while True:
+            item = work.get()
+            if item is None:
+                return
+            seg_bytes, seg_pause = item
+            n[0] += 1
+            wav = os.path.join(tmpdir,
+                               f"voxfox_live_{os.getpid()}_{n[0]}.wav")
+            try:
+                with wave.open(wav, "wb") as w:
+                    w.setnchannels(1)
+                    w.setsampwidth(2)
+                    w.setframerate(RATE)
+                    w.writeframes(seg_bytes)
+                if status_cb:
+                    status_cb("transcribing")
+                text, err = transcribe(wav, model_name,
+                                       language_hint=language_hint,
+                                       whisper_cfg=whisper_cfg)
+                if not err and text and text.strip():
+                    on_text(text.strip(), seg_pause)
+            except Exception as e:
+                log.debug(f"live segment failed: {e}")
+            finally:
+                try:
+                    os.unlink(wav)
+                except Exception:
+                    pass
+                if status_cb:
+                    status_cb("listening")
+
+    worker = threading.Thread(target=transcriber, daemon=True)
+    worker.start()
+
+    def enqueue(seg_bytes, pause_before):
+        """Hand a segment to the transcriber; drop the oldest when full so a
+        slow machine sheds load instead of accumulating it. `pause_before`
+        is how long it stayed quiet before this segment started."""
+        item = (seg_bytes, pause_before)
+        try:
+            work.put_nowait(item)
+        except queue.Full:
+            try:
+                work.get_nowait()
+            except queue.Empty:
+                pass
+            try:
+                work.put_nowait(item)
+            except queue.Full:
+                pass
+            log.info("live transcription falling behind; dropped a segment")
+            if status_cb:
+                status_cb("skipped")
+
+    if status_cb:
+        status_cb("listening")
+    seg = bytearray()
+    silence_run = 0.0
+    speech_s = 0.0
+    ambient = 0
+    recent = []                # last ~3 s of levels; min() = the noise floor
+    RECENT_N = int(3.0 / CHUNK_S)
+    logged = 0.0
+    quiet_before = 0.0          # running silence since the last segment ended
+    pause_for_this_seg = 0.0
+
+    try:
+        while stop_evt is None or not stop_evt.is_set():
+            chunk = proc.stdout.read(CHUNK_BYTES)
+            if not chunk:
+                return False, "Recorder stopped unexpectedly"
+            level = _rms(chunk)
+            recent.append(level)
+            if len(recent) > RECENT_N:
+                recent.pop(0)
+            logged += CHUNK_S
+            if logged >= 2.0:
+                logged = 0.0
+                amb = int(ambient)
+                log.info(f"live: level={level} floor={amb} "
+                         f"start>{max(FLOOR_MIN, int(amb * sm) + sa)} "
+                         f"end<{max(int(FLOOR_MIN * 0.8), int(amb * em) + ea)} "
+                         f"seg={speech_s:.1f}s")
+
+            # The noise floor is simply the minimum level over the last few
+            # seconds: that is where the signal settles between words,
+            # whatever the mic gain or background rumble is doing. No
+            # learning phase, nothing to lock up, self-recovering.
+            ambient = min(recent)
+            thr_start = max(FLOOR_MIN, int(ambient * sm) + sa)
+            thr_end = max(int(FLOOR_MIN * 0.8), int(ambient * em) + ea)
+            threshold = thr_end if seg else thr_start
+            loud = level >= threshold
+
+            if loud:
+                if not seg:
+                    # First loud chunk of a new segment: remember the pause
+                    # that preceded it, for the caller's paragraph decision.
+                    pause_for_this_seg = quiet_before
+                seg.extend(chunk)
+                speech_s += CHUNK_S
+                silence_run = 0.0
+                quiet_before = 0.0
+            elif seg:
+                seg.extend(chunk)
+                silence_run += CHUNK_S
+                if silence_run >= SILENCE_END_S:
+                    if speech_s >= MIN_SPEECH_S:
+                        enqueue(bytes(seg), pause_for_this_seg)
+                    seg = bytearray()
+                    speech_s = 0.0
+                    silence_run = 0.0
+                    quiet_before = 0.0
+            else:
+                quiet_before += CHUNK_S
+            if speech_s >= MAX_SEGMENT_S:
+                enqueue(bytes(seg), pause_for_this_seg)
+                seg = bytearray()
+                speech_s = 0.0
+                silence_run = 0.0
+                quiet_before = 0.0
+        if speech_s >= MIN_SPEECH_S:
+            enqueue(bytes(seg), pause_for_this_seg)
+        return True, "ok"
+    finally:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        # Let the transcriber finish what is already queued (so the last
+        # sentence is not lost when the window closes), then stop it via
+        # the None sentinel. The join is bounded in case a transcription
+        # hangs; the thread is a daemon so it can never block process exit.
+        try:
+            work.put(None, timeout=5)
+        except Exception:
+            pass
+        worker.join(timeout=20)
+
+
 def transcribe_remote(wav_path, url, api_key, model_name, language_hint=None):
     """Send a WAV file to an OpenAI-compatible /audio/transcriptions endpoint.
 
@@ -557,6 +775,7 @@ def _transcribe_local(wav_path, model_name, language_hint=None,
 
 
 __all__ = [
+    "live_transcribe_loop",
     "WHISPER_MODELS",
     "WHISPER_SAMPLE_RATE",
     "WHISPER_TYPE_LIMIT",

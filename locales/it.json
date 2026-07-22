@@ -254,5 +254,17 @@
   "Text only": "Solo testo",
   "Orientation": "Orientamento",
   "Horizontal": "Orizzontale",
-  "Vertical": "Verticale"
+  "Vertical": "Verticale",
+  "Live transcription": "Trascrizione dal vivo",
+  "Listening...": "In ascolto…",
+  "Clear": "Cancella",
+  "Smaller text": "Testo più piccolo",
+  "Larger text": "Testo più grande",
+  "Falling behind — a sentence was skipped": "In ritardo — una frase è stata saltata",
+  "Sensitivity": "Sensibilità",
+  "High": "Alta",
+  "Medium": "Media",
+  "Low": "Bassa",
+  "How easily speech is detected. High suits quiet laptop microphones.": "Quanto facilmente viene rilevato il parlato. Alta è adatta ai microfoni deboli dei portatili.",
+  "Toggle live transcription": "Attiva/disattiva trascrizione dal vivo"
 }
