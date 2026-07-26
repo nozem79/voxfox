@@ -187,6 +187,7 @@ Settings live on the *Dictation* tab:
   otherwise the CPU, and falls back to CPU if GPU init fails
 - **Mic** — choose a specific input device, or leave at *Default*
 - **Confirm transcription before typing** — show a preview popup with the transcription so you can review and edit it, then copy it to the clipboard and paste it yourself with Ctrl+V (rather than having VoxFox type it)
+- **Max. recording length** — recording stops automatically after this many seconds (default 120), even if Speak/Stop is never pressed again; a safety net if dictation is left running by accident. Enforced both by VoxFox and, a few seconds later, by the OS itself, so a forgotten recording can't run away even if VoxFox stops responding
 - **Backend** — *Local* (runs faster-whisper here) or *Remote API* (see below)
 
 The active slot's language is used as a hint for Whisper, which is far more
@@ -276,6 +277,27 @@ A keyboard shortcut can be set for it in **Settings → Shortcuts** (see
 below) — unlike the other actions it has no default key, so assign one
 yourself before installing.
 
+## Translate & read
+
+Select text in any language, trigger **Translate**, and VoxFox translates it
+into the language of Language 1 and reads it aloud with that voice. The
+feature is off by default: enable the Translate button under **Settings →
+Interface**, and assign a keyboard shortcut of your choice under **Settings →
+Shortcuts** (like live transcription, it ships without a default binding).
+
+Translation runs through any OpenAI-compatible API, configured under
+**Settings → Translation** with a URL, a model name and an optional API key:
+
+- **Local (private):** an [Ollama](https://ollama.com) server on your own
+  machine — the default, `http://localhost:11434/v1` with e.g. `llama3.2`.
+  Nothing leaves your computer.
+- **Remote:** OpenAI (`https://api.openai.com/v1` plus your API key) or any
+  other provider that speaks the same protocol.
+
+The **Test connection** button checks the endpoint and whether the chosen
+model is available. Long selections are translated paragraph by paragraph
+with progress shown in the status bar; translations are saved to History.
+
 ## OCR — read PDFs, images, and screen regions
 
 VoxFox can extract text from documents and images and read it aloud:
@@ -286,6 +308,14 @@ VoxFox can extract text from documents and images and read it aloud:
 - **Select** takes a screenshot, shows it full-screen, and lets you drag a
   rectangle around the text you want (Escape cancels). The region is OCR'd and
   read aloud in the active voice.
+
+A shortcut-only variant, **OCR select & translate**, adds a translation
+step: it OCRs the region, translates the result into the language of
+Language 1, and reads that aloud — for a screenshot, image, or video
+still in another language. Like live transcription, it has no toolbar
+button (Select already has one, and this is a variant of it rather than
+a separate everyday action); assign a key for it under **Settings →
+Shortcuts**.
 
 OCR output has its word-wrapped lines merged into paragraphs (the *Misc*
 toggle), so reading flows naturally instead of pausing at every line.
@@ -490,7 +520,10 @@ parts of hover depend on the compositor and may be limited.
 
 The code is split into a UI-agnostic backend (the `voxfox_core/` package —
 `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) and
-a GTK4 front-end (`voxfox_gtk.py`, which also holds the CLI). Translations are
+a GTK4 front-end (the `voxfox_ui/` package — since 4.0 split into
+`common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
+`history.py`, `preferences.py`, `live.py`, `main_window.py` and `app.py`,
+with `voxfox_gtk.py` as a thin launcher). Translations are
 plain JSON files under `locales/`, key-aligned across all languages. See
 `CHANGELOG.md` for the version history.
 
@@ -499,7 +532,8 @@ Packaging and release helpers live in `packaging/`:
 - `VERSION=x.y bash packaging/build-deb.sh` builds the Debian package, and
   `VERSION=x.y bash packaging/build-rpm.sh` the RPM (Fedora). Both mirror the
   same file layout and bundle `locales/` and, when present, `dicts/`.
-- The Piper engine download is pinned to `PIPER_VERSION` in `voxfox_gtk.py`
+- The Piper engine download is pinned to `PIPER_VERSION` in
+  `src/voxfox_ui/common.py`
   and verified against the SHA-256 sums in `PIPER_SHA256` before extraction.
   When bumping `PIPER_VERSION`, regenerate those sums by running
   `python3 packaging/pin_piper_hashes.py` on a machine with internet access
@@ -523,6 +557,14 @@ selection instead.
 
 **Select does nothing** — no screenshot tool is installed. Install
 `gnome-screenshot`, `spectacle`, `scrot` (X11) or `grim`+`slurp` (Wayland).
+
+**Dictation was left running** — recording stops on its own after the configured maximum length (Settings → Dictation → Max. recording length), enforced independently of VoxFox's own process so a forgotten recording can't grow unbounded. Lower the limit there for an even tighter safety margin.
+
+**A KDE shortcut doesn't fire** — KDE silently drops a global shortcut if
+the key is already used by another application or by Plasma itself.
+Settings → Shortcuts now detects this when you install and lists which
+key(s) collided and with what; free the key in KDE's own System Settings
+→ Shortcuts, or pick a different one for VoxFox.
 
 **Remote Whisper times out** — the remote backend has a 60-second per-request
 timeout. Use a faster model on the server, or make shorter recordings.

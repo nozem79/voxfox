@@ -53,6 +53,7 @@ _TESS_LANG_MAP = {
     "Chinese":    "chi_sim",
     "Arabic":     "ara",
     "Greek":      "ell",
+    "Ukrainian":  "ukr",
 }
 
 

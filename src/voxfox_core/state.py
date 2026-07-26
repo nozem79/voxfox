@@ -35,6 +35,9 @@ DEFAULT_STATE = {
         "model": "small",          # tiny / base / small / medium / large-v3
         "mic_id": "",              # PulseAudio source name; "" = system default
         "confirm_before_typing": False,  # ask before typing transcription
+        # Safety cap (seconds): recording auto-stops after this long even
+        # if never manually stopped. Mirrors stt.WHISPER_MAX_SECONDS.
+        "max_record_seconds": 120,
         # Remote API support. When backend == "remote", transcription is sent
         # to an OpenAI-compatible /v1/audio/transcriptions endpoint instead
         # of running locally. If the remote call fails (network, auth, 5xx),
@@ -92,6 +95,14 @@ DEFAULT_STATE = {
         "model": "llama3.2",
         "api_key": "",
     },
+    # 4.0 translate & read: translate the selection into the UI language
+    # via any OpenAI-compatible endpoint (local Ollama or a remote API),
+    # then speak it with the Slot 1 voice.
+    "translate": {
+        "url":     "http://localhost:11434/v1",
+        "model":   "llama3.2",
+        "api_key": "",
+    },
 }
 
 
@@ -142,7 +153,8 @@ def load_state():
             # Normalise section types: when a single section is corrupted
             # (wrong type), replace just that section with its default rather
             # than discarding every setting the user has.
-            for sect in ("slot1", "slot2", "whisper", "webread", "ui_layout",
+            for sect in ("slot1", "slot2", "whisper", "webread", "translate",
+                         "ui_layout",
                          "pronunciations", "shortcut_bindings",
                          "cinnamon_shortcut_slots", "gnome_shortcut_slots"):
                 if sect in s and not isinstance(s[sect], dict):
@@ -159,6 +171,8 @@ def load_state():
             w.setdefault("mic_id",  DEFAULT_STATE["whisper"]["mic_id"])
             w.setdefault("confirm_before_typing",
                          DEFAULT_STATE["whisper"]["confirm_before_typing"])
+            w.setdefault("max_record_seconds",
+                         DEFAULT_STATE["whisper"]["max_record_seconds"])
             s.setdefault("merge_lines",  DEFAULT_STATE["merge_lines"])
             s.setdefault("pronunciations", {})
             s.setdefault("win_pos", None)
@@ -173,6 +187,10 @@ def load_state():
                          copy.deepcopy(DEFAULT_STATE["webread"]))
             for k, v in DEFAULT_STATE["webread"].items():
                 s["webread"].setdefault(k, v)
+            s.setdefault("translate",
+                         copy.deepcopy(DEFAULT_STATE["translate"]))
+            for k, v in DEFAULT_STATE["translate"].items():
+                s["translate"].setdefault(k, v)
             # UI language now follows Slot 1 automatically (the ui_lang field
             # in the state file is ignored — kept around only so older state
             # files don't crash).
@@ -275,7 +293,7 @@ def _snap_scale(value):
     return min(UI_SCALES, key=lambda s: abs(s - v))
 
 
-def reconcile_toolbar_layout(layout, default_order):
+def reconcile_toolbar_layout(layout, default_order, default_hidden=()):
     """Reconcile a stored ui_layout against the buttons the app actually has.
 
     Drops stored buttons whose id no longer exists (removed in an update),
@@ -299,9 +317,11 @@ def reconcile_toolbar_layout(layout, default_order):
             stored[bid] = bool(entry.get("visible", True))
             order.append(bid)
 
-    for bid in default_order:          # buttons new in this version: append, visible
+    for bid in default_order:          # buttons new in this version: append
         if bid not in stored:
-            stored[bid] = True
+            # Optional buttons (default_hidden) start invisible; the user
+            # switches them on under Settings -> Interface.
+            stored[bid] = bid not in default_hidden
             order.append(bid)
 
     return {

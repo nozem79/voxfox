@@ -192,6 +192,7 @@ De instellingen staan op het tabblad *Dicteren*:
   cuDNN), anders de CPU, en valt terug op de CPU als de GPU niet start
 - **Microfoon** — kies een specifiek invoerapparaat of laat op *Standaard*
 - **Transcriptie bevestigen voor het typen** — toon eerst een voorbeeldvenster met de transcriptie, zodat je die kunt nakijken en bewerken, en kopieer die daarna naar het klembord om zelf te plakken met Ctrl+V (in plaats van dat VoxFox het typt)
+- **Max. opnameduur** — opnemen stopt automatisch na dit aantal seconden (standaard 120), ook als Spreken/Stop nooit meer wordt ingedrukt; een vangnet als dictatie per ongeluk aan blijft staan. Wordt zowel door VoxFox zelf afgedwongen als, een paar seconden later, door het OS, zodat een vergeten opname niet kan doorlopen zelfs als VoxFox niet meer reageert
 - **Backend** — *Lokaal* (draait faster-whisper hier) of *Remote API* (zie onder)
 
 De taal van het actieve slot wordt als hint aan Whisper meegegeven, wat veel
@@ -284,6 +285,28 @@ Er kan een sneltoets voor worden ingesteld bij **Instellingen → Sneltoetsen**
 (zie verderop) — in tegenstelling tot de andere acties heeft deze geen
 standaardtoets, dus wijs er zelf een toe voordat je installeert.
 
+## Vertaal & lees voor
+
+Selecteer tekst in een willekeurige taal, activeer **Vertaal**, en VoxFox
+vertaalt hem naar de taal van Taal 1 en leest hem voor met die stem. De
+functie staat standaard uit: zet de Vertaal-knop aan onder **Instellingen →
+Interface** en kies zelf een sneltoets onder **Instellingen → Sneltoetsen**
+(net als live transcriptie zonder standaardbinding geleverd).
+
+Het vertalen loopt via elke OpenAI-compatibele API, ingesteld onder
+**Instellingen → Vertaling** met een URL, een modelnaam en een optionele
+API-sleutel:
+
+- **Lokaal (privé):** een [Ollama](https://ollama.com)-server op je eigen
+  machine — de standaard, `http://localhost:11434/v1` met bijv. `llama3.2`.
+  Er verlaat niets je computer.
+- **Extern:** OpenAI (`https://api.openai.com/v1` plus je API-sleutel) of
+  elke andere aanbieder die hetzelfde protocol spreekt.
+
+De knop **Test verbinding** controleert de endpoint en of het gekozen model
+beschikbaar is. Lange selecties worden alinea voor alinea vertaald met
+voortgang in de statusbalk; vertalingen komen in de Geschiedenis.
+
 ## OCR — pdf's, afbeeldingen en schermgebieden voorlezen
 
 VoxFox kan tekst uit documenten en afbeeldingen halen en voorlezen:
@@ -295,6 +318,14 @@ VoxFox kan tekst uit documenten en afbeeldingen halen en voorlezen:
 - **Selecteren** maakt een schermafdruk, toont die schermvullend, en laat je een
   rechthoek om de gewenste tekst slepen (Escape annuleert). Het gebied wordt
   ge-OCR'd en voorgelezen met de actieve stem.
+
+Een variant die alleen via een sneltoets werkt, **OCR-selectie &
+vertaling**, voegt een vertaalstap toe: het gebied wordt ge-OCR'd, het
+resultaat vertaald naar de taal van Taal 1, en dat wordt voorgelezen —
+handig voor een schermafbeelding, afbeelding of videostilstand in een
+andere taal. Net als live transcriptie heeft dit geen knop (Selecteren
+heeft er al een, en dit is een variant daarop, geen aparte alledaagse
+actie); ken er een toets aan toe onder **Instellingen → Sneltoetsen**.
 
 OCR-uitvoer krijgt de afgebroken regels samengevoegd tot alinea's (de
 *Overig*-schakelaar), zodat het voorlezen vloeiend gaat in plaats van bij elke
@@ -506,7 +537,10 @@ kunnen beperkt zijn.
 
 De code is gesplitst in een UI-onafhankelijke backend (het `voxfox_core/`-pakket
 — `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) en
-een GTK4-frontend (`voxfox_gtk.py`, die ook de CLI bevat). Vertalingen zijn
+een GTK4-frontend (het pakket `voxfox_ui/` — sinds 4.0 opgesplitst in
+`common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
+`history.py`, `preferences.py`, `live.py`, `main_window.py` en `app.py`,
+met `voxfox_gtk.py` als dunne launcher). Vertalingen zijn
 gewone JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen.
 Zie `CHANGELOG.md` voor de versiegeschiedenis.
 
@@ -517,7 +551,7 @@ Scripts voor verpakken en uitbrengen staan in `packaging/`:
   spiegelen dezelfde bestandsindeling en bundelen `locales/` en, indien
   aanwezig, `dicts/`.
 - De download van de Piper-engine is vastgezet op `PIPER_VERSION` in
-  `voxfox_gtk.py` en wordt vóór het uitpakken gecontroleerd tegen de
+  `src/voxfox_ui/common.py` en wordt vóór het uitpakken gecontroleerd tegen de
   SHA-256-sommen in `PIPER_SHA256`. Bij het ophogen van `PIPER_VERSION`
   genereer je die sommen opnieuw met `python3 packaging/pin_piper_hashes.py`
   op een machine met internet, en plak je de uitvoer over het
@@ -542,6 +576,15 @@ spaarzaam of niet. Gebruik dan Voorlezen op een selectie.
 
 **Selecteren doet niets** — er is geen schermafdruktool geïnstalleerd. Installeer
 `gnome-screenshot`, `spectacle`, `scrot` (X11) of `grim`+`slurp` (Wayland).
+
+**Dictatie is aan blijven staan** — opnemen stopt vanzelf na de ingestelde maximumduur (Instellingen → Dicteren → Max. opnameduur), onafhankelijk van VoxFox zelf afgedwongen zodat een vergeten opname niet ongelimiteerd kan doorgroeien. Verlaag de limiet daar voor een strakkere marge.
+
+**Een KDE-sneltoets doet het niet** — KDE laat een systeembrede sneltoets
+stilzwijgend vallen als de toets al door een andere toepassing of door
+Plasma zelf gebruikt wordt. Instellingen → Sneltoetsen herkent dit nu bij
+het installeren en laat zien welke toets(en) botsten en waarmee; maak de
+toets vrij via KDE's eigen Systeeminstellingen → Sneltoetsen, of kies een
+andere voor VoxFox.
 
 **Remote Whisper loopt vast** — de remote-backend heeft een time-out van 60
 seconden per verzoek. Gebruik een sneller model op de server, of maak kortere

@@ -14,19 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+"""voxfox_ui — the GTK4 user interface package (VoxFox 4.0).
 
-"""voxfox_core — VoxFox backend (screen reader + dictation engine).
-
-This package was split out of a single module; the public API is
-re-exported here so ``import voxfox_core as vf`` keeps working.
+The old monolithic voxfox_gtk.py was split into this package.
+voxfox_gtk.py remains as a thin launcher for packaging compatibility.
 """
-
-from .common import *  # noqa: F401,F403
-from .state import *  # noqa: F401,F403
-from .tts import *  # noqa: F401,F403
-from .stt import *  # noqa: F401,F403
-from .ocr import *  # noqa: F401,F403
-from .a11y import *  # noqa: F401,F403
-from .webread import *  # noqa: F401,F403
-from .translate import *  # noqa: F401,F403
-from .ipc import *  # noqa: F401,F403

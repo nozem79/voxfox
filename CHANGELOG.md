@@ -1,3 +1,60 @@
+## 4.0
+
+The interface has been split from one 4160-line file into the `voxfox_ui`
+package (common, widgets, setup, screenshot, history, preferences, live,
+main_window, shortcuts, app) for maintainability; `voxfox_gtk.py` remains a
+thin launcher, so packaging and the `voxfox` command are unchanged.
+
+- New: Translate & read. Select text in any language, translate it into the
+  language of Language 1 via any OpenAI-compatible endpoint (a local Ollama
+  server or a remote API), and read it aloud with that voice. The button is
+  hidden by default (enable it under Settings → Interface) and its shortcut
+  has no default binding — assign your own, the same as live transcription.
+  Long selections are translated paragraph by paragraph with progress shown
+  in the status bar; translations are saved to History.
+- New: OCR select & translate. A shortcut-only sibling of Select (OCR): OCRs
+  a screen region, translates the result, and reads it aloud — for text
+  that isn't selectable (images, scanned pages, video subtitles) in another
+  language. No toolbar button by design: a button would move keyboard focus
+  to VoxFox before the result could be read back into the originating
+  window's context, so a global shortcut is the only thing that works here.
+- New: Settings → Translation can discover models already available on the
+  configured endpoint — merged into the existing Model field as autocomplete
+  suggestions rather than a second picker — and offers a short, curated list
+  of lightweight translation models (a translation-specialised 1B model plus
+  two small general multilingual ones) with one-click Ollama pull and
+  streaming progress. VoxFox never installs Ollama itself; that remains a
+  one-time manual step at ollama.com.
+- New: Ukrainian, VoxFox's 11th interface language, with a default Piper
+  voice, native display name for the language-switch button, and Tesseract
+  OCR language mapping.
+- Fixed: on KDE Plasma, a new shortcut could silently fail to fire whenever
+  its key was already bound to something else — another application, or
+  Plasma itself. KGlobalAccel drops a clashing global shortcut on reload
+  with nothing surfaced to the user; installing a shortcut now checks it
+  against everything already registered first, skips any that would
+  collide, and reports which shortcut(s) were skipped and what they
+  collided with.
+- Hardening: dictation's recording-length safety cap (120s by default) was
+  previously enforced only by VoxFox's own process polling the recorder. If
+  that process ever died or hung mid-recording, the recorder had nothing
+  left to stop it and would keep writing to a RAM-backed temp file
+  (ram_tmpdir()) until the system ran out of memory. The recorder is now
+  also wrapped with the `timeout` command, so the OS itself guarantees an
+  end regardless of VoxFox's own process. The limit is now a visible,
+  adjustable Settings → Dictation option (10–600s) instead of a hidden
+  constant.
+- Settings → Web page: the AI (Ollama) sub-options (mode, URL, API key,
+  model, test, status) now collapse behind "Use AI (Ollama) to clean up the
+  page text" instead of always showing.
+- New icons for Translate (overlapping speech bubbles) and the
+  language-switch button (exchange arrows, replacing the old single-stroke
+  version).
+- All 11 interface languages carry an identical, complete set of interface
+  strings. Dutch and English are fully reviewed; the other nine —
+  including Ukrainian — are machine-translated and would benefit from a
+  native-speaker pass.
+
 ## 3.12
 
 - New: live transcription. A separate, freely resizable window shows speech

@@ -4,13 +4,14 @@ set -e
 # Repo root, relative to this script (packaging/ lives one level below root).
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="${SRC:-$ROOT/src}"
-VERSION="${VERSION:-$(grep APP_VERSION "$SRC/voxfox_gtk.py" | grep -oP '".*"' | tr -d '"')}"
+VERSION="${VERSION:-$(grep APP_VERSION "$SRC/voxfox_ui/common.py" | grep -oP '".*"' | tr -d '"')}"
 LOCALES="${LOCALES:-$ROOT/locales}"
 
 WORK=$(mktemp -d); trap "rm -rf $WORK" EXIT
 INST="$WORK/install"
 
 mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
+         "$INST/usr/lib/voxfox/voxfox_ui" \
          "$INST/usr/share/voxfox/locales" \
          "$INST/usr/share/applications" \
          "$INST/usr/share/icons/hicolor/256x256/apps" \
@@ -21,6 +22,7 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 # App code
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
+cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
 
 # Bundled community pronunciation dictionaries (optional).

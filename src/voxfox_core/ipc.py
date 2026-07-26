@@ -174,12 +174,18 @@ class IPCServer:
         if cmd in ("ocr-select", "select", "region"):
             self.app.root.after(0, self.app.do_ocr_select)
             return "ok"
+        if cmd in ("ocr-select-translate", "ocr-translate"):
+            self.app.root.after(0, self.app.do_ocr_select_translate)
+            return "ok"
         if cmd in ("read-page", "page"):
             self.app.root.after(0, self.app.do_read_page)
             return "ok"
         if cmd in ("live-toggle", "live"):
             log.info("ipc: received live-toggle command")
             self.app.root.after(0, self.app.do_live_toggle)
+            return "ok"
+        if cmd == "translate":
+            self.app.root.after(0, self.app.do_translate)
             return "ok"
         if cmd in ("pause-toggle", "pause", "resume"):
             self.app.root.after(0, self.app.do_pause)
@@ -240,8 +246,10 @@ def run_cli(args):
         "hover_toggle":   "hover-toggle",
         "whisper_toggle": "whisper-toggle",
         "ocr_select":     "ocr-select",
+        "ocr_select_translate": "ocr-select-translate",
         "read_page":      "read-page",
         "live_toggle":    "live-toggle",
+        "translate":      "translate",
         "pause":          "pause-toggle",
         "status":         "ping",
         "quit":           "quit",

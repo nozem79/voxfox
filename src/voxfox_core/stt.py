@@ -18,7 +18,7 @@
 """voxfox_core.stt — Speech-to-text: Whisper model loading, recording, transcription."""
 
 import json, os, subprocess, threading, time, urllib.error, urllib.request
-from .common import _, log
+from .common import _, log, _have
 
 
 # Whisper config
@@ -282,7 +282,9 @@ def list_microphones():
 def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=None):
     """Record from `mic_id` (or default) to wav_path as 16kHz mono PCM.
 
-    Records until stop_evt is set or max_seconds elapses.
+    Records until stop_evt is set or max_seconds elapses. The cap is also
+    enforced a few seconds later at the OS level (see _try_record), so it
+    still applies even if this process itself dies or hangs mid-recording.
     Returns (ok, message).
 
     If a specific mic_id is given and recording with it fails (zero bytes
@@ -292,7 +294,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
     """
     global _record_proc
 
-    def _try_record(use_mic_id):
+    def _try_record(use_mic_id, cap_seconds):
         # Build commands. Both parecord (--device) and arecord (-D) take mic IDs.
         parecord_cmd = ["parecord", "--rate", str(WHISPER_SAMPLE_RATE),
                         "--channels", "1", "--format", "s16le",
@@ -307,6 +309,22 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
             arecord_cmd += ["-D", use_mic_id]
         arecord_cmd.append(wav_path)
 
+        # Belt-and-suspenders duration cap. The poll loop below is what
+        # normally stops the recorder, well before this — but if this
+        # process ever dies or hangs while a recording is in progress
+        # (exactly a "forgot dictation was on" scenario), the recorder
+        # would otherwise keep writing to a RAM-backed temp file (see
+        # ram_tmpdir()) with nothing left to stop it: unbounded growth
+        # there is an out-of-memory system freeze waiting to happen, not
+        # just a big file. Wrapping with `timeout` makes the OS itself
+        # guarantee an end, independent of whether our own process is
+        # even still alive. -k sends SIGKILL a few seconds later if the
+        # recorder ignores the initial SIGTERM.
+        if _have("timeout"):
+            wrap = ["timeout", "-k", "5", str(int(cap_seconds))]
+            parecord_cmd = wrap + parecord_cmd
+            arecord_cmd = wrap + arecord_cmd
+
         # Capture stderr so we can see what went wrong if recording fails.
         proc = None
         used_cmd = None
@@ -320,7 +338,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
                 continue
         return proc, used_cmd
 
-    proc, used_cmd = _try_record(mic_id)
+    proc, used_cmd = _try_record(mic_id, max_seconds + 10)
     if proc is None:
         return False, "No recorder found (parecord or arecord)"
     _record_proc = proc
@@ -373,7 +391,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
                 os.unlink(wav_path)
         except Exception:
             pass
-        proc, used_cmd = _try_record("")
+        proc, used_cmd = _try_record("", 5)
         if proc is None:
             return False, "No recorder found (parecord or arecord)"
         _record_proc = proc
