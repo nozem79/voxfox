@@ -18,7 +18,7 @@
 """voxfox_core.state — Persistent state and history (load/save, atomic writes, migration)."""
 
 import copy, json, os, tempfile, time
-from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG
+from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG, PIPER_LANG_TO_CODE, app
 
 
 
@@ -370,6 +370,39 @@ def load_dict_file(path):
     return language, rules
 
 
+def load_builtin_pronunciations():
+    """Scan the bundled dicts/ directory (community submissions merged via
+    packaging/merge_dict.py) and install every dictionary found as always-on
+    default pronunciations, applied automatically before speech the same way
+    a user's own rules are -- but never written into the user's own state and
+    never listed under Settings -> Pronunciation, so that list doesn't grow
+    into the hundreds as more community words get merged in over time. A
+    user's own rule for the same word still overrides the built-in one (see
+    AppState.pron_for()). A malformed dictionary file is logged and skipped,
+    the same way load_translations() skips a broken locale.
+    """
+    d = system_dicts_dir()
+    mapping = {}
+    if d and os.path.isdir(d):
+        code_to_lang = {code: name for name, code in PIPER_LANG_TO_CODE.items()}
+        for fname in sorted(os.listdir(d)):
+            if not fname.endswith(".json"):
+                continue
+            path = os.path.join(d, fname)
+            try:
+                language, rules = load_dict_file(path)
+            except Exception as e:
+                log.warning(f"Could not load bundled dictionary {fname}: {e}")
+                continue
+            if not language:
+                language = code_to_lang.get(os.path.splitext(fname)[0], "")
+            if not language or not rules:
+                continue
+            mapping.setdefault(language, {}).update(rules)
+    app.set_builtin_pronunciations(mapping)
+    return mapping
+
+
 def save_dict_file(path, language, rules):
     """Write a dictionary file (sorted, human-editable)."""
     data = {
@@ -395,4 +428,5 @@ __all__ = [
     "system_dicts_dir",
     "load_dict_file",
     "save_dict_file",
+    "load_builtin_pronunciations",
 ]

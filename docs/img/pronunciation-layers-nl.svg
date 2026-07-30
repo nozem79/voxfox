@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 470" font-family="Arial, sans-serif">
+<rect width="640" height="470" fill="#faf9f7"/>
+<rect x="140" y="20" width="360" height="46" rx="10" fill="#ffffff" stroke="#d8d6d0" stroke-width="1.5"/>
+<text x="320.0" y="48.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#2e3436">Tekst die zo wordt voorgelezen</text>
+<path d="M320 66V96" stroke="#2e3436" stroke-width="2" fill="none"/><path d="M314 96L320 106L326 96" stroke="#2e3436" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="90" y="106" width="460" height="84" rx="10" fill="#f2f1ee" stroke="#d8d6d0" stroke-width="1.5"/>
+<text x="320.0" y="134" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#2e3436">Ingebouwd woordenboek</text>
+<text x="320.0" y="156" text-anchor="middle" font-family="Arial, sans-serif" font-size="12.5" fill="#6b7280">dicts/*.json — community-inzendingen</text>
+<text x="320.0" y="174" text-anchor="middle" font-family="Arial, sans-serif" font-size="12.5" fill="#6b7280">altijd actief · nooit in Instellingen te zien</text>
+<path d="M320 190V216" stroke="#2e3436" stroke-width="2" fill="none"/><path d="M314 216L320 226L326 216" stroke="#2e3436" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="356" y="196" width="230" height="34" rx="8" fill="#fbeee6" stroke="#c9622f" stroke-width="1"/>
+<text x="471" y="209" text-anchor="middle" font-size="10.5" fill="#c9622f" font-weight="600">zelfde woord in beide?</text>
+<text x="471" y="223" text-anchor="middle" font-size="10.5" fill="#c9622f" font-weight="700">jouw regel wint</text>
+<rect x="90" y="226" width="460" height="84" rx="10" fill="#fbeee6" stroke="#c9622f" stroke-width="1.5"/>
+<text x="320.0" y="254" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="600" fill="#2e3436">Jouw eigen regels</text>
+<text x="320.0" y="276" text-anchor="middle" font-family="Arial, sans-serif" font-size="12.5" fill="#6b7280">Instellingen → Uitspraak</text>
+<text x="320.0" y="294" text-anchor="middle" font-family="Arial, sans-serif" font-size="12.5" fill="#6b7280">zichtbaar · optioneel · door jou toegevoegd</text>
+<path d="M320 310V336" stroke="#2e3436" stroke-width="2" fill="none"/><path d="M314 336L320 346L326 336" stroke="#2e3436" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="140" y="346" width="360" height="46" rx="10" fill="#ffffff" stroke="#d8d6d0" stroke-width="1.5"/>
+<text x="320.0" y="374.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#2e3436">Uiteindelijke uitspraak → Piper TTS</text>
+<text x="320.0" y="412" text-anchor="middle" font-size="12" fill="#6b7280">Een woord zonder eigen regel klinkt alsnog goed als het in het ingebouwde</text>
+<text x="320.0" y="429" text-anchor="middle" font-size="12" fill="#6b7280">woordenboek staat. Vind je een ingebouwde uitspraak niet goed? Voeg je eigen</text>
+<text x="320.0" y="446" text-anchor="middle" font-size="12" fill="#6b7280">regel voor dat woord toe — die wint altijd van de ingebouwde.</text>
+</svg>

@@ -299,5 +299,8 @@
   "Purpose-built for translation, based on Gemma 3": "Creato appositamente per la traduzione, basato su Gemma 3",
   "Fast, general-purpose, solid multilingual support": "Veloce, generico, buon supporto multilingue",
   "Strong multilingual, especially Asian languages": "Fortemente multilingue, specialmente lingue asiatiche",
-  "Maximum recording length in seconds": "Durata massima di registrazione in secondi"
+  "Maximum recording length in seconds": "Durata massima di registrazione in secondi",
+  "Use": "Usa",
+  "{model} is now the active model": "{model} è ora il modello attivo",
+  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox applica anche automaticamente alcune correzioni di pronuncia; aggiungi qui una tua regola per sostituirne una."
 }

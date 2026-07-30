@@ -114,12 +114,22 @@ regularly read in two languages. The interface language follows Slot 1.
 ## Pronunciation dictionary
 
 VoxFox can re-spell words before they are spoken — handy for names,
-abbreviations and loanwords the voice gets wrong. Open *Settings →
-Pronunciation*; it edits the dictionary for slot 1's language. Add rules as
-*word → pronounce as* (e.g. `VoxFox → Voks-foks`, `GUI → goo-ee`), and use the
-▶ button on each rule to hear that single word. Matching is whole-word and
-case-insensitive, and the rules apply to everything spoken in that language
-(Read, Hover, OCR). Stored per language in your settings file.
+abbreviations and loanwords the voice gets wrong. Two layers work together:
+
+![How the two pronunciation layers combine](docs/img/pronunciation-layers.svg)
+
+- **Built-in** — a community dictionary (`dicts/*.json`) that ships with
+  VoxFox and is always active. It never appears in Settings, so it can keep
+  growing without cluttering your list.
+- **Yours** — open *Settings → Pronunciation* to edit the dictionary for
+  slot 1's language. Add rules as *word → pronounce as* (e.g.
+  `VoxFox → Voks-foks`, `GUI → goo-ee`), and use the ▶ button on each rule
+  to hear that single word. A rule you add always overrides the built-in
+  one for that word.
+
+Matching is whole-word and case-insensitive, and the rules apply to
+everything spoken in that language (Read, Hover, OCR). Your rules are
+stored per language in your settings file.
 
 ## History
 

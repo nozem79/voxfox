@@ -56,7 +56,8 @@ SUGGESTED_MODELS = [
 _LANG_EN_NAMES = {
     "en": "English", "nl": "Dutch", "de": "German", "fr": "French",
     "es": "Spanish", "it": "Italian", "pt": "Portuguese", "el": "Greek",
-    "ar": "Arabic", "zh": "Chinese", "uk": "Ukrainian",
+    "ar": "Arabic", "zh": "Chinese", "uk": "Ukrainian", "no": "Norwegian", "sv": "Swedish", "fi": "Finnish",
+    "ro": "Romanian", "cs": "Czech", "pl": "Polish",
 }
 
 _CHUNK_CHARS = 3500

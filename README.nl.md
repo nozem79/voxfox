@@ -115,13 +115,23 @@ talen leest. De interfacetaal volgt slot 1.
 ## Uitspraakwoordenboek
 
 VoxFox kan woorden herschrijven voordat ze worden uitgesproken — handig voor
-namen, afkortingen en leenwoorden die de stem verkeerd uitspreekt. Open
-*Instellingen → Uitspraak*; daar bewerk je het woordenboek voor de taal van
-slot 1. Voeg regels toe als *woord → uitspreken als* (bijv. `VoxFox →
-Voks-foks`, `GUI → goe-wie`), en gebruik de ▶-knop bij elke regel om dat ene
-woord te beluisteren. Matching gebeurt op hele woorden en hoofdletterongevoelig,
-en de regels gelden voor alles wat in die taal wordt voorgelezen (Voorlezen,
-Zweven, OCR). Per taal opgeslagen in je instellingenbestand.
+namen, afkortingen en leenwoorden die de stem verkeerd uitspreekt. Twee lagen
+werken samen:
+
+![Hoe de twee uitspraaklagen samenwerken](docs/img/pronunciation-layers-nl.svg)
+
+- **Ingebouwd** — een community-woordenboek (`dicts/*.json`) dat met VoxFox
+  meekomt en altijd actief is. Het staat nergens in Instellingen, zodat het
+  kan blijven groeien zonder je lijst vol te zetten.
+- **Van jou** — open *Instellingen → Uitspraak* om het woordenboek voor de
+  taal van slot 1 te bewerken. Voeg regels toe als *woord → uitspreken als*
+  (bijv. `VoxFox → Voks-foks`, `GUI → goe-wie`), en gebruik de ▶-knop bij
+  elke regel om dat ene woord te beluisteren. Een regel die jij toevoegt,
+  wint altijd van de ingebouwde versie voor dat woord.
+
+Matching gebeurt op hele woorden en hoofdletterongevoelig, en de regels
+gelden voor alles wat in die taal wordt voorgelezen (Voorlezen, Zweven,
+OCR). Jouw regels worden per taal opgeslagen in je instellingenbestand.
 
 ## Geschiedenis
 

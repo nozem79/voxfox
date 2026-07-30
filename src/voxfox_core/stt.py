@@ -33,7 +33,8 @@ WHISPER_MAX_SECONDS = 120          # safety cap on recording length
 _WHISPER_LANG_MAP = {
     "Dutch": "nl", "Flemish": "nl", "Nederlands": "nl",
     "English": "en", "German": "de", "French": "fr", "Spanish": "es",
-    "Italian": "it", "Portuguese": "pt", "Polish": "pl", "Russian": "ru",
+    "Italian": "it", "Portuguese": "pt", "Portuguese (Portugal)": "pt",
+    "Polish": "pl", "Russian": "ru",
     "Turkish": "tr", "Arabic": "ar", "Chinese": "zh", "Japanese": "ja",
     "Korean": "ko", "Catalan": "ca", "Czech": "cs", "Danish": "da",
     "Greek": "el", "Finnish": "fi", "Hungarian": "hu", "Norwegian": "no",

@@ -54,6 +54,13 @@ _TESS_LANG_MAP = {
     "Arabic":     "ara",
     "Greek":      "ell",
     "Ukrainian":  "ukr",
+    "Norwegian":  "nor",
+    "Swedish":    "swe",
+    "Finnish":    "fin",
+    "Romanian":   "ron",
+    "Czech":      "ces",
+    "Polish":     "pol",
+    "Portuguese (Portugal)": "por",
 }
 
 

@@ -1,7 +1,19 @@
 {
-  "_meta": {"format": 1, "language": "Dutch", "generator": "VoxFox"},
+  "_meta": {
+    "format": 1,
+    "language": "Dutch",
+    "generator": "VoxFox"
+  },
   "rules": {
+    "Apple": "appel",
     "GUI": "goe wie",
-    "VoxFox": "Voks Foks"
+    "ok": "okee",
+    "Opdrachtregel": "Opdracht regel",
+    "schermlezer": "scherm leezer",
+    "subsidieregelingen": "sub siedie regeling",
+    "Thee": "tee",
+    "voorlezen": "vooorlezen",
+    "VoxFox": "Voks Foks",
+    "XI": "Ksie"
   }
 }

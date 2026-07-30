@@ -299,5 +299,8 @@
   "Low": "Низька",
   "How easily speech is detected. High suits quiet laptop microphones.": "Наскільки легко виявляється мовлення. Висока чутливість підходить для тихих мікрофонів ноутбуків.",
   "Toggle live transcription": "Перемкнути транскрипцію наживо",
-  "Maximum recording length in seconds": "Максимальна тривалість запису в секундах"
+  "Maximum recording length in seconds": "Максимальна тривалість запису в секундах",
+  "Use": "Використати",
+  "{model} is now the active model": "{model} тепер активна модель",
+  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox також автоматично застосовує деякі виправлення вимови; додайте тут своє власне правило, щоб замінити одне з них."
 }

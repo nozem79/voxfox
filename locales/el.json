@@ -299,5 +299,8 @@
   "Purpose-built for translation, based on Gemma 3": "Δημιουργήθηκε ειδικά για μετάφραση, βασισμένο στο Gemma 3",
   "Fast, general-purpose, solid multilingual support": "Γρήγορο, γενικής χρήσης, καλή πολυγλωσσική υποστήριξη",
   "Strong multilingual, especially Asian languages": "Ισχυρή πολυγλωσσική υποστήριξη, ειδικά για ασιατικές γλώσσες",
-  "Maximum recording length in seconds": "Μέγιστη διάρκεια εγγραφής σε δευτερόλεπτα"
+  "Maximum recording length in seconds": "Μέγιστη διάρκεια εγγραφής σε δευτερόλεπτα",
+  "Use": "Χρήση",
+  "{model} is now the active model": "Το {model} είναι πλέον το ενεργό μοντέλο",
+  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "Το VoxFox εφαρμόζει επίσης αυτόματα ορισμένες διορθώσεις προφοράς· προσθέστε τον δικό σας κανόνα εδώ για να αντικαταστήσετε κάποια."
 }

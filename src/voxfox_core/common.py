@@ -147,6 +147,13 @@ class AppState:
         self.translations = {}           # {code: {english: translated}}
         self.ui_lang_names = {"en": "English"}
         self.pronunciations = {}         # {piper_lang_name: {word: respelling}}
+        # Always-on defaults from dicts/*.json (community submissions). Kept
+        # separate from `pronunciations` on purpose: these are never written
+        # into the user's own state and never listed under Settings ->
+        # Pronunciation, so that list doesn't grow into the hundreds as more
+        # community words get merged in. A user's own rule for the same word
+        # still wins -- see pron_for().
+        self.builtin_pronunciations = {}
         self.merge_lines = True
 
     # ── i18n ──────────────────────────────────────────────────────────────
@@ -205,8 +212,22 @@ class AppState:
     def set_pronunciations(self, mapping):
         self.pronunciations = mapping or {}
 
+    def set_builtin_pronunciations(self, mapping):
+        self.builtin_pronunciations = mapping or {}
+
     def pron_for(self, lang):
-        return self.pronunciations.get(lang, {})
+        """Effective pronunciation rules for `lang`: the always-on built-in
+        dictionary with the user's own rules layered on top, so a personal
+        rule for a word always overrides the built-in one for that word."""
+        builtin = self.builtin_pronunciations.get(lang, {})
+        user = self.pronunciations.get(lang, {})
+        if not builtin:
+            return user
+        if not user:
+            return builtin
+        merged = dict(builtin)
+        merged.update(user)
+        return merged
 
     def set_merge_lines(self, enabled):
         self.merge_lines = bool(enabled)
@@ -232,6 +253,13 @@ PIPER_LANG_TO_CODE = {
     "Arabic":     "ar",
     "Greek":      "el",
     "Ukrainian":  "uk",
+    "Norwegian":  "no",
+    "Swedish":    "sv",
+    "Finnish":    "fi",
+    "Romanian":   "ro",
+    "Czech":      "cs",
+    "Polish":     "pl",
+    "Portuguese (Portugal)": "pt",
 }
 
 
@@ -252,6 +280,13 @@ PIPER_LANG_NATIVE = {
     "Arabic":     "العربية",
     "Greek":      "Ελληνικά",
     "Ukrainian":  "Українська",
+    "Norwegian":  "Norsk",
+    "Swedish":    "Svenska",
+    "Finnish":    "Suomi",
+    "Romanian":   "Română",
+    "Czech":      "Čeština",
+    "Polish":     "Polski",
+    "Portuguese (Portugal)": "Português (Portugal)",
 }
 
 
@@ -283,6 +318,7 @@ PIPER_LANG_SHORT = {
     "Slovak":     "SK",
     "Swedish":    "SV",
     "Ukrainian":  "UK",
+    "Portuguese (Portugal)": "PT",
     "Turkish":    "TR",
     "Arabic":     "AR",
     "Chinese":    "ZH",
@@ -352,6 +388,13 @@ DEFAULT_VOICE_FOR_LANG = {
     "Arabic":     "ar_JO-kareem-medium",
     "Greek":      "el_GR-rapunzelina-low",
     "Ukrainian":  "uk_UA-ukrainian_tts-medium",
+    "Norwegian":  "no_NO-talesyntese-medium",
+    "Swedish":    "sv_SE-lisa-medium",
+    "Finnish":    "fi_FI-harri-medium",
+    "Romanian":   "ro_RO-mihai-medium",
+    "Czech":      "cs_CZ-jirka-medium",
+    "Polish":     "pl_PL-gosia-medium",
+    "Portuguese (Portugal)": "pt_PT-tugão-medium",
 }
 
 

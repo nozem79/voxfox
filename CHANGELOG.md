@@ -1,3 +1,34 @@
+## 4.0.1
+
+- New: seven more interface languages -- Norwegian, Swedish, Finnish,
+  Romanian, Czech, Polish, and Portuguese (Portugal) as a distinct option
+  alongside the existing (Brazilian) Portuguese, sharing the same interface
+  text since the difference is purely which Piper voice is used. All are
+  fully wired: default Piper voice, native display name, Tesseract OCR
+  mapping, and Whisper dictation language hint. All 17 locales carry an
+  identical key set, verified the same way Ukrainian's addition was
+  (placeholder consistency, code-string coverage), plus a state-migration
+  check confirming an old (pre-4.0) state file still loads correctly.
+- Settings -> Translation: suggested models can now be selected as the
+  active model directly, not just pulled. The button reads "Use" once a
+  model is installed (rather than a disabled "Installed" label) and picks
+  it as the active model with one click; a freshly pulled model is
+  selected automatically too.
+- The bundled community pronunciation dictionary (dicts/*.json) is now
+  always active automatically for every user, instead of something you had
+  to opt into loading -- and it no longer appears in Settings ->
+  Pronunciation's editable word list, so that list stays short no matter
+  how many community words get added over time. A rule you add yourself
+  for a word always overrides the built-in one, so you can still correct
+  any pronunciation you disagree with; that correction can be folded into
+  the bundled dictionary itself in a future release. Import/export of your
+  own dictionary file is unchanged. dicts/nl.json's first batch of
+  voxfox.nl submissions (Apple, ok, Opdrachtregel, schermlezer,
+  subsidieregelingen, Thee, voorlezen, XI) is included.
+- Docs: README.md/README.nl.md's Pronunciation dictionary section explains
+  the two layers above, with a new diagram
+  (docs/img/pronunciation-layers[-nl].svg).
+
 ## 4.0
 
 The interface has been split from one 4160-line file into the `voxfox_ui`

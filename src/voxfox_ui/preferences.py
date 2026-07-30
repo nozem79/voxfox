@@ -714,6 +714,13 @@ class PreferencesWindow(Gtk.Window):
             % native)
         box.append(info)
 
+        hint = Gtk.Label(xalign=0.0, wrap=True)
+        hint.add_css_class("dim-label")
+        hint.set_text(
+            _("VoxFox also applies some pronunciation fixes automatically; "
+              "add your own rule here to override one."))
+        box.append(hint)
+
         self.pron_list = Gtk.ListBox()
         self.pron_list.set_selection_mode(Gtk.SelectionMode.NONE)
         box.append(self.pron_list)
@@ -735,10 +742,6 @@ class PreferencesWindow(Gtk.Window):
         exp = Gtk.Button(label=_("Export dictionary…"))
         exp.connect("clicked", self._on_dict_export)
         btnrow.append(exp)
-        if self._bundled_dict_path():
-            bnd = Gtk.Button(label=_("Load bundled dictionary"))
-            bnd.connect("clicked", self._on_dict_bundled)
-            btnrow.append(bnd)
         box.append(btnrow)
 
         share = Gtk.Label(xalign=0.0)
@@ -749,17 +752,7 @@ class PreferencesWindow(Gtk.Window):
         box.append(share)
         return frame
 
-    # ── dictionary files: import / export / bundled ──────────────────────────
-    def _bundled_dict_path(self):
-        """Path of the bundled community dictionary for slot 1's language,
-        or None when there is none."""
-        d = vf.system_dicts_dir()
-        if not d:
-            return None
-        code = vf.ui_code_for_piper_lang(self._pron_lang)
-        p = os.path.join(d, f"{code}.json")
-        return p if os.path.isfile(p) else None
-
+    # ── dictionary files: import / export ─────────────────────────────────
     def _on_dict_export(self, _btn):
         dlg = Gtk.FileChooserNative.new(
             _("Export dictionary…"), self, Gtk.FileChooserAction.SAVE,
@@ -797,11 +790,6 @@ class PreferencesWindow(Gtk.Window):
         if resp == Gtk.ResponseType.ACCEPT and dlg.get_file():
             self._merge_dict_file(dlg.get_file().get_path())
         dlg.destroy()
-
-    def _on_dict_bundled(self, _btn):
-        path = self._bundled_dict_path()
-        if path:
-            self._merge_dict_file(path)
 
     def _merge_dict_file(self, path):
         """Merge a dictionary file into the state. Rules land under the
@@ -1184,10 +1172,30 @@ class PreferencesWindow(Gtk.Window):
         have_base = {h.split(":")[0] for h in have}
         for name, btn in self.trans_suggest_rows.items():
             installed = name in have or name.split(":")[0] in have_base
-            btn.set_label(_("Installed") if installed else _("Pull"))
-            btn.set_sensitive(not installed)
+            # Installed models get a "Use" button instead of a disabled
+            # "Installed" label -- picking a suggestion should never require
+            # retyping its exact name into the Model field by hand.
+            btn.set_label(_("Use") if installed else _("Pull"))
+            btn.set_sensitive(True)
+
+    def _select_translate_model(self, model_name):
+        """Make `model_name` the active translation model without a network
+        call -- used both for an already-installed suggestion and right
+        after a fresh pull succeeds."""
+        self.trans_model.set_text(model_name)
+        self._on_translate_changed()
+        self.trans_status.set_text(
+            _("{model} is now the active model").format(model=model_name))
 
     def _on_translate_pull(self, _btn, model_name):
+        have = set(getattr(self, "_discovered_models", []) or [])
+        have_base = {h.split(":")[0] for h in have}
+        if model_name in have or model_name.split(":")[0] in have_base:
+            # Already installed: this click means "use it", not "pull it
+            # again" -- no network call needed.
+            self._select_translate_model(model_name)
+            return
+
         self._on_translate_changed()
         self.trans_pull_bar.set_visible(True)
         self.trans_pull_bar.set_fraction(0.0)
@@ -1209,12 +1217,14 @@ class PreferencesWindow(Gtk.Window):
     def _translate_pull_done(self, ok, msg, model_name):
         _hide_progress_bar(self.trans_pull_bar)
         if ok:
-            self.trans_status.set_text(
-                _("{model} installed").format(model=model_name))
             self._discovered_models = list(
                 set(getattr(self, "_discovered_models", []) or [])
                 | {model_name})
             self._refresh_suggested_buttons()
+            # A model someone just spent time downloading is, in every
+            # realistic case, one they want to try immediately -- select it
+            # rather than leaving them to type its exact name afterwards.
+            self._select_translate_model(model_name)
         else:
             self.trans_status.set_text(
                 f"{_('Could not pull')} {model_name}: {msg}")

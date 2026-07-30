@@ -335,6 +335,7 @@ def main():
     # (Without load_translations() the tables stay empty and the UI is stuck
     # on English regardless of the slot 1 setting.)
     vf.load_translations()
+    vf.load_builtin_pronunciations()
     try:
         st = vf.load_state()
         apply_ui_language(st["slot1"].get("lang", ""))
