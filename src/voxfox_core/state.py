@@ -18,14 +18,14 @@
 """voxfox_core.state — Persistent state and history (load/save, atomic writes, migration)."""
 
 import copy, json, os, tempfile, time
-from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG, PIPER_LANG_TO_CODE, app
+from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG, DEFAULT_SPEED_FOR_LANG, DEFAULT_PITCH_FOR_LANG, PIPER_LANG_TO_CODE, app
 
 
 
 # ── Default state ─────────────────────────────────────────────────────────────
 DEFAULT_STATE = {
     "slot1": {"lang": "English", "voice": "en_GB-alba-medium", "speed": 1.0, "pitch": 0.0},
-    "slot2": {"lang": "Dutch",   "voice": "nl_NL-pim-medium",  "speed": 1.0, "pitch": 0.0},
+    "slot2": {"lang": "Dutch",   "voice": "nl_NL-alex-medium", "speed": 1.10, "pitch": -2.0},
     "active_slot": "slot1",
     "ui_view": "both",         # toolbar buttons: icons / both / text
     "ui_orientation": "horizontal",  # toolbar layout: horizontal / vertical
@@ -119,11 +119,13 @@ def _fresh_state():
         if lang:
             s["slot1"] = {"lang": lang,
                           "voice": DEFAULT_VOICE_FOR_LANG.get(lang, ""),
-                          "speed": 1.0, "pitch": 0.0}
+                          "speed": DEFAULT_SPEED_FOR_LANG.get(lang, 1.0),
+                          "pitch": DEFAULT_PITCH_FOR_LANG.get(lang, 0.0)}
             second = "English" if lang != "English" else "Dutch"
             s["slot2"] = {"lang": second,
                           "voice": DEFAULT_VOICE_FOR_LANG.get(second, ""),
-                          "speed": 1.0, "pitch": 0.0}
+                          "speed": DEFAULT_SPEED_FOR_LANG.get(second, 1.0),
+                          "pitch": DEFAULT_PITCH_FOR_LANG.get(second, 0.0)}
             log.info(f"Fresh install: seeded Slot 1 from system language ({lang})")
     except Exception as e:
         log.debug(f"system language detection skipped: {e}")

@@ -17,8 +17,8 @@
 
 """voxfox_core.tts — Text-to-speech: Piper voices, chunking, the speaking worker."""
 
-import json, os, re, subprocess, tempfile, threading, time, urllib.request
-from .common import BASE_URL, CHUNK_SIZE, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
+import json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
+from .common import BASE_URL, CHUNK_SIZE, CONFIG_DIR, DATA_DIR, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
 
 
 
@@ -56,10 +56,130 @@ def get_voices_for_lang(voices, lang):
             if v.get("language", {}).get("name_english", "") == lang}
 
 
+# Where a Piper voice's .onnx/.onnx.json is looked up, in priority order
+# (first match wins). Only VOICES_USER_DIR (layer 1) is ever written to or
+# deleted from; the rest are legacy or system locations, read-only as far
+# as VoxFox is concerned. Mirrors the layered pattern already used for the
+# bundled pronunciation dictionaries (see state.py's
+# load_builtin_pronunciations() / AppState.pron_for()) -- personal always
+# overrides system, for the same reason: a user's own choice should win,
+# and the system layer may be a read-only squashfs (FoxOS) with nothing
+# to gain from ever trying to write to it.
+def _voice_search_dirs():
+    return [
+        os.path.join(DATA_DIR, "voices"),    # ~/.local/share/voxfox/voices (current, writable)
+        os.path.join(CONFIG_DIR, "voices"),  # ~/.config/voxfox/voices (legacy, read-only)
+        PIPER_DIR,                            # ~/.piper (legacy, read-only; also holds the engine)
+        "/usr/share/voxfox/voices",           # system, e.g. bundled by FoxOS (read-only)
+    ]
+
+
+def _safe_move_file(src, dst):
+    """Move `src` to `dst` without ever deleting `src` unless `dst` is
+    first confirmed to be a complete copy. A failure partway through --
+    permissions, a full disk, a cross-filesystem hiccup -- always leaves
+    the original exactly where it was, with nothing lost and no partial
+    file left behind at the destination. Returns True on success."""
+    tmp = dst + ".migrating"
+    try:
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        if os.path.exists(dst):
+            return False
+        shutil.copy2(src, tmp)
+        if os.path.getsize(tmp) != os.path.getsize(src):
+            os.remove(tmp)
+            return False
+        os.replace(tmp, dst)   # atomic rename into place
+        os.remove(src)         # only remove the original once dst is real
+        return True
+    except OSError as e:
+        log.warning(f"Could not migrate {src} -> {dst}: {e}")
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
+        return False
+
+
+def migrate_legacy_voices():
+    """One-time move of voice files from legacy locations
+    (~/.config/voxfox/voices, ~/.piper) into the current
+    ~/.local/share/voxfox/voices, so a live/read-only home doesn't force
+    every session to redownload them. Moves rather than copies, so large
+    voice files don't end up duplicated on disk -- but see
+    _safe_move_file(): a failed move leaves the legacy file exactly where
+    it was, and voice resolution simply keeps falling through to that
+    legacy layer, same as if migration had never run. Gated by a marker
+    file so this only ever runs once; never touches the read-only system
+    layer, and never touches anything but .onnx/.onnx.json files, so the
+    Piper engine itself (which also lives in the legacy ~/.piper) is left
+    completely alone.
+    """
+    marker = os.path.join(DATA_DIR, ".migrated")
+    if os.path.isfile(marker):
+        return
+    user_dir = voices_user_dir()
+    moved = []
+    for src_dir in (os.path.join(CONFIG_DIR, "voices"), PIPER_DIR):
+        if not os.path.isdir(src_dir):
+            continue
+        try:
+            names = os.listdir(src_dir)
+        except OSError:
+            continue
+        for fname in names:
+            if not (fname.endswith(".onnx") or fname.endswith(".onnx.json")):
+                continue
+            src = os.path.join(src_dir, fname)
+            dst = os.path.join(user_dir, fname)
+            if os.path.isfile(dst):
+                continue  # user layer already has this one; leave the legacy copy alone
+            if _safe_move_file(src, dst):
+                moved.append(f"{src} -> {dst}")
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(marker, "w", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}: migrated "
+                   f"{len(moved)} voice file(s)\n")
+    except OSError as e:
+        log.warning(f"Could not write migration marker {marker}: {e}")
+    if moved:
+        log.info("Migrated voice files:\n  " + "\n  ".join(moved))
+
+
+def voices_user_dir():
+    """The one directory a new voice is ever downloaded into. Always the
+    first search layer, so a freshly downloaded voice is found again
+    immediately and takes priority over any same-named system voice."""
+    return os.path.join(DATA_DIR, "voices")
+
+
+def find_voice_dir(voice_key):
+    """The directory actually holding `voice_key`'s .onnx file, searched
+    in priority order across _voice_search_dirs(), or None if it isn't in
+    any of them. A voice present in more than one layer resolves to the
+    highest-priority one -- a personal copy always wins over a system or
+    other legacy one of the same name."""
+    for d in _voice_search_dirs():
+        if d and os.path.isfile(os.path.join(d, f"{voice_key}.onnx")):
+            return d
+    return None
+
+
 def get_local_voices():
-    if not os.path.isdir(PIPER_DIR):
-        return set()
-    return {f[:-5] for f in os.listdir(PIPER_DIR) if f.endswith(".onnx")}
+    """Every voice key available in ANY search layer (user, legacy, or
+    system) -- used to decide whether a voice still needs downloading, so
+    a voice already present system-wide is correctly treated as local."""
+    found = set()
+    for d in _voice_search_dirs():
+        if not d or not os.path.isdir(d):
+            continue
+        try:
+            found.update(f[:-5] for f in os.listdir(d) if f.endswith(".onnx"))
+        except OSError:
+            continue
+    return found
 
 
 def download_voice(voice_key, progress_cb=None, cancel_evt=None, frac_cb=None):
@@ -72,11 +192,17 @@ def download_voice(voice_key, progress_cb=None, cancel_evt=None, frac_cb=None):
     voices = fetch_voices()
     if voice_key not in voices:
         return False, f"Voice not found: {voice_key}"
-    os.makedirs(PIPER_DIR, exist_ok=True)
+    # Downloads always land in the user's own directory (layer 1) -- never
+    # in a legacy or system location, which may not even be writable
+    # (a read-only squashfs on FoxOS). ~/.local/share/voxfox/voices is a
+    # normal part of the user's own home, so creating it is expected to
+    # succeed; any failure here surfaces through the existing try/except
+    # below exactly as a download failure already would.
+    os.makedirs(voices_user_dir(), exist_ok=True)
     for filename in voices[voice_key].get("files", {}):
         if not (filename.endswith(".onnx") or filename.endswith(".onnx.json")):
             continue
-        dest = os.path.join(PIPER_DIR, os.path.basename(filename))
+        dest = os.path.join(voices_user_dir(), os.path.basename(filename))
         if os.path.isfile(dest):
             continue
         url = f"{BASE_URL}/{filename}"
@@ -150,7 +276,8 @@ def toggle_pause():
 
 def _voice_sample_rate(voice_key):
     """Read the sample rate from a Piper voice's .onnx.json. Default 22050."""
-    cfg_path = os.path.join(PIPER_DIR, f"{voice_key}.onnx.json")
+    cfg_path = os.path.join(
+        find_voice_dir(voice_key) or PIPER_DIR, f"{voice_key}.onnx.json")
     try:
         with open(cfg_path) as f:
             return int(json.load(f).get("audio", {}).get("sample_rate", 22050))
@@ -512,7 +639,7 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
         pitch_factor = 2.0 ** (float(slot_config.get("pitch", 0.0)) / 12.0)
     except (TypeError, ValueError):
         pitch_factor = 1.0
-    model = os.path.join(PIPER_DIR, f"{voice}.onnx")
+    model = os.path.join(find_voice_dir(voice) or PIPER_DIR, f"{voice}.onnx")
     if not os.path.isfile(model):
         log.error(f"Model not found: {model}")
         return
@@ -664,6 +791,9 @@ __all__ = [
     "get_languages",
     "get_voices_for_lang",
     "get_local_voices",
+    "voices_user_dir",
+    "find_voice_dir",
+    "migrate_legacy_voices",
     "download_voice",
     "_speak_thread",
     "_stop_event",

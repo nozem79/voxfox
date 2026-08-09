@@ -1,3 +1,38 @@
+## 4.0.2
+
+VoxFox voices can now be shared system-wide (for example by FoxOS, which
+bundles voices once for every user instead of each user downloading their
+own copy). A voice is looked up across four layers, first match wins:
+~/.local/share/voxfox/voices (current, writable) -> ~/.config/voxfox/voices
+(legacy) -> ~/.piper (legacy; still holds the Piper engine itself,
+unchanged) -> /usr/share/voxfox/voices (system). Only the first layer is
+ever written to, so VoxFox never tries to write into a read-only system
+image; a personal copy always wins over a system one of the same name.
+Existing voices in a legacy location are moved (not copied, so large files
+aren't duplicated on disk) into the new location once, automatically, the
+first time VoxFox starts after upgrading -- a failed move leaves the
+original untouched and voice resolution keeps working exactly as before.
+Whisper models already respected $HF_HOME/$HF_HUB_OFFLINE and still do,
+unchanged -- confirmed, no code change was needed there.
+
+- New default Dutch voice: nl_NL-alex-medium (was nl_NL-pim-medium), with
+  1.10 speed and -2 pitch as its defaults. Fresh installs only -- an
+  existing user's own settings are never changed.
+- Fixed: reinstalling shortcuts on KDE Plasma after they had already been
+  installed once could fail entirely with "Could not install shortcuts on
+  this desktop". kglobalaccel rewrites a freshly-written shortcut group in
+  kglobalshortcutsrc into its own nested form the first time it reloads;
+  VoxFox's own reader was misparsing that nested form as belonging to a
+  different, unknown application and skipping its own shortcuts as false
+  collisions. Fixed and confirmed against a reconstructed file matching
+  the exact format from a real KDE session, without weakening genuine
+  cross-application collision detection.
+- New: packaging/uninstall-clean.sh removes the installed package plus all
+  settings, voices, the Piper engine, and logs, for testing a genuinely
+  clean install. Asks for confirmation first; --with-whisper additionally
+  removes VoxFox's own faster-whisper models without touching any other
+  Hugging Face cache content.
+
 ## 4.0.1
 
 - New: seven more interface languages -- Norwegian, Swedish, Finnish,

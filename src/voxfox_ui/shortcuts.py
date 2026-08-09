@@ -391,7 +391,16 @@ def _kde_parse_bindings(path):
                 if not s or s.startswith(("#", ";")):
                     continue
                 if s.startswith("[") and s.endswith("]"):
-                    group = s[1:-1]
+                    inner = s[1:-1]
+                    # KDE nests .desktop-based shortcuts on one line as
+                    # "[services][name.desktop]" -- kglobalaccel rewrites a
+                    # plain "[name.desktop]" group into this form the first
+                    # time it reloads, so this shows up from the SECOND
+                    # install onward, not the first. The part that actually
+                    # identifies which app owns the shortcut is the LAST
+                    # bracketed segment; "services" alone is just KDE's own
+                    # categorisation and not a real component.
+                    group = inner.rsplit("][", 1)[-1] if "][" in inner else inner
                     continue
                 if group is None or "=" not in line:
                     continue

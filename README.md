@@ -505,16 +505,26 @@ Downloaded per user on first use: the Piper engine and voices, and
 
 ## Where things live
 
-| Path                              | Contents                          |
-|-----------------------------------|-----------------------------------|
-| `~/.piper/`                       | Piper engine and downloaded voices|
-| `~/.piper/locales/`               | Interface translation files       |
-| `~/.config/voxfox_state.json`     | Your settings                     |
-| `~/.config/voxfox_history.json`   | Read/dictation history            |
-| `~/.cache/huggingface/`           | Cached Whisper models             |
-| `~/.cache/voxfox.log`             | Log file                          |
-| `/usr/lib/voxfox/`                | Program code                      |
-| `/usr/share/voxfox/locales/`      | Bundled translations              |
+| Path                                | Contents                                        |
+|--------------------------------------|--------------------------------------------------|
+| `~/.local/share/voxfox/voices/`     | Your own downloaded voices                      |
+| `~/.local/share/voxfox/.migrated`   | One-time migration marker (see below)           |
+| `~/.config/voxfox/state.json`       | Your settings                                   |
+| `~/.config/voxfox/history.json`     | Read/dictation history                          |
+| `~/.cache/voxfox/voxfox.log`        | Log file                                        |
+| `~/.cache/huggingface/`             | Cached Whisper models (respects `$HF_HOME`)     |
+| `~/.piper/`                         | Piper engine, and any not-yet-migrated voices   |
+| `/usr/share/voxfox/voices/`         | System-wide voices (e.g. bundled by FoxOS), read-only |
+| `/usr/share/voxfox/locales/`        | Bundled translations                            |
+| `/usr/share/voxfox/dicts/`          | Bundled pronunciation dictionaries              |
+| `/usr/lib/voxfox/`                  | Program code                                    |
+
+A voice is looked up in that order top to bottom, first match wins, so a
+personal copy always overrides a system one of the same name; only the
+first row is ever written to. Voices found in a legacy location
+(`~/.config/voxfox/voices` or `~/.piper`) are moved into
+`~/.local/share/voxfox/voices` once, automatically, the first time you
+start VoxFox after upgrading from an older version.
 
 ## Supported systems
 
@@ -550,6 +560,9 @@ Packaging and release helpers live in `packaging/`:
   and pasting its output over the `PIPER_SHA256` block.
 - `packaging/merge_dict.py` merges community pronunciation submissions (a CSV
   of `taal;woord;uitspraak`) into the bundled dictionaries in `dicts/`.
+- `packaging/uninstall-clean.sh` removes the installed package plus every
+  settings/voices/cache location above, for testing a genuinely clean
+  install. Asks for confirmation first.
 
 ## Troubleshooting
 

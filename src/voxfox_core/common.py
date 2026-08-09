@@ -52,6 +52,18 @@ CACHE_DIR  = os.path.join(XDG_CACHE_HOME, "voxfox")
 # User locale overrides live in the data dir; legacy installs kept them in
 # ~/.piper/locales (migrated on first run). Read-only defaults ship in
 # /usr/share/voxfox/locales and are used as a fallback by the GUI.
+# Optional per-language overrides of the blanket 1.0 speed / 0.0 pitch
+# used when a language is freshly assigned (see state._fresh_state()).
+# Sparse on purpose: most languages simply aren't listed here, meaning
+# "use the blanket default" -- this only exists for voices that read
+# noticeably better at a different rate/pitch than Piper's own default.
+DEFAULT_SPEED_FOR_LANG = {
+    "Dutch": 1.10,
+}
+DEFAULT_PITCH_FOR_LANG = {
+    "Dutch": -2.0,
+}
+
 LOCALES_DIR = os.path.join(DATA_DIR, "locales")
 LEGACY_LOCALES_DIR = os.path.expanduser("~/.piper/locales")
 
@@ -378,7 +390,7 @@ _CODE_TO_PIPER_LANG = {code: name for name, code in PIPER_LANG_TO_CODE.items()}
 # another voice in the preferences.
 DEFAULT_VOICE_FOR_LANG = {
     "English":    "en_GB-alba-medium",
-    "Dutch":      "nl_NL-pim-medium",
+    "Dutch":      "nl_NL-alex-medium",
     "German":     "de_DE-thorsten-medium",
     "French":     "fr_FR-siwis-medium",
     "Spanish":    "es_ES-davefx-medium",
@@ -560,6 +572,8 @@ __all__ = [
     "available_ui_languages",
     "ui_code_for_piper_lang",
     "DEFAULT_VOICE_FOR_LANG",
+    "DEFAULT_SPEED_FOR_LANG",
+    "DEFAULT_PITCH_FOR_LANG",
     "detect_system_piper_lang",
     "_setup_file_logging",
     "_migrate_file",

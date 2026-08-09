@@ -522,16 +522,26 @@ Per gebruiker bij het eerste gebruik gedownload: de Piper-engine en -stemmen, en
 
 ## Waar dingen staan
 
-| Pad                               | Inhoud                              |
-|-----------------------------------|-------------------------------------|
-| `~/.piper/`                       | Piper-engine en gedownloade stemmen |
-| `~/.piper/locales/`               | Vertaalbestanden van de interface   |
-| `~/.config/voxfox_state.json`     | Je instellingen                     |
-| `~/.config/voxfox_history.json`   | Voorlees-/dicteergeschiedenis       |
-| `~/.cache/huggingface/`           | Gecachete Whisper-modellen          |
-| `~/.cache/voxfox.log`             | Logbestand                          |
-| `/usr/lib/voxfox/`                | Programmacode                       |
-| `/usr/share/voxfox/locales/`      | Meegeleverde vertalingen            |
+| Pad                                  | Inhoud                                            |
+|----------------------------------------|-----------------------------------------------------|
+| `~/.local/share/voxfox/voices/`     | Je eigen gedownloade stemmen                      |
+| `~/.local/share/voxfox/.migrated`   | Eenmalige migratiemarkering (zie hieronder)       |
+| `~/.config/voxfox/state.json`       | Je instellingen                                   |
+| `~/.config/voxfox/history.json`     | Voorlees-/dicteergeschiedenis                     |
+| `~/.cache/voxfox/voxfox.log`        | Logbestand                                        |
+| `~/.cache/huggingface/`             | Gecachete Whisper-modellen (respecteert `$HF_HOME`) |
+| `~/.piper/`                         | Piper-engine, en eventuele nog niet gemigreerde stemmen |
+| `/usr/share/voxfox/voices/`         | Systeembrede stemmen (bijv. meegeleverd door FoxOS), alleen-lezen |
+| `/usr/share/voxfox/locales/`        | Meegeleverde vertalingen                          |
+| `/usr/share/voxfox/dicts/`          | Meegeleverde uitspraakwoordenboeken               |
+| `/usr/lib/voxfox/`                  | Programmacode                                     |
+
+Een stem wordt in die volgorde van boven naar beneden opgezocht, de eerste
+treffer wint, dus een eigen kopie gaat altijd voor een systeemkopie met
+dezelfde naam; alleen de eerste rij wordt ooit beschreven. Stemmen op een
+oude plek (`~/.config/voxfox/voices` of `~/.piper`) worden eenmalig,
+automatisch verplaatst naar `~/.local/share/voxfox/voices` de eerste keer
+dat je VoxFox start na een update vanaf een oudere versie.
 
 ## Ondersteunde systemen
 
@@ -568,6 +578,9 @@ Scripts voor verpakken en uitbrengen staan in `packaging/`:
   `PIPER_SHA256`-blok.
 - `packaging/merge_dict.py` voegt aangedragen uitspraakwoorden (een CSV van
   `taal;woord;uitspraak`) samen in de meegeleverde woordenboeken in `dicts/`.
+- `packaging/uninstall-clean.sh` verwijdert het geïnstalleerde pakket plus
+  alle instellingen-/stemmen-/cachelocaties hierboven, voor het testen van
+  een echt schone installatie. Vraagt eerst om bevestiging.
 
 ## Probleemoplossing
 

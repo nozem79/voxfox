@@ -336,6 +336,7 @@ def main():
     # on English regardless of the slot 1 setting.)
     vf.load_translations()
     vf.load_builtin_pronunciations()
+    vf.migrate_legacy_voices()
     try:
         st = vf.load_state()
         apply_ui_language(st["slot1"].get("lang", ""))
