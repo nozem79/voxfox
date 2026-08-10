@@ -1,3 +1,15 @@
+## 4.0.3
+
+- Fixed: `_warmup_piper()` in app.py still hardcoded `~/.piper` instead of
+  using the layered `find_voice_dir()` lookup added in 4.0.2, so a voice
+  found via a system or migrated location silently skipped its warmup at
+  startup -- no crash, just a slower first Read after launch. Found via a
+  separate FoxOS build session that ran into it in practice; confirmed
+  here directly against the actual code (not just the report) before
+  fixing. Same fix pattern as the other two call sites already using
+  find_voice_dir() (synthesis, sample-rate lookup); a repo-wide check
+  confirms no other hardcoded PIPER_DIR + voice-name path remains.
+
 ## 4.0.2
 
 VoxFox voices can now be shared system-wide (for example by FoxOS, which

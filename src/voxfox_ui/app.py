@@ -122,7 +122,7 @@ class VoxFoxApplication(Gtk.Application):
             pitch = float(slot.get("pitch", 0.0))
             pitch_factor = 2.0 ** (pitch / 12.0)
             length_scale = round(pitch_factor / speed, 4)
-            model = os.path.join(vf.PIPER_DIR, f"{voice}.onnx")
+            model = os.path.join(vf.find_voice_dir(voice) or vf.PIPER_DIR, f"{voice}.onnx")
             if not os.path.isfile(model):
                 return False
 
