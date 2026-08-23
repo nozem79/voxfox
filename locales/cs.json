@@ -302,5 +302,8 @@
   "Maximum recording length in seconds": "Maximální délka nahrávání v sekundách",
   "Use": "Použít",
   "{model} is now the active model": "{model} je nyní aktivní model",
-  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox také automaticky používá některé opravy výslovnosti; přidejte zde vlastní pravidlo, abyste některou z nich přepsali."
+  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox také automaticky používá některé opravy výslovnosti; přidejte zde vlastní pravidlo, abyste některou z nich přepsali.",
+  "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Vlastní správce balíčků Pythonu (pip) není v tomto systému nainstalován; nainstalujte jej příkazem: sudo apt install python3-pip a poté znovu spusťte Nastavit VoxFox.",
+  "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Čtení najetím myší není v systému Wayland k dispozici — vyžaduje polohu myši mimo vlastní okno VoxFoxu, což Wayland aplikacím nedovoluje číst. Zkuste místo toho Vybrat nebo Číst.",
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Nebyl nalezen žádný nástroj pro snímky obrazovky (nainstalujte gnome-screenshot, spectacle, flameshot nebo grim+slurp)"
 }

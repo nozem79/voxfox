@@ -37,6 +37,7 @@ _WHISPER_LANG_MAP = {
     "Polish": "pl", "Russian": "ru",
     "Turkish": "tr", "Arabic": "ar", "Chinese": "zh", "Japanese": "ja",
     "Korean": "ko", "Catalan": "ca", "Czech": "cs", "Danish": "da",
+    "Persian": "fa", "Indonesian": "id",
     "Greek": "el", "Finnish": "fi", "Hungarian": "hu", "Norwegian": "no",
     "Romanian": "ro", "Slovak": "sk", "Swedish": "sv", "Ukrainian": "uk",
 }

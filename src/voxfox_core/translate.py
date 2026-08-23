@@ -58,6 +58,8 @@ _LANG_EN_NAMES = {
     "es": "Spanish", "it": "Italian", "pt": "Portuguese", "el": "Greek",
     "ar": "Arabic", "zh": "Chinese", "uk": "Ukrainian", "no": "Norwegian", "sv": "Swedish", "fi": "Finnish",
     "ro": "Romanian", "cs": "Czech", "pl": "Polish",
+    "da": "Danish", "hu": "Hungarian", "tr": "Turkish", "fa": "Persian",
+    "id": "Indonesian", "ja": "Japanese",
 }
 
 _CHUNK_CHARS = 3500

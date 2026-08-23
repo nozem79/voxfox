@@ -145,6 +145,9 @@ Requires:       libsndfile
 Recommends:     tesseract-langpack-nld
 Recommends:     python3-numpy
 Recommends:     gnome-screenshot
+Recommends:     spectacle
+Recommends:     wl-clipboard
+Recommends:     wtype
 
 %description
 Hover-to-read, text selection reading, OCR, PDF reading,

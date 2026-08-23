@@ -1,3 +1,54 @@
+## 4.0.4
+
+Six more interface languages -- Danish, Hungarian, Turkish, Persian, Indonesian,
+and Japanese -- for 23 interface languages total. Persian is right-to-left,
+like Arabic; the interface now flips correctly for both. Voice names were
+verified against the live Piper catalogue rather than the (outdated) VOICES.md
+documentation page, which is what caught that Turkish's "fahrettin" voice has
+since been removed upstream (using "dfki" instead) and confirmed Korean has no
+official Piper voice at all (only an unrelated, non-commercially-licensed
+third-party model, so it wasn't added).
+
+This release also closes out a substantial round of Wayland support work,
+prompted by real testing on Ubuntu, Fedora, and KDE/GNOME sessions rather
+than assumptions:
+
+- OCR-select now uses the xdg-desktop-portal Screenshot interface on
+  Wayland, after tracing several layers of platform-specific failures:
+  X11-only tools (maim/scrot) could silently "succeed" with a blank
+  capture instead of erroring; gnome-screenshot itself doesn't work under
+  GNOME 26.04/Wayland at all (confirmed on real hardware, not just a VM);
+  and calling GNOME Shell's own Screenshot D-Bus interface directly is
+  refused outright as a deliberate security boundary. The portal is the
+  sanctioned, cross-desktop way to ask for this, confirmed working on
+  both GNOME and KDE Wayland sessions. The portal saves a real file to
+  the system Screenshots folder as a side effect; that source file is now
+  cleaned up once VoxFox's own copy exists.
+- Hover reading is hidden on Wayland (toolbar button and its Settings
+  checkbox) and refuses cleanly if triggered via IPC/CLI regardless: it
+  needs the mouse position outside VoxFox's own window, which Wayland's
+  security model doesn't let any app query -- a hard platform limit, not
+  a missing dependency.
+- wl-clipboard, wtype, gnome-screenshot, and spectacle are now in both the
+  .deb's and .rpm's Recommends (the .deb was missing gnome-screenshot
+  entirely, and neither had the other three), giving the Select feature's
+  existing Wayland clipboard fallback and OCR-select's screenshot tools
+  something to actually find.
+- Dictation could silently fail to install on a fresh, minimal system
+  without python3-pip (increasingly common on newer Ubuntu/Debian): both
+  the post-install script and "Set up VoxFox" now check for pip first and
+  show a clear "sudo apt install python3-pip" message instead of a
+  generic failure or, previously, no message at all.
+
+Also fixed: the "VoxFox" title text in the header bar didn't shrink with
+the Interface size setting, since the header bar's built-in title label
+doesn't reliably inherit the scaled font size in every GTK theme; and
+toolbar icons rendered incorrectly on Fedora KDE (only the top-left
+portion of each icon visible) because every icon's SVG declared
+conflicting width/height/viewBox values -- removing the redundant
+width/height attributes, leaving only viewBox, is the standard way to
+mark an SVG as fully scalable and resolves the ambiguity.
+
 ## 4.0.3
 
 - Fixed: `_warmup_piper()` in app.py still hardcoded `~/.piper` instead of

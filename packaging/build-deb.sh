@@ -123,7 +123,7 @@ Depends: python3 (>= 3.9),
  ffmpeg,
  libportaudio2,
  libsndfile1
-Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy
+Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot
 Description: VoxFox — screen reader and dictation tool
  Hover-to-read, text selection reading, OCR, PDF reading,
  and local/remote speech-to-text dictation.
@@ -148,14 +148,23 @@ if [ "$REAL_USER" = "root" ] || [ -z "$REAL_USER" ]; then
     REAL_USER=$(logname 2>/dev/null || echo "")
 fi
 
-pip_install() {
+as_user() {
     if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ]; then
-        su -c "pip install --user --break-system-packages $PKGS 2>/dev/null || \
-               pip install --user $PKGS 2>/dev/null || true" "$REAL_USER" || true
+        su -c "$1" "$REAL_USER"
     else
-        pip install --break-system-packages $PKGS 2>/dev/null || \
-        pip install $PKGS 2>/dev/null || true
+        sh -c "$1"
     fi
+}
+
+have_pip() {
+    as_user "python3 -m pip --version" >/dev/null 2>&1
+}
+
+pip_install() {
+    # python3 -m pip, not a bare `pip` command -- only needs the pip module
+    # to be importable, not a `pip`-named executable on PATH.
+    as_user "python3 -m pip install --user --break-system-packages $PKGS" 2>&1 || \
+    as_user "python3 -m pip install --user $PKGS" 2>&1
 }
 
 # Check if packages are already importable
@@ -163,8 +172,21 @@ if python3 -c "import faster_whisper, sounddevice, soundfile" 2>/dev/null; then
     exit 0
 fi
 
+if ! have_pip; then
+    echo "VoxFox: python3-pip is not installed, so the dictation dependencies"
+    echo "        (faster-whisper, sounddevice, soundfile) could not be"
+    echo "        installed automatically. A fresh, minimal install often"
+    echo "        doesn't include it by default. Run:"
+    echo "          sudo apt install python3-pip"
+    echo "        then open VoxFox and choose Set up VoxFox to finish."
+    exit 0
+fi
+
 echo "VoxFox: installing Python dictation dependencies (faster-whisper, sounddevice, soundfile)..."
-pip_install
+if ! pip_install; then
+    echo "VoxFox: dictation dependency install failed. Open VoxFox and choose"
+    echo "        Set up VoxFox to retry with more detail."
+fi
 echo "VoxFox: done. Run 'voxfox --setup' to download voices."
 
 # Refresh the icon cache and desktop database so the menu/taskbar pick up the

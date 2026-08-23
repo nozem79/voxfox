@@ -30,7 +30,8 @@ sudo dnf install ./voxfox-*.noarch.rpm
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
 `gir1.2-gtk-4.0`, `python3-pyatspi`, `at-spi2-core`) en beveelt de optionele
 hulpmiddelen aan die sommige functies gebruiken (`tesseract-ocr`,
-`poppler-utils`, `xdotool`, `wmctrl`, `gnome-screenshot`, `python3-pip`,
+`poppler-utils`, `xdotool`, `wmctrl`, `gnome-screenshot`, `spectacle`,
+`wl-clipboard`, `wtype`, `python3-pip`,
 audiobibliotheken). Start via het programmamenu (onder *Toegankelijkheid*) of
 met `voxfox`.
 
@@ -365,8 +366,9 @@ sudo apt install tesseract-ocr tesseract-ocr-nld tesseract-ocr-deu \
                  tesseract-ocr-por poppler-utils gnome-screenshot
 ```
 
-Voor **Selecteren** is een schermafdruktool nodig — `gnome-screenshot`,
-`spectacle`, `scrot` (X11) of `grim`+`slurp` (Wayland). Voeg meer
+Voor **Selecteren** is een schermafdruktool nodig. VoxFox gebruikt
+`maim`/`scrot` op X11; op Wayland eerst de systeem-schermafdrukportal (al
+onderdeel van GTK), daarna `gnome-screenshot` of `spectacle`. Voeg meer
 `tesseract-ocr-<taal>`-pakketten toe voor extra talen.
 
 ## Hover-modus
@@ -484,16 +486,19 @@ voor de meeste mensen prettig snellezen zodra je aan de stem gewend bent.
 
 De interface volgt **de taal van slot 1**: zet je die op Duits, dan schakelen de
 knoppen, tooltips, menu's en meldingen naar het Duits; zet je 'm op Frans, dan
-schakelt alles naar het Frans. Engels, Nederlands, Duits, Frans, Spaans,
-Italiaans, Portugees, Chinees, Arabisch en Grieks zijn standaard aanwezig. Kies je
-Arabisch, dan klapt de hele interface om naar rechts-naar-links. Chinees, Arabisch
-en Grieks hebben ook Piper-stemmen en werken voor dicteren en OCR — voor OCR
-installeer je het bijbehorende Tesseract-pakket (`tesseract-ocr-chi-sim`,
-`tesseract-ocr-ara` of `tesseract-ocr-ell`).
+schakelt alles naar het Frans. 23 interfacetalen zijn standaard aanwezig — start
+VoxFox en open de taal-dropdown voor de volledige, actuele lijst, of bekijk
+`locales/` in de broncode. Kies je Arabisch of Perzisch, dan klapt de hele
+interface om naar rechts-naar-links. Elke genoemde taal heeft een bijbehorende
+Piper-stem en werkt voor dicteren; voor OCR installeer je het bijbehorende
+Tesseract-taalpakket (bijv. `tesseract-ocr-chi-sim`, `tesseract-ocr-ara`,
+`tesseract-ocr-fas`) voor talen naast Engels en Nederlands, die standaard al
+geïnstalleerd zijn.
 
-De vertaalbestanden staan in `~/.piper/locales/`, één JSON per taal. Om een
-vertaling te verbeteren of een taal toe te voegen: kopieer `en.json` naar
-`<code>.json`, zet `_meta.name` op de eigen naam van de taal, vertaal de
+Meegeleverde vertaalbestanden staan, eenmaal geïnstalleerd, in
+`/usr/share/voxfox/locales/`. Om een vertaling te verbeteren of een taal toe
+te voegen: kopieer in de broncode `locales/en.json` naar `locales/<code>.json`,
+zet `_meta.name` op de eigen naam van de taal, vertaal de
 rechterkant van elke regel (laat de Engelse sleutels links staan) en herstart
 VoxFox. Ontbrekende regels vallen terug op het Engels, dus gedeeltelijke
 vertalingen werken prima.
@@ -514,7 +519,8 @@ Door het pakket geïnstalleerd:
 
 Aanbevolen (schakelen specifieke functies in): `tesseract-ocr` + taalpakketten
 en `poppler-utils` (OCR), `xdotool` (dicteren typen op X11), `wmctrl`
-(altijd-bovenop), `gnome-screenshot` (schermgebied kiezen), `python3-pip`
+(altijd-bovenop), `gnome-screenshot`/`spectacle` (schermgebied kiezen),
+`wl-clipboard`/`wtype` (klembord en typen op Wayland), `python3-pip`
 (faster-whisper installeren) en audiobibliotheken.
 
 Per gebruiker bij het eerste gebruik gedownload: de Piper-engine en -stemmen, en
@@ -581,6 +587,13 @@ Scripts voor verpakken en uitbrengen staan in `packaging/`:
 - `packaging/uninstall-clean.sh` verwijdert het geïnstalleerde pakket plus
   alle instellingen-/stemmen-/cachelocaties hierboven, voor het testen van
   een echt schone installatie. Vraagt eerst om bevestiging.
+- Iconen staan in `icons/hicolor/scalable/actions/` als
+  `voxfox-<id>-symbolic.svg`, geladen via `Gtk.Image.new_from_icon_name` op
+  een vaste pixelgrootte die in de code staat. Alleen `viewBox="0 0 24 24"`
+  op het root-`<svg>`-element, geen `width`/`height`-attributen: die
+  definiëren een aparte "natuurlijke grootte" die op sommige GTK/librsvg-
+  combinaties botst met de aangevraagde rendergrootte — precies wat ervoor
+  zorgde dat elk icoon op Fedora KDE alleen zijn linksboven-gedeelte toonde.
 
 ## Probleemoplossing
 
@@ -597,8 +610,14 @@ programma dat het klembord niet synchroniseert: kopieer eerst expliciet
 AT-SPI-gebeurtenissen; sommige programma's (met name Electron-apps) versturen die
 spaarzaam of niet. Gebruik dan Voorlezen op een selectie.
 
-**Selecteren doet niets** — er is geen schermafdruktool geïnstalleerd. Installeer
-`gnome-screenshot`, `spectacle`, `scrot` (X11) of `grim`+`slurp` (Wayland).
+**Selecteren doet niets** — er is geen schermafdruktool geïnstalleerd. VoxFox
+gebruikt `maim`/`scrot` op X11; op Wayland wordt eerst de systeem-
+schermafdrukportal geprobeerd (al onderdeel van GTK, geen extra pakket
+nodig), daarna `gnome-screenshot`, `spectacle` of `flameshot` — installeer
+een daarvan als de portal op jouw desktopomgeving niet beschikbaar is.
+`grim`+`slurp` werkt ook, maar alleen op wlroots-gebaseerde compositors
+zoals Sway — GNOME's Mutter en KDE's KWin ondersteunen het benodigde
+protocol niet.
 
 **Dictatie is aan blijven staan** — opnemen stopt vanzelf na de ingestelde maximumduur (Instellingen → Dicteren → Max. opnameduur), onafhankelijk van VoxFox zelf afgedwongen zodat een vergeten opname niet ongelimiteerd kan doorgroeien. Verlaag de limiet daar voor een strakkere marge.
 

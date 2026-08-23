@@ -61,6 +61,12 @@ _TESS_LANG_MAP = {
     "Czech":      "ces",
     "Polish":     "pol",
     "Portuguese (Portugal)": "por",
+    "Danish":     "dan",
+    "Hungarian":  "hun",
+    "Turkish":    "tur",
+    "Persian":    "fas",
+    "Indonesian": "ind",
+    "Japanese":   "jpn",
 }
 
 

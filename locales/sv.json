@@ -302,5 +302,8 @@
   "Maximum recording length in seconds": "Maximal inspelningslängd i sekunder",
   "Use": "Använd",
   "{model} is now the active model": "{model} är nu den aktiva modellen",
-  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox tillämpar också vissa uttalskorrigeringar automatiskt; lägg till din egen regel här för att åsidosätta en."
+  "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox tillämpar också vissa uttalskorrigeringar automatiskt; lägg till din egen regel här för att åsidosätta en.",
+  "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Pythons egen paketinstallerare (pip) är inte installerad på det här systemet; installera den med: sudo apt install python3-pip, kör sedan Konfigurera VoxFox igen.",
+  "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Uppläsning vid hovring är inte tillgänglig under Wayland — det kräver muspekarens position utanför VoxFox eget fönster, vilket Wayland inte tillåter appar att läsa av. Prova Markera eller Läs upp istället.",
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Inget skärmbildsverktyg hittades (installera gnome-screenshot, spectacle, flameshot eller grim+slurp)"
 }

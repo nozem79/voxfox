@@ -272,6 +272,12 @@ PIPER_LANG_TO_CODE = {
     "Czech":      "cs",
     "Polish":     "pl",
     "Portuguese (Portugal)": "pt",
+    "Danish":     "da",
+    "Hungarian":  "hu",
+    "Turkish":    "tr",
+    "Persian":    "fa",
+    "Indonesian": "id",
+    "Japanese":   "ja",
 }
 
 
@@ -299,6 +305,12 @@ PIPER_LANG_NATIVE = {
     "Czech":      "Čeština",
     "Polish":     "Polski",
     "Portuguese (Portugal)": "Português (Portugal)",
+    "Danish":     "Dansk",
+    "Hungarian":  "Magyar",
+    "Turkish":    "Türkçe",
+    "Persian":    "فارسی",
+    "Indonesian": "Bahasa Indonesia",
+    "Japanese":   "日本語",
 }
 
 
@@ -331,6 +343,8 @@ PIPER_LANG_SHORT = {
     "Swedish":    "SV",
     "Ukrainian":  "UK",
     "Portuguese (Portugal)": "PT",
+    "Persian":    "FA",
+    "Indonesian": "ID",
     "Turkish":    "TR",
     "Arabic":     "AR",
     "Chinese":    "ZH",
@@ -407,6 +421,12 @@ DEFAULT_VOICE_FOR_LANG = {
     "Czech":      "cs_CZ-jirka-medium",
     "Polish":     "pl_PL-gosia-medium",
     "Portuguese (Portugal)": "pt_PT-tugão-medium",
+    "Danish":     "da_DK-talesyntese-medium",
+    "Hungarian":  "hu_HU-anna-medium",
+    "Turkish":    "tr_TR-dfki-medium",
+    "Persian":    "fa_IR-amir-medium",
+    "Indonesian": "id_ID-news_tts-medium",
+    "Japanese":   "ja_JP-hi-fi-captain-medium",
 }
 
 

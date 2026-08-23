@@ -200,6 +200,20 @@ def _pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
     return False
 
 
+def _have_pip():
+    """Whether `python3 -m pip` actually works. A fresh, minimal install --
+    increasingly the default on newer Ubuntu/Debian -- may not have
+    python3-pip installed at all, which _pip_install() would otherwise just
+    fail at silently, leaving dictation/OCR quietly broken with no clue why.
+    """
+    try:
+        return subprocess.run(
+            [sys.executable, "-m", "pip", "--version"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+    except Exception:
+        return False
+
+
 def install_python_extras(progress=lambda m: None, pulse=lambda: None):
     """Install the pip-only Python deps that aren't reliably packaged in Debian:
     faster-whisper (dictation) and pytesseract + Pillow (OCR). Each is skipped
@@ -211,17 +225,30 @@ def install_python_extras(progress=lambda m: None, pulse=lambda: None):
         except Exception:
             return False
 
-    problems = []
-    if not have("faster_whisper"):
-        if not _pip_install(["faster-whisper"], progress, pulse):
-            progress(_("faster-whisper install failed (dictation disabled)"))
-            problems.append("faster-whisper")
-    # Pillow usually comes from apt (python3-pil); pip-install only if missing.
+    need_whisper = not have("faster_whisper")
     ocr_pkgs = []
     if not have("pytesseract"):
         ocr_pkgs.append("pytesseract")
     if not have("PIL"):
         ocr_pkgs.append("pillow")
+
+    if (need_whisper or ocr_pkgs) and not _have_pip():
+        progress(_("Python's own package installer (pip) isn't installed "
+                  "on this system; install it with: sudo apt install "
+                  "python3-pip, then run Set up VoxFox again."))
+        problems = []
+        if need_whisper:
+            problems.append("faster-whisper")
+        if ocr_pkgs:
+            problems.append("OCR (" + ", ".join(ocr_pkgs) + ")")
+        return False, "pip missing: " + "; ".join(problems)
+
+    problems = []
+    if need_whisper:
+        if not _pip_install(["faster-whisper"], progress, pulse):
+            progress(_("faster-whisper install failed (dictation disabled)"))
+            problems.append("faster-whisper")
+    # Pillow usually comes from apt (python3-pil); pip-install only if missing.
     if ocr_pkgs and not _pip_install(ocr_pkgs, progress, pulse):
         progress(_("OCR Python packages failed to install"))
         problems.append("OCR (" + ", ".join(ocr_pkgs) + ")")
@@ -288,7 +315,7 @@ def enable_accessibility():
 # ── UI language + text direction ─────────────────────────────────────────────
 # Locale codes whose script runs right-to-left. When the interface switches to
 # one of these, the whole GTK layout (buttons, labels, menus) must flip.
-_RTL_UI_CODES = {"ar"}
+_RTL_UI_CODES = {"ar", "fa"}  # Arabic and Persian both run right-to-left
 
 
 def apply_ui_language(piper_lang_name):

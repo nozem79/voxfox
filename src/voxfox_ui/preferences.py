@@ -204,6 +204,11 @@ class PreferencesWindow(Gtk.Window):
         labels = {b[0]: b[2] for b in TOOLBAR_BUTTONS}
         labels["switch"] = "Switch language"
         buttons = self.state["ui_layout"]["buttons"]
+        if vf.IS_WAYLAND:
+            # Hover mode can't work under Wayland (see do_hover()); don't
+            # even list a checkbox for it here, since toggling it "on"
+            # wouldn't do anything -- the toolbar filters it out regardless.
+            buttons = [e for e in buttons if e["id"] != "hover"]
         n = len(buttons)
         for i, entry in enumerate(buttons):
             bid = entry["id"]

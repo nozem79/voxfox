@@ -22,7 +22,8 @@ Split out of voxfox_gtk.py in VoxFox 4.0.
 
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk  # noqa: E402
+gi.require_version("Pango", "1.0")
+from gi.repository import Gtk, Pango  # noqa: E402
 
 import voxfox_core as vf  # noqa: E402
 
@@ -39,6 +40,16 @@ def _btn_make_content(btn, icon_id, text):
     img = Gtk.Image.new_from_icon_name(f"voxfox-{icon_id}-symbolic")
     img.set_pixel_size(20)
     lbl = Gtk.Label(label=text)
+    # Defensive: without this, a label that doesn't get its full natural
+    # width in a tightly homogeneous row (four buttons splitting the
+    # window width equally) could render as nothing at all rather than
+    # visibly truncated. width_chars (not max_width_chars, which caps the
+    # natural size request itself rather than setting a floor) sets a
+    # minimum: the label still requests its full text as natural size
+    # when there's room, and only shrinks toward this floor -- "Voorl…"
+    # -- when a layout is genuinely constrained.
+    lbl.set_ellipsize(Pango.EllipsizeMode.END)
+    lbl.set_width_chars(8)
     box.append(img)
     box.append(lbl)
     btn.set_child(box)
@@ -54,16 +65,23 @@ def _btn_set_text(btn, text):
 
 
 def _scale_css(scale):
-    """CSS that scales the main window. .voxfox-root only sets the root
-    font-size (which scales the title text and, via em, the header icons) so it
-    can safely sit on the header without bloating the window-control or
-    menu/settings buttons. Everything that contributes to the window's width —
-    the toolbar button padding/min-width, the gaps between buttons, and the
-    padding around the toolbar — is expressed in em and scoped to the toolbar,
-    so the whole window shrinks proportionally at 75 % instead of keeping
-    fixed-pixel slack. Only the main window and its header carry these classes;
-    the settings dialog keeps the theme default."""
+    """CSS that scales the main window. .voxfox-root sets the root font-size;
+    plain inheritance alone doesn't reliably reach the header bar's built-in
+    title label, since the GTK theme's own .title rule can carry an explicit
+    size that wins over an inherited one -- so a dedicated ".voxfox-root
+    .title { font-size: 1em }" rule is included too, at the same
+    (APPLICATION) CSS priority as the theme, forcing the title back onto the
+    already-scaled value instead of the theme's fixed one. 1em, not a second
+    {scale}%, since the header itself already carries the root's scaled
+    font-size -- squaring the percentage would shrink the title twice as
+    fast as everything else. Everything that contributes to the window's
+    width — the toolbar button padding/min-width, the gaps between buttons,
+    and the padding around the toolbar — is expressed in em and scoped to
+    the toolbar, so the whole window shrinks proportionally at 75 % instead
+    of keeping fixed-pixel slack. Only the main window and its header carry
+    these classes; the settings dialog keeps the theme default."""
     return (f".voxfox-root {{ font-size: {scale}%; }}\n"
+            ".voxfox-root .title { font-size: 1em; }\n"
             ".voxfox-root button image { -gtk-icon-size: 1.1em; }\n"
             ".voxfox-pad { padding: 0.2em; }\n"
             ".voxfox-toolbar button { padding: 0.25em 0.4em; min-width: 2.6em; margin: 0.12em; }\n"

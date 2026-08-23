@@ -194,6 +194,11 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                                              TOOLBAR_IDS,
                                              TOOLBAR_DEFAULT_HIDDEN)
         visible_ids = [e["id"] for e in layout["buttons"] if e["visible"]]
+        if vf.IS_WAYLAND:
+            # Hover mode can't work under Wayland (see do_hover()) -- hide
+            # the button rather than leave a control that looks clickable
+            # but can never do anything.
+            visible_ids = [bid for bid in visible_ids if bid != "hover"]
         if vertical:
             rows = [[bid] for bid in visible_ids]
         else:
@@ -234,15 +239,49 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 self._header_gear.set_visible(False)
                 self._header_menu.set_visible(False)
             else:
-                self._header.set_title_widget(None)
+                if self._header_title is None:
+                    self._header_title = Gtk.Label(label="VoxFox")
+                    self._header_title.add_css_class("title")
+                self._header.set_title_widget(self._header_title)
                 self._header.set_decoration_layout(":minimize,close")
                 self._header_gear.set_visible(True)
                 self._header_menu.set_visible(True)
         except Exception as e:
             log.debug(f"slim header failed: {e}")
 
+        # Two targeted attempts at a reported Fedora/KDE label-rendering
+        # issue (ellipsize/width-chars, then the button-display mode) made
+        # no visible difference at all -- not even a partial one -- which
+        # means something more fundamental than a CSS/property tweak is
+        # going on. Dump what each label actually has once layout has
+        # settled (GLib.idle_add, since sizes aren't meaningful until
+        # after the pending allocation pass) so --verbose can show whether
+        # this is a visibility problem, a missing-text problem, a
+        # zero-size-allocation problem, or something else (e.g. a colour
+        # matching the background) that none of the above would explain.
+        GLib.idle_add(self._debug_dump_button_sizes)
+
         if fit:
             self._fit_to_content()
+
+    def _debug_dump_button_sizes(self):
+        """One-shot diagnostic for --verbose: for every toolbar button, log
+        whether its icon/label are visible, what text the label actually
+        holds, and the allocated size of both the label and the button
+        itself. Only meaningful after layout has settled (see the
+        GLib.idle_add call site), since sizes are 0 beforehand."""
+        for bid, btn in self._toolbar_btns.items():
+            icon = getattr(btn, "_icon", None)
+            lbl = getattr(btn, "_lbl", None)
+            if icon is None or lbl is None:
+                log.debug(f"UI-diag: {bid}: no _icon/_lbl attributes")
+                continue
+            log.debug(
+                f"UI-diag: {bid}: icon_visible={icon.get_visible()} "
+                f"lbl_visible={lbl.get_visible()} lbl_text={lbl.get_text()!r} "
+                f"lbl_size={lbl.get_width()}x{lbl.get_height()} "
+                f"btn_size={btn.get_width()}x{btn.get_height()}")
+        return False  # one-shot; don't re-arm as a repeating source
 
     def _fit_to_content(self, keep_width=False):
         """Shrink the window to the toolbar's current natural size (X11, best-
@@ -322,6 +361,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         gear.connect("clicked", lambda *_a: self.open_preferences())
         header.pack_end(gear)
         self._header = header
+        self._header_title = None
         self._header_gear = gear
 
         menu = Gio.Menu()
@@ -918,7 +958,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         def worker():
             tmp = None
             try:
-                fd, tmp = tempfile.mkstemp(suffix=".png")
+                os.makedirs(vf.CACHE_DIR, exist_ok=True)
+                fd, tmp = tempfile.mkstemp(suffix=".png", dir=vf.CACHE_DIR)
                 os.close(fd)
                 ok, err = _grab_region_to_file(tmp)
                 if not ok:
@@ -972,7 +1013,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         def worker():
             tmp = None
             try:
-                fd, tmp = tempfile.mkstemp(suffix=".png")
+                os.makedirs(vf.CACHE_DIR, exist_ok=True)
+                fd, tmp = tempfile.mkstemp(suffix=".png", dir=vf.CACHE_DIR)
                 os.close(fd)
                 ok, err = _grab_region_to_file(tmp)
                 if not ok:
@@ -1025,6 +1067,20 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
     def do_hover(self):
         """Toggle hover-to-read. Mirrors the Tk build: an AT-SPI focus-event
         listener plus a polling fallback, controlled via vf.set_hover_running()."""
+        if vf.IS_WAYLAND:
+            # Reading the mouse position outside our own window is an X11
+            # thing; Wayland's security model doesn't let any app query it.
+            # There's no missing dependency that would fix this, so refuse
+            # cleanly here -- reachable via IPC/CLI too, not just the
+            # toolbar button, so this guard has to live here, not just in
+            # whether the button is shown.
+            self.set_status(
+                _("Hover reading isn't available on Wayland — it needs "
+                  "the mouse position outside VoxFox's own window, which "
+                  "Wayland doesn't allow apps to read. Try Select or Read "
+                  "instead."),
+                duration=6000)
+            return
         if self.hover_on:
             vf.set_hover_running(False)
             self.hover_on = False

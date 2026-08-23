@@ -32,7 +32,8 @@ sudo dnf install ./voxfox-*.noarch.rpm
 `apt` pulls in the runtime dependencies (`python3-gi`, `gir1.2-gtk-4.0`,
 `python3-pyatspi`, `at-spi2-core`) and recommends the optional tools used by
 some features (`tesseract-ocr`, `poppler-utils`, `xdotool`, `wmctrl`,
-`gnome-screenshot`, `python3-pip`, audio libraries). Launch from the
+`gnome-screenshot`, `spectacle`, `wl-clipboard`, `wtype`, `python3-pip`,
+audio libraries). Launch from the
 application menu (under *Accessibility*) or by running `voxfox`.
 
 The `.deb` only installs the program. The Piper engine, the default voices,
@@ -354,8 +355,9 @@ sudo apt install tesseract-ocr tesseract-ocr-nld tesseract-ocr-deu \
                  tesseract-ocr-por poppler-utils gnome-screenshot
 ```
 
-A screenshot tool is needed for **Select** — `gnome-screenshot`, `spectacle`,
-`scrot` (X11) or `grim`+`slurp` (Wayland). Add more `tesseract-ocr-<lang>`
+A screenshot tool is needed for **Select**. VoxFox uses `maim`/`scrot` on
+X11; on Wayland it tries the system screenshot portal first (built into
+GTK), then `gnome-screenshot` or `spectacle`. Add more `tesseract-ocr-<lang>`
 packages for extra languages.
 
 ## Hover mode
@@ -468,16 +470,19 @@ speed-listening for most people once you're used to the voice.
 
 The interface follows **Slot 1's language**: set it to German and the buttons,
 tooltips, menus and status messages switch to German; set it to French and
-everything switches to French. English, Dutch, German, French, Spanish, Italian,
-Portuguese, Chinese, Arabic and Greek ship out of the box. Choosing Arabic also flips
-the whole interface to right-to-left. Chinese, Arabic and Greek have Piper
-speech voices and work for dictation and OCR too — for OCR install the
-matching Tesseract pack (`tesseract-ocr-chi-sim`, `tesseract-ocr-ara` or
-`tesseract-ocr-ell`).
+everything switches to French. 23 interface languages ship out of the box —
+run VoxFox and open the language dropdown for the full, current list, or see
+`locales/` in the source repository. Choosing Arabic or Persian also flips the
+whole interface to right-to-left. Every listed language has a matching Piper
+speech voice and works for dictation too; for OCR, install the matching
+Tesseract language pack (e.g. `tesseract-ocr-chi-sim`, `tesseract-ocr-ara`,
+`tesseract-ocr-fas`) for languages beyond English and Dutch, which are
+installed by default.
 
-Translation files live in `~/.piper/locales/`, one JSON per language. To improve
-a translation or add a language: copy `en.json` to `<code>.json`, set
-`_meta.name` to the native language name, translate the right-hand side of each
+Bundled translation files live in `/usr/share/voxfox/locales/` once
+installed. To improve a translation or add a language: in the source
+repository, copy `locales/en.json` to `locales/<code>.json`, set `_meta.name`
+to the native language name, translate the right-hand side of each
 entry (leave the English keys on the left alone), and restart VoxFox. Missing
 entries fall back to English, so partial translations work fine.
 
@@ -497,8 +502,9 @@ Installed by the package:
 
 Recommended (enable specific features): `tesseract-ocr` + language packs and
 `poppler-utils` (OCR), `xdotool` (typing dictation on X11), `wmctrl`
-(always-on-top), `gnome-screenshot` (region select), `python3-pip` (installing
-faster-whisper), and audio libraries.
+(always-on-top), `gnome-screenshot`/`spectacle` (region select),
+`wl-clipboard`/`wtype` (clipboard and typing on Wayland), `python3-pip`
+(installing faster-whisper), and audio libraries.
 
 Downloaded per user on first use: the Piper engine and voices, and
 `faster-whisper` for local dictation.
@@ -563,6 +569,12 @@ Packaging and release helpers live in `packaging/`:
 - `packaging/uninstall-clean.sh` removes the installed package plus every
   settings/voices/cache location above, for testing a genuinely clean
   install. Asks for confirmation first.
+- Icons live in `icons/hicolor/scalable/actions/` as `voxfox-<id>-symbolic.svg`,
+  loaded via `Gtk.Image.new_from_icon_name` at a fixed pixel size set in code.
+  Only `viewBox="0 0 24 24"` on the root `<svg>` element, no `width`/`height`
+  attributes: those define a separate "natural size" that conflicts with the
+  requested render size on some GTK/librsvg combinations, which is what
+  caused every icon to render as only its top-left portion on Fedora KDE.
 
 ## Troubleshooting
 
@@ -578,8 +590,13 @@ an app that doesn't sync the clipboard, copy explicitly (`Ctrl+C`) first.
 apps (notably Electron ones) emit them sparsely or not at all. Use Read on a
 selection instead.
 
-**Select does nothing** — no screenshot tool is installed. Install
-`gnome-screenshot`, `spectacle`, `scrot` (X11) or `grim`+`slurp` (Wayland).
+**Select does nothing** — no screenshot tool is installed. VoxFox uses
+`maim`/`scrot` on X11; on Wayland it tries the system screenshot portal first
+(built into GTK, no extra package needed), then `gnome-screenshot`,
+`spectacle` or `flameshot` — install one of those if the portal isn't
+available on your desktop. `grim`+`slurp` also works, but only on
+wlroots-based compositors such as Sway — GNOME's Mutter and KDE's KWin don't
+support the protocol it needs.
 
 **Dictation was left running** — recording stops on its own after the configured maximum length (Settings → Dictation → Max. recording length), enforced independently of VoxFox's own process so a forgotten recording can't grow unbounded. Lower the limit there for an even tighter safety margin.
 
