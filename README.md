@@ -355,9 +355,10 @@ sudo apt install tesseract-ocr tesseract-ocr-nld tesseract-ocr-deu \
                  tesseract-ocr-por poppler-utils gnome-screenshot
 ```
 
-A screenshot tool is needed for **Select**. VoxFox uses `maim`/`scrot` on
-X11; on Wayland it tries the system screenshot portal first (built into
-GTK), then `gnome-screenshot` or `spectacle`. Add more `tesseract-ocr-<lang>`
+A screenshot tool is needed for **OCR-select**. VoxFox uses `maim`/`scrot`
+on X11; on Wayland, `quickshot` (bundled, installed alongside `voxfox`) is
+tried first, then `spectacle` directly, then the system screenshot portal
+(built into GTK), then `gnome-screenshot`. Add more `tesseract-ocr-<lang>`
 packages for extra languages.
 
 ## Hover mode
@@ -575,6 +576,14 @@ Packaging and release helpers live in `packaging/`:
   attributes: those define a separate "natural size" that conflicts with the
   requested render size on some GTK/librsvg combinations, which is what
   caused every icon to render as only its top-left portion on Fedora KDE.
+- `src/quickshot.py` is a separate, standalone tool (GTK3, since it can't
+  share a process with VoxFox's own GTK4) that OCR-select tries before
+  anything else on Wayland. It does its own non-interactive full-screen
+  capture, then handles region selection itself in a plain window rather
+  than asking the desktop's portal backend for an interactive one — see
+  `_grab_region_to_file()`'s docstring in `voxfox_ui/screenshot.py` for why
+  that matters on KDE specifically. Built and packaged as `/usr/bin/quickshot`
+  alongside `voxfox`; it can also be run standalone (`quickshot --help`).
 
 ## Troubleshooting
 
@@ -590,13 +599,15 @@ an app that doesn't sync the clipboard, copy explicitly (`Ctrl+C`) first.
 apps (notably Electron ones) emit them sparsely or not at all. Use Read on a
 selection instead.
 
-**Select does nothing** — no screenshot tool is installed. VoxFox uses
-`maim`/`scrot` on X11; on Wayland it tries the system screenshot portal first
-(built into GTK, no extra package needed), then `gnome-screenshot`,
-`spectacle` or `flameshot` — install one of those if the portal isn't
-available on your desktop. `grim`+`slurp` also works, but only on
-wlroots-based compositors such as Sway — GNOME's Mutter and KDE's KWin don't
-support the protocol it needs.
+**OCR-select does nothing** — no screenshot tool is installed or working.
+VoxFox uses `maim`/`scrot` on X11; on Wayland it tries `quickshot` first
+(bundled, installed alongside `voxfox` — needs `gir1.2-gtk-3.0`,
+`gir1.2-gdkpixbuf-2.0` and `python3-gi-cairo`), then `spectacle` directly,
+then the system screenshot portal (built into GTK, no extra package
+needed), then `gnome-screenshot` or `flameshot` — install one of those if
+none of the above work on your desktop. `grim`+`slurp` also works, but
+only on wlroots-based compositors such as Sway — GNOME's Mutter and KDE's
+KWin don't support the protocol it needs.
 
 **Dictation was left running** — recording stops on its own after the configured maximum length (Settings → Dictation → Max. recording length), enforced independently of VoxFox's own process so a forgotten recording can't grow unbounded. Lower the limit there for an even tighter safety margin.
 

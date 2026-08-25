@@ -305,5 +305,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox anvender også selv nogle udtalerettelser automatisk; tilføj din egen regel her for at tilsidesætte en.",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Pythons egen pakkeinstallatør (pip) er ikke installeret på dette system; installer den med: sudo apt install python3-pip, og kør derefter Konfigurer VoxFox igen.",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Oplæsning ved hover er ikke tilgængelig under Wayland — det kræver museposition uden for VoxFox' eget vindue, hvilket Wayland ikke tillader apps at læse. Prøv i stedet Vælg eller Læs.",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Intet skærmbilledeværktøj fundet (installer gnome-screenshot, spectacle, flameshot eller grim+slurp)"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Intet skærmbilledeværktøj fundet (installer gnome-screenshot, spectacle, flameshot eller grim+slurp)",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "Kunne ikke skrive automatisk — kopieret til udklipsholder, tryk Ctrl+V for at indsætte"
 }

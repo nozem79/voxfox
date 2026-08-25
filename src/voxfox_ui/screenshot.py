@@ -20,7 +20,6 @@ Split out of voxfox_gtk.py in VoxFox 4.0.
 """
 
 import os
-import re
 import time
 import shutil
 import secrets
@@ -29,10 +28,8 @@ from urllib.parse import urlparse, unquote
 
 import gi
 gi.require_version("Gio", "2.0")
-from gi.repository import Gio, GLib  # noqa: E402
-
-import gi
 gi.require_version("Gtk", "4.0")
+from gi.repository import Gio, GLib  # noqa: E402
 
 import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
@@ -69,13 +66,15 @@ def _grab_via_xdg_portal(dest_png):
             "modal": GLib.Variant("b", True),
             "interactive": GLib.Variant("b", True),
             "target": GLib.Variant("u", 4),  # Area (version 3+; ignored by older portals)
-            # "interactive" must stay true: it's what enables the drag-to-
-            # select UI here, not just an optional customization step on
-            # top of it -- target=Area alone was not sufficient, and
-            # removing this produced a full-screen capture with no way to
-            # pick a region. The one downside is an extra confirm button
-            # after drawing the rectangle; that's preferable to losing
-            # area selection entirely.
+            # Both required for a correct result: without "interactive",
+            # area selection isn't possible at all (full-screen only);
+            # without "target", the portal defaults to "Full screen" mode
+            # on KDE. Neither controls step count -- some
+            # xdg-desktop-portal-kde versions have no live drag-select
+            # mode regardless (see _grab_region_to_file's docstring for
+            # why spectacle is tried directly instead). Both have been
+            # tried removed; each made things worse -- don't retry
+            # without new evidence.
         }
         call_result = bus.call_sync(
             "org.freedesktop.portal.Desktop",
@@ -155,46 +154,102 @@ def _grab_via_xdg_portal(dest_png):
 
 
 def _grab_region_to_file(dest_png):
-    """Capture a user-drawn rectangle into dest_png using the desktop's native
-    region-screenshot tool — which is what makes this work on X11 and Wayland.
+    """Capture a user-drawn rectangle into dest_png using the desktop's
+    native region-screenshot mechanism -- works on X11 and Wayland.
     Returns (ok, error_message).
 
-    Tool order is deliberate and differs by display server. On X11:
-    maim/scrot first. gnome-screenshot fails *silently* on non-GNOME desktops
-    (notably Cinnamon: no GNOME Shell DBus, broken X11 fallback), producing no
-    file and no error, so it must not be preferred where maim/scrot are
-    present. On Wayland, maim/scrot are skipped entirely (see below) and
-    gnome-screenshot/spectacle/flameshot/grim+slurp are tried directly.
+    Order, by display server:
 
-    maim/scrot grab the pointer to draw the rectangle. When OCR-select is
-    triggered from a Super-key shortcut, the window manager still holds the
-    keybinding's pointer grab for a moment, so the first attempt can fail with
-    'couldn't grab pointer'. That clears once the keys are released, so we
-    retry briefly. A non-zero exit *without* a grab error means the user
-    cancelled (Escape), which we report as such rather than retrying."""
+    X11: maim/scrot, then gnome-screenshot/spectacle/flameshot.
+    gnome-screenshot fails silently (exit 0, no file) on non-GNOME
+    desktops like Cinnamon, so it must not be preferred over maim/scrot.
+
+    Wayland: quickshot (bundled, /usr/bin/quickshot) first -- it captures
+    the screen non-interactively, then handles region selection itself in
+    an ordinary window instead of asking the compositor's portal for an
+    interactive one. That matters because some xdg-desktop-portal-kde
+    versions have no live drag-to-select mode at all (an interactive Area
+    request there goes through a mode-picker, then a separate capture-
+    then-crop step instead). Then spectacle directly -- its -r flag goes
+    straight into drag-to-select with no mode picker (KDE Bugzilla
+    #473521), since it's a trusted first-party KDE component with its own
+    access to KWin. Then the xdg-desktop-portal Screenshot interface
+    (confirmed working on GNOME and KDE). Then gnome-screenshot/
+    flameshot. maim/scrot are skipped entirely on Wayland: they can
+    "succeed" with a blank capture instead of erroring. grim+slurp is
+    last resort, wlroots-only -- slurp needs zwlr_layer_shell_v1, which
+    neither GNOME's Mutter nor KDE's KWin implement.
+
+    maim/scrot: a Super-key-triggered capture can briefly conflict with
+    the WM's own pointer grab on the hotkey; retried briefly, and
+    distinguished from a genuine user cancel (Escape) via "grab" in
+    stderr."""
+    if vf._have("quickshot"):
+        log.debug("OCR-select: trying quickshot")
+        try:
+            r = subprocess.run(["quickshot", dest_png], timeout=120,
+                               capture_output=True, text=True)
+            if r.returncode == 0 and os.path.exists(dest_png) \
+                    and os.path.getsize(dest_png) > 0:
+                log.debug("OCR-select: quickshot succeeded")
+                return True, ""
+            # quickshot doesn't distinguish cancellation from failure in its
+            # exit code (both are 1) -- always fall through rather than
+            # trying to parse its (Dutch, potentially changing) stderr text.
+            log.debug(f"OCR-select: quickshot exited {r.returncode} "
+                     f"(stderr={r.stderr!r}), falling back")
+        except Exception as e:
+            log.debug(f"OCR-select: quickshot raised: {e}, falling back")
+
+    fallbacks = [
+        ("gnome-screenshot", ["-a", "-f", dest_png]),
+        ("flameshot",        ["gui", "-r", "-p", dest_png]),
+    ]
+
     if vf.IS_WAYLAND:
-        # maim/scrot call into X11 directly and don't fail cleanly under
-        # Wayland -- they can "succeed" with a blank/black capture (the
-        # file exists, non-zero size) instead of erroring, which OCR then
-        # reports as "no text found" with no hint that the capture itself
-        # was the real problem. Skip them here so gnome-screenshot (uses
-        # the compositor's own screenshot portal) actually gets a turn.
+        considered = ["spectacle", "xdg-portal"] + [b for b, _a in fallbacks] + ["grim", "slurp"]
+        log.debug(f"OCR-select: Wayland, tools present: "
+                 f"{[b for b in considered if b == 'xdg-portal' or vf._have(b)]} "
+                 f"(of {considered} considered)")
+
+        if vf._have("spectacle"):
+            log.debug("OCR-select: trying spectacle directly (bypassing the portal)")
+            try:
+                if os.path.exists(dest_png):
+                    os.unlink(dest_png)
+            except OSError:
+                pass
+            try:
+                r = subprocess.run(["spectacle", "-rbno", dest_png],
+                                   timeout=120, capture_output=True, text=True)
+                if r.returncode == 0 and os.path.exists(dest_png) \
+                        and os.path.getsize(dest_png) > 0:
+                    log.debug("OCR-select: spectacle (direct) succeeded")
+                    return True, ""
+                log.debug(f"OCR-select: spectacle (direct) exited "
+                         f"{r.returncode} with no usable file "
+                         f"(stdout={r.stdout!r} stderr={r.stderr!r}); "
+                         f"trying the portal instead")
+            except Exception as e:
+                log.debug(f"OCR-select: spectacle (direct) raised: {e}; "
+                         f"trying the portal instead")
+
+        log.debug("OCR-select: trying xdg-desktop-portal Screenshot interface")
+        ok, err = _grab_via_xdg_portal(dest_png)
+        if ok:
+            log.debug("OCR-select: xdg-desktop-portal succeeded")
+            return True, ""
+        log.debug(f"OCR-select: xdg-desktop-portal failed: {err}")
         grabbers = []
     else:
         grabbers = [
             ("maim",  ["-s", dest_png]),
             ("scrot", ["-s", dest_png]),
         ]
-    fallbacks = [
-        ("gnome-screenshot", ["-a", "-f", dest_png]),
-        ("spectacle",        ["-rbno", dest_png]),
-        ("flameshot",        ["gui", "-r", "-p", dest_png]),
-    ]
-
-    considered = [b for b, _a in grabbers + fallbacks] + ["grim", "slurp"]
-    log.debug(f"OCR-select: Wayland={vf.IS_WAYLAND}, tools present: "
-             f"{[b for b in considered if vf._have(b)]} (of {considered} "
-             f"considered)")
+        considered = [b for b, _a in grabbers + fallbacks]
+        log.debug(f"OCR-select: X11, tools present: "
+                 f"{[b for b in considered if vf._have(b)]} (of {considered} "
+                 f"considered)")
 
     def _run_grabber(binary, args, attempts=10, delay=0.12):
         """Run a pointer-grabbing tool, retrying only on grab contention."""
@@ -267,13 +322,7 @@ def _grab_region_to_file(dest_png):
             log.debug(f"OCR-select: {binary} raised: {e}")
             return False, str(e)
 
-    log.debug("OCR-select: trying xdg-desktop-portal Screenshot interface")
-    ok, err = _grab_via_xdg_portal(dest_png)
-    if ok:
-        return True, ""
-    log.debug(f"OCR-select: xdg-desktop-portal path failed: {err}")
-
-    if vf._have("grim") and vf._have("slurp"):
+    if vf.IS_WAYLAND and vf._have("grim") and vf._have("slurp"):
         log.debug("OCR-select: trying grim+slurp")
         try:
             geom = subprocess.run(["slurp"], capture_output=True, text=True,
@@ -293,7 +342,7 @@ def _grab_region_to_file(dest_png):
         except Exception as e:
             log.debug(f"OCR-select: grim+slurp raised: {e}")
             return False, str(e)
-    else:
+    elif vf.IS_WAYLAND:
         log.debug("OCR-select: grim+slurp not both present, skipping")
     log.debug("OCR-select: no working screenshot tool found")
     if vf.IS_WAYLAND:

@@ -305,5 +305,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFoxはいくつかの発音修正も自動的に適用します。上書きするにはここに独自のルールを追加してください。",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Python独自のパッケージインストーラー（pip）がこのシステムにはインストールされていません。次のコマンドでインストールしてください: sudo apt install python3-pip その後、もう一度「VoxFoxを設定」を実行してください。",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Waylandではホバー読み上げは利用できません — VoxFox自身のウィンドウ外のマウス位置が必要ですが、Waylandはアプリがそれを読み取ることを許可していません。代わりに選択または読み上げをお試しください。",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "スクリーンショットツールが見つかりません（gnome-screenshot、spectacle、flameshot、または grim+slurp をインストールしてください）"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "スクリーンショットツールが見つかりません（gnome-screenshot、spectacle、flameshot、または grim+slurp をインストールしてください）",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "自動入力できませんでした — クリップボードにコピーしました、Ctrl+Vで貼り付けてください"
 }

@@ -305,5 +305,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "A VoxFox néhány kiejtési javítást automatikusan is alkalmaz; adj hozzá saját szabályt itt az egyik felülbírálásához.",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "A Python saját csomagtelepítője (pip) nincs telepítve ezen a rendszeren; telepítse ezzel: sudo apt install python3-pip, majd futtassa újra a VoxFox beállítását.",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "A rámutatásos felolvasás nem érhető el Wayland alatt — ehhez az egér pozíciója szükséges a VoxFox saját ablakán kívül, amit a Wayland nem enged az alkalmazásoknak leolvasni. Próbálja inkább a Kijelölés vagy a Felolvasás lehetőséget.",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Nem található képernyőkép-eszköz (telepítse a gnome-screenshot, spectacle, flameshot vagy grim+slurp egyikét)"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Nem található képernyőkép-eszköz (telepítse a gnome-screenshot, spectacle, flameshot vagy grim+slurp egyikét)",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "Nem sikerült automatikusan begépelni — vágólapra másolva, nyomja meg a Ctrl+V-t a beillesztéshez"
 }

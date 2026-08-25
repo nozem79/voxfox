@@ -1,3 +1,24 @@
+## 4.0.5
+
+OCR-select on Wayland now tries, in order: quickshot (bundled as
+/usr/bin/quickshot -- captures the screen non-interactively, then handles
+region selection itself in an ordinary window instead of asking the
+desktop's portal for one), spectacle directly, the xdg-desktop-portal
+Screenshot interface, then gnome-screenshot/flameshot/grim+slurp as
+further fallbacks. X11 (maim/scrot) is unchanged.
+
+Also:
+- The window no longer stays oversized on Wayland after a status message
+  or progress bar disappears; it shrinks back to fit, same as on X11.
+- Dictation now shows a clear message when it could only copy to the
+  clipboard instead of typing automatically, rather than the same
+  checkmark as a full success.
+- gnome-screenshot, spectacle, wl-clipboard, wtype, grim, and quickshot's
+  own dependencies (GTK3, cairo, gdk-pixbuf typelibs) are recommended by
+  both the .deb and .rpm, which previously disagreed on a few of these.
+- Code cleanup: shortened several overly long comments, removed an
+  unused import.
+
 ## 4.0.4
 
 Six more interface languages -- Danish, Hungarian, Turkish, Persian, Indonesian,

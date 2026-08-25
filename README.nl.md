@@ -366,10 +366,12 @@ sudo apt install tesseract-ocr tesseract-ocr-nld tesseract-ocr-deu \
                  tesseract-ocr-por poppler-utils gnome-screenshot
 ```
 
-Voor **Selecteren** is een schermafdruktool nodig. VoxFox gebruikt
-`maim`/`scrot` op X11; op Wayland eerst de systeem-schermafdrukportal (al
-onderdeel van GTK), daarna `gnome-screenshot` of `spectacle`. Voeg meer
-`tesseract-ocr-<taal>`-pakketten toe voor extra talen.
+Voor **OCR-selectie** is een schermafdruktool nodig. VoxFox gebruikt
+`maim`/`scrot` op X11; op Wayland wordt eerst `quickshot` geprobeerd (komt
+standaard mee, naast `voxfox` geïnstalleerd), daarna `spectacle`
+rechtstreeks, daarna de systeem-schermafdrukportal (al onderdeel van GTK),
+daarna `gnome-screenshot`. Voeg meer `tesseract-ocr-<taal>`-pakketten toe
+voor extra talen.
 
 ## Hover-modus
 
@@ -594,6 +596,15 @@ Scripts voor verpakken en uitbrengen staan in `packaging/`:
   definiëren een aparte "natuurlijke grootte" die op sommige GTK/librsvg-
   combinaties botst met de aangevraagde rendergrootte — precies wat ervoor
   zorgde dat elk icoon op Fedora KDE alleen zijn linksboven-gedeelte toonde.
+- `src/quickshot.py` is een los, zelfstandig programma (GTK3, want dat kan
+  niet in hetzelfde proces samen met VoxFox's eigen GTK4) dat OCR-selectie
+  op Wayland als eerste probeert. Het maakt zelf een niet-interactieve
+  volledige schermopname, en handelt de gebiedselectie daarna zelf af in
+  een gewoon venster, in plaats van de portal-achtergrond van de
+  desktopomgeving om een interactieve versie te vragen — zie de docstring
+  van `_grab_region_to_file()` in `voxfox_ui/screenshot.py` voor waarom dat
+  op KDE specifiek uitmaakt. Gebouwd en verpakt als `/usr/bin/quickshot`
+  naast `voxfox`; ook los te gebruiken (`quickshot --help`).
 
 ## Probleemoplossing
 
@@ -610,14 +621,16 @@ programma dat het klembord niet synchroniseert: kopieer eerst expliciet
 AT-SPI-gebeurtenissen; sommige programma's (met name Electron-apps) versturen die
 spaarzaam of niet. Gebruik dan Voorlezen op een selectie.
 
-**Selecteren doet niets** — er is geen schermafdruktool geïnstalleerd. VoxFox
-gebruikt `maim`/`scrot` op X11; op Wayland wordt eerst de systeem-
-schermafdrukportal geprobeerd (al onderdeel van GTK, geen extra pakket
-nodig), daarna `gnome-screenshot`, `spectacle` of `flameshot` — installeer
-een daarvan als de portal op jouw desktopomgeving niet beschikbaar is.
-`grim`+`slurp` werkt ook, maar alleen op wlroots-gebaseerde compositors
-zoals Sway — GNOME's Mutter en KDE's KWin ondersteunen het benodigde
-protocol niet.
+**OCR-selectie doet niets** — er is geen werkende schermafdruktool. VoxFox
+gebruikt `maim`/`scrot` op X11; op Wayland wordt eerst `quickshot`
+geprobeerd (komt standaard mee, naast `voxfox` geïnstalleerd — heeft
+`gir1.2-gtk-3.0`, `gir1.2-gdkpixbuf-2.0` en `python3-gi-cairo` nodig),
+daarna `spectacle` rechtstreeks, daarna de systeem-schermafdrukportal (al
+onderdeel van GTK, geen extra pakket nodig), daarna `gnome-screenshot` of
+`flameshot` — installeer een daarvan als niets van het bovenstaande werkt
+op jouw desktopomgeving. `grim`+`slurp` werkt ook, maar alleen op
+wlroots-gebaseerde compositors zoals Sway — GNOME's Mutter en KDE's KWin
+ondersteunen het benodigde protocol niet.
 
 **Dictatie is aan blijven staan** — opnemen stopt vanzelf na de ingestelde maximumduur (Instellingen → Dicteren → Max. opnameduur), onafhankelijk van VoxFox zelf afgedwongen zodat een vergeten opname niet ongelimiteerd kan doorgroeien. Verlaag de limiet daar voor een strakkere marge.
 

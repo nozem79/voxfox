@@ -21,6 +21,7 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 
 # App code
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
+cp "$SRC/quickshot.py"         "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
@@ -75,6 +76,12 @@ exec python3 /usr/lib/voxfox/voxfox_gtk.py "$@"
 LAUNCHER
 chmod 755 "$INST/usr/bin/voxfox"
 
+cat > "$INST/usr/bin/quickshot" <<'LAUNCHER'
+#!/bin/sh
+exec python3 /usr/lib/voxfox/quickshot.py "$@"
+LAUNCHER
+chmod 755 "$INST/usr/bin/quickshot"
+
 # Desktop entry
 cat > "$INST/usr/share/applications/voxfox.desktop" <<'DESKTOP'
 [Desktop Entry]
@@ -123,13 +130,15 @@ Depends: python3 (>= 3.9),
  ffmpeg,
  libportaudio2,
  libsndfile1
-Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot
+Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot, spectacle, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, python3-gi-cairo, grim
 Description: VoxFox — screen reader and dictation tool
- Hover-to-read, text selection reading, OCR, PDF reading,
- and local/remote speech-to-text dictation.
+ VoxFox reads text aloud from any application on your screen, lets you
+ dictate by voice instead of typing, and can read text out of PDFs,
+ images, or scanned documents using text recognition (OCR). Everything
+ runs on your own computer.
  .
- After installation, run: voxfox --setup
- to download the Piper voice engine and default voices.
+ After installing, open VoxFox and choose "Set up VoxFox" (or run:
+ voxfox --setup) to download the voices and dictation model.
 CTRL
 
 # Post-install script: install Python packages that may not be in the distro repos.

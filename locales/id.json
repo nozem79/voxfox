@@ -305,5 +305,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox juga menerapkan beberapa perbaikan pengucapan secara otomatis; tambahkan aturan Anda sendiri di sini untuk menggantikan salah satunya.",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Penginstal paket bawaan Python (pip) tidak terpasang di sistem ini; pasang dengan: sudo apt install python3-pip, lalu jalankan kembali Siapkan VoxFox.",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Membaca saat diarahkan tidak tersedia di Wayland — ini memerlukan posisi mouse di luar jendela VoxFox sendiri, yang tidak diizinkan Wayland untuk dibaca oleh aplikasi. Coba gunakan Pilih atau Baca sebagai gantinya.",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Tidak ada alat tangkapan layar ditemukan (pasang gnome-screenshot, spectacle, flameshot, atau grim+slurp)"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Tidak ada alat tangkapan layar ditemukan (pasang gnome-screenshot, spectacle, flameshot, atau grim+slurp)",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "Tidak dapat mengetik secara otomatis — disalin ke clipboard, tekan Ctrl+V untuk menempel"
 }

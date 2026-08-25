@@ -284,15 +284,15 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         return False  # one-shot; don't re-arm as a repeating source
 
     def _fit_to_content(self, keep_width=False):
-        """Shrink the window to the toolbar's current natural size (X11, best-
-        effort). GTK4 doesn't auto-shrink a window when its content gets smaller
-        (after lowering the UI scale or hiding buttons), so we nudge it via
-        wmctrl to keep the window as narrow/short as the visible buttons allow.
-        The window stays resizable; this only removes leftover empty space.
-        With keep_width=True only the height shrinks back (used after the
-        status line hides), so a user-widened window keeps its width."""
-        if not vf._have("wmctrl"):
-            return
+        """Shrink the window to the toolbar's current natural size. GTK4
+        doesn't auto-shrink a window when its content gets smaller (after
+        lowering the UI scale or hiding buttons), so we nudge it back to the
+        computed w, h below: via wmctrl on X11 (best-effort, external tool),
+        or via GTK4's own set_default_size(w, h) on Wayland, where wmctrl
+        doesn't exist. The window stays resizable; this only removes
+        leftover empty space. With keep_width=True only the height shrinks
+        back (used after the status line hides), so a user-widened window
+        keeps its width."""
 
         def do_fit():
             try:
@@ -325,6 +325,19 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                         w = max(w, self.get_width())
             except Exception as e:
                 log.debug(f"fit measure failed: {e}")
+                return False
+
+            if vf.IS_WAYLAND:
+                # set_default_size() is a GTK call and must happen on the
+                # main thread (unlike the wmctrl subprocess below, which is
+                # safe to run in a background thread since it never touches
+                # GTK directly) -- called straight from do_fit(), which
+                # itself already runs on the main thread via GLib.timeout_add.
+                try:
+                    self.set_default_size(w, h)
+                    self.queue_resize()
+                except Exception as e:
+                    log.debug(f"fit-to-content (Wayland) failed: {e}")
                 return False
 
             def worker():
@@ -774,7 +787,21 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             return
         vf.add_history("dictate", text)
         preview = text if len(text) <= 40 else text[:40] + "..."
-        self.root.after(0, self.set_status, f"✓ {preview}")
+        if msg2 == "ok":
+            self.root.after(0, self.set_status, f"✓ {preview}")
+        else:
+            # type_or_paste_text() couldn't type or auto-paste (e.g. on
+            # Wayland without a working keystroke-injection path -- wtype
+            # needs virtual-keyboard-unstable-v1, which neither GNOME's
+            # Mutter nor KDE's KWin implement). The text IS safe, on the
+            # clipboard and already in History; without this the status
+            # bar showed the same checkmark either way, giving no hint
+            # that a manual paste was actually needed.
+            self.root.after(
+                0, self.set_status,
+                _("Couldn't type automatically — copied to clipboard, "
+                  "press Ctrl+V to paste"),
+                6000)
 
     def _confirm_transcription(self, text):
         """Preview dialog shown after dictation when 'Confirm transcription

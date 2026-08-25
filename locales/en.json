@@ -306,5 +306,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste"
 }

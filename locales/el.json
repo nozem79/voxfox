@@ -305,5 +305,6 @@
   "VoxFox also applies some pronunciation fixes automatically; add your own rule here to override one.": "Το VoxFox εφαρμόζει επίσης αυτόματα ορισμένες διορθώσεις προφοράς· προσθέστε τον δικό σας κανόνα εδώ για να αντικαταστήσετε κάποια.",
   "Python's own package installer (pip) isn't installed on this system; install it with: sudo apt install python3-pip, then run Set up VoxFox again.": "Ο δικός του διαχειριστής πακέτων της Python (pip) δεν είναι εγκατεστημένος σε αυτό το σύστημα· εγκαταστήστε τον με: sudo apt install python3-pip και μετά εκτελέστε ξανά το Ρύθμιση VoxFox.",
   "Hover reading isn't available on Wayland — it needs the mouse position outside VoxFox's own window, which Wayland doesn't allow apps to read. Try Select or Read instead.": "Η ανάγνωση με αιώρηση δεν είναι διαθέσιμη στο Wayland — απαιτεί τη θέση του ποντικιού εκτός του παραθύρου του VoxFox, κάτι που το Wayland δεν επιτρέπει στις εφαρμογές να διαβάζουν. Δοκιμάστε Επιλογή ή Ανάγνωση αντ' αυτού.",
-  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Δεν βρέθηκε εργαλείο στιγμιότυπου οθόνης (εγκαταστήστε gnome-screenshot, spectacle, flameshot ή grim+slurp)"
+  "No screenshot tool found (install gnome-screenshot, spectacle, flameshot, or grim+slurp)": "Δεν βρέθηκε εργαλείο στιγμιότυπου οθόνης (εγκαταστήστε gnome-screenshot, spectacle, flameshot ή grim+slurp)",
+  "Couldn't type automatically — copied to clipboard, press Ctrl+V to paste": "Δεν ήταν δυνατή η αυτόματη πληκτρολόγηση — αντιγράφηκε στο πρόχειρο, πατήστε Ctrl+V για επικόλληση"
 }

@@ -39,6 +39,7 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 
 # App code — identical layout to the deb.
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
+cp "$SRC/quickshot.py"         "$INST/usr/lib/voxfox/"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
@@ -86,6 +87,12 @@ cat > "$INST/usr/bin/voxfox" <<'LAUNCHER'
 exec python3 /usr/lib/voxfox/voxfox_gtk.py "$@"
 LAUNCHER
 chmod 755 "$INST/usr/bin/voxfox"
+
+cat > "$INST/usr/bin/quickshot" <<'LAUNCHER'
+#!/bin/sh
+exec python3 /usr/lib/voxfox/quickshot.py "$@"
+LAUNCHER
+chmod 755 "$INST/usr/bin/quickshot"
 
 # Desktop entry — identical to the deb.
 cat > "$INST/usr/share/applications/voxfox.desktop" <<'DESKTOP'
@@ -148,13 +155,19 @@ Recommends:     gnome-screenshot
 Recommends:     spectacle
 Recommends:     wl-clipboard
 Recommends:     wtype
+Recommends:     gtk3
+Recommends:     gdk-pixbuf2
+Recommends:     python3-cairo
+Recommends:     grim
 
 %description
-Hover-to-read, text selection reading, OCR, PDF reading,
-and local/remote speech-to-text dictation.
+VoxFox reads text aloud from any application on your screen, lets you
+dictate by voice instead of typing, and can read text out of PDFs,
+images, or scanned documents using text recognition (OCR). Everything
+runs on your own computer.
 
-After installation, run: voxfox --setup
-to download the Piper voice engine and default voices.
+After installing, open VoxFox and choose "Set up VoxFox" (or run:
+voxfox --setup) to download the voices and dictation model.
 
 EXPERIMENTAL package for RPM-based distributions (Fedora, openSUSE).
 The .deb for Debian/Ubuntu/Mint remains the primary package.
@@ -200,6 +213,7 @@ exit 0
 
 %files
 /usr/bin/voxfox
+/usr/bin/quickshot
 /usr/lib/voxfox/
 /usr/share/voxfox/
 /usr/share/applications/voxfox.desktop
