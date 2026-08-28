@@ -77,6 +77,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
     def _on_active_changed(self, *_a):
         if not self.is_active():
             self.set_always_on_top()
+        # The document currently being spoken, so pause and stop know
+        # where to save the reading position. None for ordinary text.
+        self.current_document = None
+        self.current_document_dir = None
 
     def rebuild_ui(self):
         """Rebuild the whole window UI in place. Used to re-render every label
@@ -287,9 +291,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         """Shrink the window to the toolbar's current natural size. GTK4
         doesn't auto-shrink a window when its content gets smaller (after
         lowering the UI scale or hiding buttons), so we nudge it back to the
-        computed w, h below: via wmctrl on X11 (best-effort, external tool),
-        or via GTK4's own set_default_size(w, h) on Wayland, where wmctrl
-        doesn't exist. The window stays resizable; this only removes
+        computed w, h below: via wmctrl when we have an X server
+        (best-effort, external tool), or via GTK4's own
+        set_default_size(w, h) on a plain Wayland window, where wmctrl
+        cannot reach us. The window stays resizable; this only removes
         leftover empty space. With keep_width=True only the height shrinks
         back (used after the status line hides), so a user-widened window
         keeps its width."""
@@ -327,7 +332,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 log.debug(f"fit measure failed: {e}")
                 return False
 
-            if vf.IS_WAYLAND:
+            if not vf.is_x11_client():
                 # set_default_size() is a GTK call and must happen on the
                 # main thread (unlike the wmctrl subprocess below, which is
                 # safe to run in a background thread since it never touches
@@ -380,6 +385,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         menu = Gio.Menu()
         menu.append(_("Set up VoxFox…"), "app.first_run")
         menu.append(_("History"), "app.history")
+        menu.append(_("Library"), "app.library")
         menu.append(_("Live transcription"), "app.live_transcribe")
         menu.append(_("About"), "app.about")
         menu.append(_("Quit"),  "app.quit")
@@ -532,11 +538,36 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
     def refresh_setup_bar(self):
         self.setup_bar.set_visible(not os.path.exists(vf.PIPER_BIN))
 
+    def _pos_on_screen(self, x, y):
+        """True when (x, y) lands on one of the monitors we can see.
+
+        A saved position can outlive the screen it was saved on: a
+        second monitor unplugged, a laptop moved off its dock, or a
+        position first recorded while restoring it was still a no-op.
+        Putting the window back there leaves it somewhere the user
+        cannot reach, and since this window is meant to float above
+        everything, it just looks like VoxFox never started.
+
+        Returns True when we cannot work it out, so an unexpected
+        display setup never costs the user their saved position."""
+        try:
+            monitors = Gdk.Display.get_default().get_monitors()
+            for i in range(monitors.get_n_items()):
+                g = monitors.get_item(i).get_geometry()
+                if g.x <= x < g.x + g.width and \
+                        g.y <= y < g.y + g.height:
+                    return True
+        except Exception as e:
+            log.debug(f"could not read monitor layout: {e}")
+            return True
+        return False
+
     def get_window_pos(self):
-        """Return (x, y) of our window via wmctrl (X11 only), or None.
-        GTK4 has no portable get_position(), so we read it from the window
-        manager. Matches our window by its exact title (APP_NAME)."""
-        if not vf._have("wmctrl"):
+        """Return (x, y) of our window via wmctrl, or None. GTK4 has no
+        portable get_position(), so we read it from the window manager.
+        Matches our window by its exact title (APP_NAME). Needs an X
+        server, so under Wayland only with the X11 backend."""
+        if not vf.is_x11_client() or not vf._have("wmctrl"):
             return None
         try:
             r = subprocess.run(["wmctrl", "-lG"],
@@ -553,21 +584,30 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         """Remember the current window position so the next start reopens here."""
         try:
             pos = self.get_window_pos()
-            if pos:
+            if pos and self._pos_on_screen(pos[0], pos[1]):
                 self.state["win_pos"] = [pos[0], pos[1]]
                 vf.save_state(self.state)
         except Exception as e:
             log.debug(f"could not save window position: {e}")
 
     def restore_window_pos(self):
-        """Move the window back to its saved position (X11 only, best-effort).
-        Size is left unchanged (-1,-1)."""
+        """Move the window back to its saved position (best-effort). Size
+        is left unchanged (-1,-1). Needs an X server, so under Wayland
+        only with the X11 backend."""
         pos = (self.state or {}).get("win_pos")
-        if not pos or not vf._have("wmctrl"):
+        if not pos or not vf.is_x11_client() or not vf._have("wmctrl"):
             return
         try:
             x, y = int(pos[0]), int(pos[1])
         except (TypeError, ValueError, IndexError):
+            return
+        if not self._pos_on_screen(x, y):
+            # Forget it rather than keep failing on every start.
+            log.info(f"Saved window position {x},{y} is not on any "
+                     f"current monitor -- opening where the window "
+                     f"manager puts us instead")
+            self.state["win_pos"] = None
+            vf.save_state(self.state)
             return
 
         def worker():
@@ -580,10 +620,13 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def set_always_on_top(self):
         """Keep the window above others, like the old Tk build's -topmost.
-        GTK4 dropped a native always-on-top API, so this is best-effort via
-        wmctrl and only takes effect on X11 (Wayland leaves stacking to the
-        compositor)."""
-        if not vf._have("wmctrl"):
+        GTK4 dropped a native always-on-top API, so this is best-effort
+        via wmctrl, which needs an X server: either a real X11 session, or
+        a Wayland session started with the X11 backend (force_x11_backend).
+        A plain Wayland window cannot be raised by anyone but the user."""
+        if not self.state.get("always_on_top", True):
+            return
+        if not vf.is_x11_client() or not vf._have("wmctrl"):
             return
 
         def worker():
@@ -693,8 +736,37 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             GLib.idle_add(done)
         threading.Thread(target=worker, daemon=True).start()
 
+    def set_current_document(self, name, folder):
+        """Remember which document is playing, or None for loose text."""
+        self.current_document = name
+        self.current_document_dir = folder
+
+    def save_reading_position(self):
+        """Write where the listener got to back to the document.
+
+        Reads tts.get_position(), which survives stopping -- the live
+        progress is cleared as soon as the speech worker finishes, so
+        by the time a stop is handled there would be nothing left to
+        save."""
+        if not self.current_document or not self.current_document_dir:
+            return
+        pos = vf.get_position()
+        # Speaking anything else replaces the speech but not this
+        # bookmark, so check that what played really was this document.
+        # Reading out a menu name or a translation must not move a
+        # book's bookmark.
+        if pos.get("token") != self.current_document:
+            return
+        saved = vf.documents.set_position(self.current_document_dir,
+                                         self.current_document,
+                                         pos.get("offset", 0),
+                                         pos.get("length"))
+        log.debug(f"library: saved position {saved} in "
+                  f"{self.current_document}")
+
     def do_stop(self):
         vf.stop_speaking()
+        self.save_reading_position()
         self._sync_pause_btn()
         self.set_status(_("Stopped"))
 
@@ -703,6 +775,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             self.set_status(_("Nothing to pause"))
             return
         paused = vf.toggle_pause()
+        if paused:
+            self.save_reading_position()
         self._sync_pause_btn()
         self.set_status(_("Paused") if paused else _("Resumed"))
 
@@ -758,9 +832,12 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             if not text:
                 self.root.after(0, self.set_status, _("No speech detected"))
                 return
-            if w.get("confirm_before_typing", False):
+            if vf.confirm_typing_forced() or \
+                    w.get("confirm_before_typing", False):
                 # Show the transcription for review before it is typed. The
-                # dialog must run on the GUI thread.
+                # dialog must run on the GUI thread. On Wayland this is not
+                # optional: nothing can be typed there, so the dialog is the
+                # only place the text is ever shown.
                 self.root.after(0, self._confirm_transcription, text)
             else:
                 self._deliver_transcription(text)
@@ -1021,9 +1098,22 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         if not text or not text.strip():
             self.set_status(_("No text found"))
             return
+        # OCR keeps the hard line breaks of the scan, so a paragraph
+        # arrives as a stack of short lines and is read as such. Same
+        # treatment as page text, under the same setting.
+        if vf.merge_enabled():
+            text = vf.merge_wrapped_lines(text)
         vf.add_history("read", text)
-        threading.Thread(target=vf.speak, args=(text, self._active_cfg()),
-                         daemon=True).start()
+        # Every OCR run is a new document, never merged with an
+        # earlier one: scanning the same page twice is two documents.
+        folder = vf.documents.library_dir(self.state)
+        entry = vf.documents.add(folder, text)
+        name = entry.get("file") if entry else None
+        self.set_current_document(name, folder if entry else None)
+        threading.Thread(
+            target=vf.speak,
+            args=(text, self._active_cfg(), 0, name),
+            daemon=True).start()
         self._sync_pause_btn()
         self.set_status(_("Reading..."), 1500)
 

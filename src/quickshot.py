@@ -11,13 +11,51 @@ import shutil
 import tempfile
 import subprocess
 
+
+def _restart_on_xwayland():
+    """Restart as an X11 client so the selector can cover every monitor.
+
+    On Wayland a client may not choose its own position, which left the
+    selector stuck on one monitor. As an XWayland client it can be moved
+    and sized freely, and set_keep_above() works again.
+
+    GDK_BACKEND is read when the display is opened, and setting it from
+    inside the process is already too late, so we hand ourselves a
+    corrected environment and start over. This has to happen before gi
+    is imported.
+
+    Capturing is unaffected: that goes through grim or the portal, both
+    of which key off the session, not off our GTK backend."""
+    if os.environ.get("QUICKSHOT_BACKEND_SWITCHED"):
+        return
+    if os.environ.get("GDK_BACKEND"):
+        return
+    wayland = (os.environ.get("XDG_SESSION_TYPE", "").lower() == "wayland"
+               or bool(os.environ.get("WAYLAND_DISPLAY")))
+    if not wayland or not os.environ.get("DISPLAY"):
+        return
+    env = dict(os.environ)
+    env["GDK_BACKEND"] = "x11"
+    env["QUICKSHOT_BACKEND_SWITCHED"] = "1"
+    try:
+        os.execve(sys.executable,
+                  [sys.executable, os.path.abspath(__file__)]
+                  + sys.argv[1:], env)
+    except Exception:
+        # Fall back to the old single-monitor behaviour rather than
+        # failing to start at all.
+        pass
+
+
+_restart_on_xwayland()
+
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Gio
 
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 
 DEBUG = os.environ.get("QUICKSHOT_DEBUG") == "1"
 TARGET = None
@@ -348,13 +386,15 @@ def capture_screen():
 
 class Selector(Gtk.Window):
 
-    def __init__(self, pixbuf, scale, origin_x, origin_y, width, height, wayland):
+    def __init__(self, pixbuf, scale, origin_x, origin_y, width, height, x11):
         Gtk.Window.__init__(self, type=Gtk.WindowType.TOPLEVEL)
         self.pixbuf = pixbuf
         self.scale = scale
         self.ox = origin_x
         self.oy = origin_y
-        self.wayland = wayland
+        # True when GTK talks to an X server: a real X11 session or
+        # XWayland. Decides placement and whether a grab is allowed.
+        self.x11 = x11
         self.start = None
         self.current = None
         self.saved = None
@@ -393,11 +433,14 @@ class Selector(Gtk.Window):
         self.connect("destroy", lambda *a: Gtk.main_quit())
 
         self.set_default_size(width, height)
-        if wayland:
-            self.fullscreen()
-        else:
+        if x11:
+            # Cover the whole desktop, however many monitors that is.
             self.move(origin_x, origin_y)
             self.resize(width, height)
+        else:
+            # No XWayland: we cannot place ourselves, so the best we can
+            # do is fill the monitor the compositor gives us.
+            self.fullscreen()
 
         # noodrem: nooit langer dan twee minuten een scherm blokkeren
         GLib.timeout_add_seconds(120, self.on_timeout)
@@ -417,8 +460,8 @@ class Selector(Gtk.Window):
         if window is not None and cursor is not None:
             window.set_cursor(cursor)
 
-        # Op Wayland zijn globale grabs niet toegestaan; alleen op X11 grijpen.
-        if not self.wayland:
+        # Globale grabs bestaan alleen op X11; onder XWayland mogen ze wel.
+        if self.x11:
             seat = display.get_default_seat()
             status = seat.grab(window, Gdk.SeatCapabilities.ALL, True,
                                cursor, None, None, None)
@@ -615,16 +658,22 @@ def main():
     scale = pixbuf.get_width() / float(tw) if tw else 1.0
     log("bureaublad %d,%d %dx%d, schaal %.3f" % (tx, ty, tw, th, scale))
 
-    if wayland:
+    # Ask the display what it actually is rather than what we asked for:
+    # the restart above may have been skipped or may have failed.
+    x11_window = type(Gdk.Display.get_default()).__name__.startswith("X11")
+    if x11_window:
+        # One window over the entire desktop, so a selection may cross
+        # from one monitor to the next.
+        ox, oy, w, h = tx, ty, tw, th
+    else:
+        # Native Wayland: no placement, so the primary monitor it is.
         display = Gdk.Display.get_default()
         monitor = display.get_primary_monitor() or display.get_monitor(0)
         g = monitor.get_geometry()
         ox, oy, w, h = g.x, g.y, g.width, g.height
-    else:
-        ox, oy, w, h = tx, ty, tw, th
-    log("venster %d,%d %dx%d" % (ox, oy, w, h))
+    log("venster %d,%d %dx%d, x11=%s" % (ox, oy, w, h, x11_window))
 
-    window = Selector(pixbuf, scale, ox, oy, w, h, wayland)
+    window = Selector(pixbuf, scale, ox, oy, w, h, x11_window)
     window.show_all()
     Gtk.main()
 

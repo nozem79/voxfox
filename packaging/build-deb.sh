@@ -118,7 +118,6 @@ Depends: python3 (>= 3.9),
  python3-pip,
  gir1.2-gtk-4.0,
  gir1.2-glib-2.0,
- python3-pyatspi,
  at-spi2-core,
  xdotool,
  wmctrl,
@@ -130,7 +129,7 @@ Depends: python3 (>= 3.9),
  ffmpeg,
  libportaudio2,
  libsndfile1
-Recommends: tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot, spectacle, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, python3-gi-cairo, grim
+Recommends: python3-pyatspi, tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot, spectacle, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, python3-gi-cairo, grim
 Description: VoxFox — screen reader and dictation tool
  VoxFox reads text aloud from any application on your screen, lets you
  dictate by voice instead of typing, and can read text out of PDFs,

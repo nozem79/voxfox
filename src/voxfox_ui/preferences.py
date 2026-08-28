@@ -24,7 +24,7 @@ import threading
 
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GLib, Gdk  # noqa: E402
+from gi.repository import Gtk, GLib, Gdk, Pango  # noqa: E402
 
 import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
@@ -165,6 +165,47 @@ class PreferencesWindow(Gtk.Window):
         or_frame.set_child(orow)
         box.append(or_frame)
 
+        # Stay on top. On Wayland this decides the GTK backend, which is
+        # only chosen while starting up, hence the note about restarting.
+        top_frame = Gtk.Frame(label=_("Window"))
+        tbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(tbox, f"set_margin_{m}")(10)
+        self.ontop_chk = Gtk.CheckButton(
+            label=_("Stay on top of other windows"))
+        self.ontop_chk.set_active(self.state.get("always_on_top", True))
+        self.ontop_chk.connect("toggled", self._on_ontop_toggled)
+        tbox.append(self.ontop_chk)
+        if vf.IS_WAYLAND:
+            hint = Gtk.Label(
+                label=_("On Wayland, VoxFox starts through XWayland to do "
+                        "this. The change takes effect the next time you "
+                        "start VoxFox."))
+            hint.set_wrap(True)
+            hint.set_xalign(0.0)
+            hint.add_css_class("dim-label")
+            tbox.append(hint)
+        top_frame.set_child(tbox)
+        box.append(top_frame)
+
+        # Where OCR documents are kept.
+        doc_frame = Gtk.Frame(label=_("Documents"))
+        dbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(dbox, f"set_margin_{m}")(10)
+        drow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.docs_lbl = Gtk.Label(
+            label=vf.documents.library_dir(self.state), xalign=0.0)
+        self.docs_lbl.set_hexpand(True)
+        self.docs_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        drow.append(self.docs_lbl)
+        pick = Gtk.Button(label=_("Change..."))
+        pick.connect("clicked", self._on_pick_docs_dir)
+        drow.append(pick)
+        dbox.append(drow)
+        doc_frame.set_child(dbox)
+        box.append(doc_frame)
+
         # Buttons: per-button visibility toggle + up/down reordering.
         btn_frame = Gtk.Frame(label=_("Buttons"))
         self._iface_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
@@ -175,6 +216,47 @@ class PreferencesWindow(Gtk.Window):
         btn_frame.set_child(self._iface_list)
         box.append(btn_frame)
         return box
+
+    def _on_pick_docs_dir(self, _btn):
+        """Choose a new folder for the document library.
+
+        Existing documents move along with it, positions included, so
+        the library does not appear to have emptied itself."""
+        dlg = Gtk.FileDialog()
+        dlg.set_title(_("Choose a folder for documents"))
+
+        def done(source, result, *_a):
+            try:
+                folder = source.select_folder_finish(result)
+            except Exception:
+                return  # cancelled
+            if folder is None or not folder.get_path():
+                return
+            new = folder.get_path()
+            old = vf.documents.library_dir(self.state)
+            if os.path.abspath(new) == os.path.abspath(old):
+                return
+            moved, failed = vf.documents.move_library(old, new)
+            self.state["docs_dir"] = new
+            vf.save_state(self.state)
+            self.docs_lbl.set_text(new)
+            if failed:
+                self.win.set_status(
+                    _("{failed} document(s) could not be moved")
+                    .format(failed=failed))
+            elif moved:
+                self.win.set_status(
+                    _("{moved} document(s) moved").format(moved=moved))
+
+        dlg.select_folder(self, None, done)
+
+    def _on_ontop_toggled(self, chk):
+        self.state["always_on_top"] = chk.get_active()
+        vf.save_state(self.state)
+        # Switching it on mid-session works right away on X11 and on
+        # XWayland; switching it off only stops us re-asserting it.
+        if chk.get_active():
+            self.win.set_always_on_top()
 
     def _on_orient_toggled(self, rb, val):
         if not rb.get_active():
@@ -607,12 +689,29 @@ class PreferencesWindow(Gtk.Window):
         grid.attach(mic_box, 1, r, 1, 1)
         r += 1
 
-        # Confirm before typing
+        # Confirm before typing. Locked on under Wayland, where nothing
+        # can be typed into another application: the dialog is then the
+        # only way the user sees the text. The stored preference is left
+        # untouched, so it comes back on an X11 session.
         confirm = Gtk.CheckButton(label=_("Confirm transcription before typing"))
-        confirm.set_active(bool(w.get("confirm_before_typing", False)))
-        confirm.connect("toggled", self._on_confirm_toggled)
+        forced = vf.confirm_typing_forced()
+        confirm.set_active(forced or bool(w.get("confirm_before_typing", False)))
+        if forced:
+            confirm.set_sensitive(False)
+        else:
+            confirm.connect("toggled", self._on_confirm_toggled)
         grid.attach(confirm, 0, r, 2, 1)
         r += 1
+        if forced:
+            note = Gtk.Label(
+                label=_("On Wayland, text cannot be typed into another "
+                        "application. Dictation is copied to the clipboard, "
+                        "so it is always shown for confirmation first."),
+                xalign=0.0)
+            note.set_wrap(True)
+            note.add_css_class("dim-label")
+            grid.attach(note, 0, r, 2, 1)
+            r += 1
 
         # Maximum recording length — a safety net if dictation is left
         # running by accident (recording then auto-stops on its own).

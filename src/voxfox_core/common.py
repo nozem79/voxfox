@@ -535,6 +535,52 @@ IS_WAYLAND = _is_wayland()
 log.info(f"Display server: {'Wayland' if IS_WAYLAND else 'X11'}")
 
 
+def is_x11_client():
+    """True when GTK is drawing through an X server.
+
+    That covers a native X11 session, and a Wayland session where we
+    asked GTK for its X11 backend (see _restart_on_xwayland in
+    voxfox_gtk.py). Note that
+    IS_WAYLAND stays a property of the *session*, not of our GTK
+    backend: it decides between wtype and xdotool, wl-clipboard and
+    xclip, the portal and scrot. Only window stacking, sizing and
+    positioning depend on which backend GTK itself uses."""
+    backend = os.environ.get("GDK_BACKEND", "").lower()
+    if backend.startswith("x11"):
+        return True
+    if backend:
+        return False
+    return not IS_WAYLAND
+
+
+def confirm_typing_forced():
+    """True when the transcription must be shown for confirmation
+    regardless of the user's setting.
+
+    On Wayland, typing into another application is not possible:
+    wtype needs virtual-keyboard-unstable-v1 and neither Mutter nor
+    KWin implements it, and XTEST through XWayland cannot reach native
+    Wayland windows either. The text therefore always lands on the
+    clipboard, and without the confirmation dialog the user never gets
+    to see or edit what was recognised.
+
+    Session-based on purpose: running through XWayland does not change
+    this, so is_x11_client() is deliberately not consulted here."""
+    return IS_WAYLAND
+
+
+def gui_child_env():
+    """Our environment, minus GDK_BACKEND, for launching other GUI
+    programs.
+
+    Environment variables are inherited, so forcing X11 for ourselves
+    would drag screenshot tools onto XWayland as well -- where a
+    Wayland compositor will not let them capture anything useful."""
+    env = dict(os.environ)
+    env.pop("GDK_BACKEND", None)
+    return env
+
+
 def _have(cmd):
     """Return True if `cmd` is on PATH."""
     try:
@@ -600,5 +646,8 @@ __all__ = [
     "init_storage",
     "_is_wayland",
     "IS_WAYLAND",
+    "is_x11_client",
+    "confirm_typing_forced",
+    "gui_child_env",
     "_have",
 ]

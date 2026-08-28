@@ -137,7 +137,6 @@ Requires:       python3 >= 3.9
 Requires:       python3-gobject
 Requires:       python3-pip
 Requires:       gtk4
-Requires:       python3-pyatspi
 Requires:       at-spi2-core
 Requires:       xdotool
 Requires:       wmctrl
@@ -149,6 +148,7 @@ Requires:       pulseaudio-utils
 Requires:       (ffmpeg-free or ffmpeg)
 Requires:       portaudio
 Requires:       libsndfile
+Recommends:     python3-pyatspi
 Recommends:     tesseract-langpack-nld
 Recommends:     python3-numpy
 Recommends:     gnome-screenshot

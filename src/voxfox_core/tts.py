@@ -248,7 +248,12 @@ _pause_event  = threading.Event()   # set = paused; cleared = playing
 _speak_lock   = threading.Lock()
 
 # Read-only progress (for the GUI). Updated by the worker, never written by GUI.
-_progress = {"chunk": 0, "total": 0, "text": ""}
+_progress = {"chunk": 0, "total": 0, "text": "", "offset": 0}
+
+# Where the listener got to, kept after speaking ends so that pausing or
+# stopping leaves something to save. _progress is reset when the worker
+# finishes; this deliberately is not.
+_position = {"offset": 0, "length": 0, "token": None}
 
 
 def is_speaking():
@@ -425,25 +430,138 @@ def chunk_text(text, max_chars=CHUNK_SIZE):
     return out
 
 
-def speak(text, slot_config):
+def chunk_offsets(text, chunks):
+    """Where each chunk starts, as a character position in `text`.
+
+    Chunks are not reliably substrings of the original: sentences are
+    rejoined with one space, comma-split parts with ", ", and blank
+    lines are collapsed. What does survive is every non-whitespace
+    character, in order. So we match on the whitespace-free stream and
+    keep an index that maps each of those characters back to its
+    position in the real text.
+
+    A chunk that cannot be matched at all (a rewrite we did not
+    anticipate) gets the position we had reached so far, which is off
+    by a little rather than wrong by a lot.
+
+    Returns a list of ints, one per chunk."""
+    stripped = text.strip()
+    if not stripped:
+        return [0] * len(chunks)
+    base = text.find(stripped)
+    index = [i for i, ch in enumerate(stripped) if not ch.isspace()]
+    dense = "".join(stripped[i] for i in index)
+
+    offsets = []
+    cursor = 0
+    for chunk, _ends_paragraph in chunks:
+        needle = "".join(ch for ch in chunk if not ch.isspace())
+        if not needle:
+            offsets.append(base + (index[cursor] if cursor < len(index)
+                                   else len(stripped)))
+            continue
+        at = dense.find(needle, cursor)
+        if at < 0:
+            # Fall back to the opening of the chunk, which is enough to
+            # place it even when the tail was reflowed.
+            at = dense.find(needle[:12], cursor)
+        if at < 0:
+            at = cursor
+        offsets.append(base + (index[at] if at < len(index)
+                               else len(stripped)))
+        cursor = min(at + len(needle), len(dense))
+    return offsets
+
+
+def chunk_index_for_offset(offsets, offset):
+    """The chunk to resume at for a saved character position.
+
+    Picks the last chunk that starts at or before `offset`, so a
+    position recorded halfway through a sentence replays that sentence
+    from its beginning rather than skipping it."""
+    if offset <= 0:
+        return 0
+    found = 0
+    for i, start in enumerate(offsets):
+        if start <= offset:
+            found = i
+        else:
+            break
+    return found
+
+
+# Rough speaking rate of the Piper voices at speed 1.0. Only used to
+# turn the skip buttons' seconds into a distance in characters, where
+# being a syllable out does not matter.
+CHARS_PER_SECOND = 15.0
+
+
+def seconds_to_chars(seconds, slot_config=None):
+    """How many characters roughly correspond to `seconds` of speech.
+
+    Scales with the slot's speed setting, so a skip covers the same
+    amount of listening time whether the voice is set fast or slow."""
+    speed = float((slot_config or {}).get("speed", 1.0) or 1.0)
+    return max(1, int(seconds * CHARS_PER_SECOND * speed))
+
+
+def _word_boundary_at_or_before(text, offset):
+    """Move `offset` back to the start of the word it falls inside.
+
+    Cutting the text at an arbitrary character would otherwise make a
+    skip begin in the middle of a word, which sounds like a stutter."""
+    if offset <= 0:
+        return 0
+    if offset >= len(text):
+        return len(text)
+    i = offset
+    while i > 0 and not text[i - 1].isspace():
+        i -= 1
+    return i
+
+
+def speak(text, slot_config, start_offset=0, token=None):
     """Speak text. Long text is split into chunks played sequentially.
-    Replaces any currently-playing speech."""
-    global _speak_thread, _stop_event, _progress
+    Replaces any currently-playing speech.
+
+    start_offset is a character position in `text`; speaking begins at
+    the chunk containing it, so a document can be resumed where the
+    listener stopped.
+
+    token is passed straight through to get_position() and is never
+    interpreted here. The interface uses it to label the speech with
+    the document it came from, so that a reading position is only ever
+    written back to the document that actually produced it."""
+    global _speak_thread, _stop_event, _progress, _position
     text = text[:MAX_TEXT_LEN]
     text = apply_pronunciations(
         text, app.pron_for((slot_config or {}).get("lang", "")))
-    chunks = chunk_text(text)
+    # Cut the text at the starting point and chunk what is left, so any
+    # character can be a starting point. Skipping back three seconds
+    # lands three seconds back, not at the top of the sentence.
+    start_offset = _word_boundary_at_or_before(text, max(0, start_offset))
+    body = text[start_offset:] if start_offset else text
+    chunks = chunk_text(body)
+    offsets = [o + start_offset for o in chunk_offsets(body, chunks)]
+    if start_offset:
+        log.debug(f"speak: starting at character {start_offset} "
+                  f"of {len(text)}")
     with _speak_lock:
         _stop_event.set()
         if _speak_thread and _speak_thread.is_alive():
             _speak_thread.join(timeout=2.0)
         _stop_event = threading.Event()
         _pause_event.clear()  # new speech starts unpaused
-        _progress = {"chunk": 0, "total": len(chunks), "text": ""}
+        _progress = {"chunk": 0, "total": len(chunks), "text": "",
+                     "offset": start_offset}
+        _position = {"offset": start_offset, "length": len(text),
+                     "token": token}
         evt   = _stop_event
         pause = _pause_event
         _speak_thread = threading.Thread(
-            target=_speak_worker, args=(chunks, slot_config, evt, pause),
+            target=_speak_worker,
+            args=(chunks, slot_config, evt, pause, offsets, len(text),
+                  token),
             daemon=True)
         _speak_thread.start()
 
@@ -451,6 +569,15 @@ def speak(text, slot_config):
 def get_progress():
     """Return a snapshot of current playback progress."""
     return dict(_progress)
+
+
+def get_position():
+    """Where the listener got to, as {"offset", "length", "token"}.
+
+    Survives stopping, so it can still be read when the user pauses or
+    stops and the document needs to remember its place. offset is a
+    character position in the text that was passed to speak()."""
+    return dict(_position)
 
 
 # ── Persistent Piper server ────────────────────────────────────────────────────
@@ -614,8 +741,12 @@ def shutdown_piper():
     _piper_server.shutdown()
 
 
-def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
+def _speak_worker(chunks, slot_config, stop_evt, pause_evt,
+                  offsets=None, total_chars=0, token=None):
     """Play a list of (text, ends_paragraph) tuples sequentially.
+
+    offsets holds the character position of each chunk in the original text
+    (see chunk_offsets); it is what lets a document remember its place.
 
     Honors stop_evt (terminate immediately) and pause_evt:
     - Between chunks: wait while paused.
@@ -628,7 +759,9 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
     the previous one finished playing, which inserted Piper's synthesis
     time (roughly 0.5-1 s) as an audible gap at every paragraph break.
     """
-    global _progress
+    global _progress, _position
+    if offsets is None:
+        offsets = []
     voice = slot_config.get("voice", "")
     speed = slot_config.get("speed", 1.0)
     # Pitch in semitones (0 = the voice's natural pitch). Shifting the playback
@@ -734,8 +867,11 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
             if _wait_while_paused():
                 break
 
+            here = offsets[idx] if idx < len(offsets) else 0
             _progress = {"chunk": idx + 1, "total": len(chunks),
-                         "text": chunk[:80]}
+                         "text": chunk[:80], "offset": here}
+            _position = {"offset": here, "length": total_chars,
+                         "token": token}
 
             # First chunk (or a failed prefetch): synthesize on the spot.
             if current is None:
@@ -775,7 +911,9 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt):
                     os.unlink(p)
                 except Exception:
                     pass
-        _progress = {"chunk": 0, "total": 0, "text": ""}
+        # _position is left alone: it is the only record of where the
+        # listener got to once this worker is gone.
+        _progress = {"chunk": 0, "total": 0, "text": "", "offset": 0}
 
 
 def stop_speaking():
@@ -808,8 +946,14 @@ __all__ = [
     "set_pronunciations",
     "apply_pronunciations",
     "chunk_text",
+    "chunk_offsets",
+    "chunk_index_for_offset",
+    "seconds_to_chars",
+    "CHARS_PER_SECOND",
     "speak",
     "get_progress",
+    "get_position",
+    "_position",
     "_speak_worker",
     "stop_speaking",
     "_PiperServer",

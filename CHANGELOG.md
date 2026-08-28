@@ -1,3 +1,57 @@
+## 5.0.1
+
+- python3-pyatspi is a recommendation instead of a requirement. On Pop!_OS
+  24.04 the newer gir1.2-atspi-2.0 conflicts with the python3-pyatspi in
+  the archive, which made VoxFox impossible to install there. Without it
+  everything works except Hover, which needs AT-SPI.
+
+## 5.0.0
+
+The window can now stay above other windows on Wayland. Wayland itself has
+no always-on-top protocol, so VoxFox restarts as an XWayland client, where
+the compositor does honour the request. Confirmed on KDE Plasma and GNOME.
+A new setting under Interface turns this off; it is read at startup, so a
+change takes effect the next time VoxFox starts. Without XWayland, VoxFox
+keeps its Wayland window rather than failing to start.
+
+Also:
+- Remembering the window position now works on Wayland too, which was not
+  possible before.
+- A saved window position that falls outside every connected monitor is
+  ignored and forgotten, instead of putting the window out of reach.
+- On Wayland, a dictation is always shown for confirmation first. Text
+  cannot be typed into another application there, so it goes to the
+  clipboard; the setting is switched on and greyed out, and the stored
+  preference is kept for X11 sessions.
+- quickshot now covers the whole desktop on Wayland instead of just one
+  monitor, so a selection may cross from one screen to the next.
+- On X11, region selection for OCR uses maim or scrot again, with
+  quickshot only as a last resort. quickshot works around a Wayland
+  restriction that does not exist on X11, where dragging happens on the
+  live screen with no capture step in between.
+- Text captured with OCR is now kept as a document. A new Library window,
+  next to History, lists them with how far they have been read, and offers
+  continue, start over and delete. Pausing or stopping records the place;
+  a document read to the end starts from the beginning next time.
+- Every OCR run is a separate document; the same page scanned twice gives
+  two documents.
+- Documents are plain .txt files in a folder you choose under Settings,
+  by default a VoxFox folder inside your Documents folder. Changing the
+  folder takes the existing documents and their positions along.
+- Reading positions are character positions in the text, so they keep
+  pointing at the right sentence even if the way text is split for speech
+  changes later.
+- OCR text now goes through the "merge wrapped lines" setting as well, so
+  a scanned paragraph is read as a paragraph instead of a stack of short
+  lines.
+- Each document in the Library has one play/pause button, plus skip back
+  and skip forward buttons that move thirty seconds at a time, scaled to
+  the voice's speaking speed.
+- Speaking can now start at any character instead of snapping to the start
+  of the surrounding chunk, which is what makes small jumps possible. The
+  starting point is nudged back to a word boundary.
+- Twenty-one new interface strings in all 23 languages.
+
 ## 4.0.5
 
 OCR-select on Wayland now tries, in order: quickshot (bundled as

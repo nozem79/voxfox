@@ -58,8 +58,16 @@ DEFAULT_STATE = {
     # but is now derived from slot1["lang"] at runtime and ignored on load.
     "ui_lang": "en",
     # Last on-screen window position [x, y], saved on close and restored on
-    # the next start. X11 only (GTK4 has no portable window positioning).
+    # the next start. Needs an X server: a real X11 session, or a Wayland
+    # session running with the X11 backend (see always_on_top).
     "win_pos": None,
+    # Keep the window above other windows. On Wayland this also makes
+    # VoxFox start as an XWayland client, since Wayland itself has no
+    # always-on-top protocol. Read once, at startup.
+    "always_on_top": True,
+    # Where OCR documents are stored. None means the default location
+    # (a VoxFox folder inside the user's Documents folder).
+    "docs_dir": None,
     # Set once the default desktop shortcuts (Super+Z/X/C/W/A) have been
     # registered, so user edits/removals in the system settings stick.
     "shortcuts_installed": False,

@@ -155,14 +155,19 @@ def _grab_via_xdg_portal(dest_png):
 
 def _grab_region_to_file(dest_png):
     """Capture a user-drawn rectangle into dest_png using the desktop's
-    native region-screenshot mechanism -- works on X11 and Wayland.
+    native region-screenshot mechanism -- works on X11 and Wayland. Every
+    tool is launched with gui_child_env(), so a VoxFox running through
+    XWayland does not drag them onto XWayland too.
     Returns (ok, error_message).
 
     Order, by display server:
 
-    X11: maim/scrot, then gnome-screenshot/spectacle/flameshot.
-    gnome-screenshot fails silently (exit 0, no file) on non-GNOME
-    desktops like Cinnamon, so it must not be preferred over maim/scrot.
+    X11: maim/scrot, then gnome-screenshot/spectacle/flameshot, with
+    quickshot only as a last resort. gnome-screenshot fails silently
+    (exit 0, no file) on non-GNOME desktops like Cinnamon, so it must
+    not be preferred over maim/scrot. quickshot is deliberately last
+    here: it is a Wayland workaround, and its capture-first-then-select
+    design buys nothing on X11 where maim can drag on the live screen.
 
     Wayland: quickshot (bundled, /usr/bin/quickshot) first -- it captures
     the screen non-interactively, then handles region selection itself in
@@ -184,11 +189,12 @@ def _grab_region_to_file(dest_png):
     the WM's own pointer grab on the hotkey; retried briefly, and
     distinguished from a genuine user cancel (Escape) via "grab" in
     stderr."""
-    if vf._have("quickshot"):
+    if vf.IS_WAYLAND and vf._have("quickshot"):
         log.debug("OCR-select: trying quickshot")
         try:
             r = subprocess.run(["quickshot", dest_png], timeout=120,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True,
+                               env=vf.gui_child_env())
             if r.returncode == 0 and os.path.exists(dest_png) \
                     and os.path.getsize(dest_png) > 0:
                 log.debug("OCR-select: quickshot succeeded")
@@ -221,7 +227,8 @@ def _grab_region_to_file(dest_png):
                 pass
             try:
                 r = subprocess.run(["spectacle", "-rbno", dest_png],
-                                   timeout=120, capture_output=True, text=True)
+                                   timeout=120, capture_output=True,
+                                   text=True, env=vf.gui_child_env())
                 if r.returncode == 0 and os.path.exists(dest_png) \
                         and os.path.getsize(dest_png) > 0:
                     log.debug("OCR-select: spectacle (direct) succeeded")
@@ -246,6 +253,8 @@ def _grab_region_to_file(dest_png):
             ("maim",  ["-s", dest_png]),
             ("scrot", ["-s", dest_png]),
         ]
+        # Only if nothing else on this machine can select a region.
+        fallbacks = fallbacks + [("quickshot", [dest_png])]
         considered = [b for b, _a in grabbers + fallbacks]
         log.debug(f"OCR-select: X11, tools present: "
                  f"{[b for b in considered if vf._have(b)]} (of {considered} "
@@ -307,7 +316,8 @@ def _grab_region_to_file(dest_png):
             pass
         try:
             r = subprocess.run([binary, *args], check=True, timeout=120,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True,
+                               env=vf.gui_child_env())
             if os.path.exists(dest_png) and os.path.getsize(dest_png) > 0:
                 log.debug(f"OCR-select: {binary} succeeded")
                 return True, ""
@@ -326,13 +336,14 @@ def _grab_region_to_file(dest_png):
         log.debug("OCR-select: trying grim+slurp")
         try:
             geom = subprocess.run(["slurp"], capture_output=True, text=True,
-                                  timeout=120)
+                                  timeout=120, env=vf.gui_child_env())
             if geom.returncode != 0 or not geom.stdout.strip():
                 log.debug(f"OCR-select: slurp gave no geometry (exit "
                          f"{geom.returncode}): stderr={geom.stderr!r}")
                 return False, _("Selection cancelled")
             r = subprocess.run(["grim", "-g", geom.stdout.strip(), dest_png],
-                               capture_output=True, text=True, timeout=120)
+                               capture_output=True, text=True, timeout=120,
+                               env=vf.gui_child_env())
             if r.returncode == 0 and os.path.exists(dest_png) \
                     and os.path.getsize(dest_png) > 0:
                 log.debug("OCR-select: grim+slurp succeeded")

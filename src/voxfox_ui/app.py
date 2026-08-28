@@ -53,6 +53,7 @@ class VoxFoxApplication(Gtk.Application):
         _install_x_error_handler()
         for name, cb in (("about", self._on_about),
                          ("history", self._on_history),
+                         ("library", self._on_library),
                          ("first_run", self._on_first_run),
                          ("quit",  self._on_quit)):
             act = Gio.SimpleAction.new(name, None)
@@ -154,6 +155,13 @@ class VoxFoxApplication(Gtk.Application):
             return
         self.hist_win = HistoryWindow(self.win)
         self.hist_win.present()
+
+    def _on_library(self, *_a):
+        if not self.win:
+            return
+        from voxfox_ui.library import LibraryWindow
+        self.lib_win = LibraryWindow(self.win)
+        self.lib_win.present()
 
     def _on_first_run(self, *_a):
         if self.win:
@@ -404,6 +412,11 @@ def main():
         os.environ.setdefault("NO_AT_BRIDGE", "1")
         log.debug("AT-SPI bus unreachable — disabled GTK a11y bridge for "
                   "this process to avoid a libatspi abort.")
+
+    # The backend switch itself happens in voxfox_gtk.py, before GTK is
+    # imported (see _restart_on_xwayland); this only records it.
+    if os.environ.get("VOXFOX_BACKEND_SWITCHED"):
+        log.info("Stay-on-top: running through XWayland (X11 backend)")
 
     VoxFoxApplication().run(None)
     return 0
