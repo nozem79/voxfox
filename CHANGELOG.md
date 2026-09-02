@@ -1,3 +1,11 @@
+## 5.0.2
+
+- Only files you open end up in the Library. Scanning a region of the
+  screen goes to the History alone, as it did before: a scan is a one-off
+  look at something, not a document to come back to.
+- A document opened from a file is named after that file instead of after
+  its first line of text.
+
 ## 5.0.1
 
 - python3-pyatspi is a recommendation instead of a requirement. On Pop!_OS

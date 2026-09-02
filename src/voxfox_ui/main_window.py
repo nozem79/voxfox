@@ -1088,10 +1088,18 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             text, err = vf.ocr_file(
                 path, tess_lang=tess,
                 progress_cb=lambda m: self.root.after(0, self.set_status, m, 0))
-            self.root.after(0, self._after_ocr, text, err)
+            self.root.after(0, self._after_ocr, text, err, path)
         threading.Thread(target=worker, daemon=True).start()
 
-    def _after_ocr(self, text, err):
+    def _after_ocr(self, text, err, source_path=None):
+        """Handle recognised text.
+
+        source_path is set when the text came from a file the user
+        opened, and is what separates the two kinds of OCR. A file is
+        something to come back to, so it is filed in the library. A
+        region scan is a one-off look at part of the screen and only
+        goes to the history -- otherwise every glance at a dialog box
+        would pile up as a document."""
         if err:
             self.set_status(err)
             return
@@ -1104,12 +1112,21 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         if vf.merge_enabled():
             text = vf.merge_wrapped_lines(text)
         vf.add_history("read", text)
-        # Every OCR run is a new document, never merged with an
-        # earlier one: scanning the same page twice is two documents.
-        folder = vf.documents.library_dir(self.state)
-        entry = vf.documents.add(folder, text)
-        name = entry.get("file") if entry else None
-        self.set_current_document(name, folder if entry else None)
+
+        name = None
+        if source_path:
+            # Every opened file is a new document, never merged with an
+            # earlier one: the same PDF twice is two documents.
+            folder = vf.documents.library_dir(self.state)
+            title = os.path.splitext(os.path.basename(source_path))[0]
+            entry = vf.documents.add(folder, text, title=title)
+            name = entry.get("file") if entry else None
+            self.set_current_document(name, folder if entry else None)
+        else:
+            # Nothing to bookmark, and the previous document must not
+            # collect this scan's position.
+            self.set_current_document(None, None)
+
         threading.Thread(
             target=vf.speak,
             args=(text, self._active_cfg(), 0, name),
