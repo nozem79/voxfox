@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "Μετακινήθηκαν {moved} έγγραφα",
   "Back {seconds} seconds": "Πίσω {seconds} δευτερόλεπτα",
   "Forward {seconds} seconds": "Μπροστά {seconds} δευτερόλεπτα",
-  "End of document": "Τέλος του εγγράφου"
+  "End of document": "Τέλος του εγγράφου",
+  "No documents yet. Files you open are kept here.": "Δεν υπάρχουν ακόμη έγγραφα. Τα αρχεία που ανοίγετε φυλάσσονται εδώ."
 }

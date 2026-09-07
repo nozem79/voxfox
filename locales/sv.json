@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} dokument flyttades",
   "Back {seconds} seconds": "{seconds} sekunder bakåt",
   "Forward {seconds} seconds": "{seconds} sekunder framåt",
-  "End of document": "Slutet på dokumentet"
+  "End of document": "Slutet på dokumentet",
+  "No documents yet. Files you open are kept here.": "Inga dokument ännu. Filer du öppnar sparas här."
 }

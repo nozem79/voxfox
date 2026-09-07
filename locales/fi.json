@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "Siirretty {moved} asiakirjaa",
   "Back {seconds} seconds": "{seconds} sekuntia taaksepäin",
   "Forward {seconds} seconds": "{seconds} sekuntia eteenpäin",
-  "End of document": "Asiakirjan loppu"
+  "End of document": "Asiakirjan loppu",
+  "No documents yet. Files you open are kept here.": "Ei vielä asiakirjoja. Avaamasi tiedostot säilytetään täällä."
 }

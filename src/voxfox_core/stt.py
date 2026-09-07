@@ -110,9 +110,67 @@ def _hf_hub_cache():
     return os.path.expanduser("~/.cache/huggingface/hub")
 
 
+def _user_hub_cache():
+    """The user's own hub cache, always writable by them."""
+    return os.path.expanduser("~/.cache/huggingface/hub")
+
+
+def _hub_caches():
+    """Every place a model may live, most specific first, no duplicates.
+
+    A distribution can point HF_HOME at a system-wide folder to ship
+    models in its image (FoxOS does). That folder is read-only for the
+    user, so it is a place to look, not necessarily a place to write."""
+    out = []
+    for c in (_hf_hub_cache(), _user_hub_cache()):
+        c = os.path.abspath(c)
+        if c not in out:
+            out.append(c)
+    return out
+
+
+def _writable_hub_cache():
+    """The first hub folder we can actually download into.
+
+    Tries the configured location first, so a user who set HF_HOME to
+    removable media still gets models there. Falls back to the user's
+    own cache when the configured one cannot be written, which is the
+    normal case on a system that ships HF_HOME under /usr."""
+    for c in _hub_caches():
+        try:
+            os.makedirs(c, exist_ok=True)
+            if os.access(c, os.W_OK):
+                return c
+        except OSError:
+            continue
+    c = _user_hub_cache()
+    os.makedirs(c, exist_ok=True)
+    return c
+
+
+def _repo_name(name):
+    return f"models--Systran--faster-whisper-{name}"
+
+
+def _cached_hub_for(name):
+    """The hub folder that holds a complete copy of `name`, or None."""
+    for cache in _hub_caches():
+        path = os.path.join(cache, _repo_name(name), "snapshots")
+        if not os.path.isdir(path):
+            continue
+        try:
+            for rev in os.listdir(path):
+                if os.path.isfile(os.path.join(path, rev, "model.bin")):
+                    return cache
+        except OSError:
+            pass
+    return None
+
+
 def _hf_model_dir(name):
-    return os.path.join(
-        _hf_hub_cache(), f"models--Systran--faster-whisper-{name}")
+    """Where `name` is, or where it would be downloaded to."""
+    hub = _cached_hub_for(name) or _writable_hub_cache()
+    return os.path.join(hub, _repo_name(name))
 
 
 def _dir_size(path):
@@ -127,20 +185,8 @@ def _dir_size(path):
 
 
 def _whisper_model_is_cached(name):
-    """Check if a faster-whisper model is already downloaded locally."""
-    cache = _hf_hub_cache()
-    repo  = f"models--Systran--faster-whisper-{name}"
-    path  = os.path.join(cache, repo, "snapshots")
-    if not os.path.isdir(path):
-        return False
-    # Snapshots dir should contain at least one revision with model.bin
-    try:
-        for rev in os.listdir(path):
-            if os.path.isfile(os.path.join(path, rev, "model.bin")):
-                return True
-    except OSError:
-        pass
-    return False
+    """True when a complete copy of the model exists in any hub cache."""
+    return _cached_hub_for(name) is not None
 
 
 def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
@@ -199,11 +245,32 @@ def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
         else:
             attempts = [("cpu", "int8")]
 
+        # Hugging Face honours HF_HUB_OFFLINE=1 from the environment and
+        # then refuses every download, including the one the user just
+        # asked for with the download button. FoxOS sets that variable
+        # system-wide. Whether we may go online is our decision, not the
+        # shell's: a cached model is loaded strictly from disk, and a
+        # missing one is fetched with the offline switch lifted for the
+        # duration of this call only.
+        prev_offline = os.environ.get("HF_HUB_OFFLINE")
+        if cached:
+            os.environ["HF_HUB_OFFLINE"] = "1"
+        else:
+            os.environ["HF_HUB_OFFLINE"] = "0"
+        # Load from wherever the model is; download into wherever we
+        # may write. Passed explicitly so HF_HOME pointing at a read-only
+        # system folder can neither hide a model nor block a download.
+        hub = _cached_hub_for(name) if cached else _writable_hub_cache()
+        log.debug(f"Whisper: {'loading' if cached else 'downloading'} "
+                  f"{name} via {hub}")
+
         try:
             last_err = None
             for dev, comp in attempts:
                 try:
-                    model = WhisperModel(name, device=dev, compute_type=comp)
+                    model = WhisperModel(name, device=dev, compute_type=comp,
+                                         download_root=hub,
+                                         local_files_only=bool(cached))
                     if dev != device and progress_cb:
                         progress_cb("GPU unavailable — using CPU...")
                     _whisper_model        = model
@@ -218,6 +285,10 @@ def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
             return None, f"Could not load model: {last_err}"
         finally:
             stop_poll.set()
+            if prev_offline is None:
+                os.environ.pop("HF_HUB_OFFLINE", None)
+            else:
+                os.environ["HF_HUB_OFFLINE"] = prev_offline
 
 
 def list_microphones():

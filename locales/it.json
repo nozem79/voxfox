@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} documento/i spostati",
   "Back {seconds} seconds": "Indietro di {seconds} secondi",
   "Forward {seconds} seconds": "Avanti di {seconds} secondi",
-  "End of document": "Fine del documento"
+  "End of document": "Fine del documento",
+  "No documents yet. Files you open are kept here.": "Ancora nessun documento. I file che apri vengono conservati qui."
 }

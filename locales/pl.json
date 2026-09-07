@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "Przeniesiono dokumenty: {moved}",
   "Back {seconds} seconds": "Cofnij o {seconds} sekundy",
   "Forward {seconds} seconds": "Przewiń o {seconds} sekundy",
-  "End of document": "Koniec dokumentu"
+  "End of document": "Koniec dokumentu",
+  "No documents yet. Files you open are kept here.": "Brak dokumentów. Otwierane pliki trafiają tutaj."
 }

@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "Переміщено документів: {moved}",
   "Back {seconds} seconds": "Назад на {seconds} секунди",
   "Forward {seconds} seconds": "Уперед на {seconds} секунди",
-  "End of document": "Кінець документа"
+  "End of document": "Кінець документа",
+  "No documents yet. Files you open are kept here.": "Документів поки немає. Файли, які ви відкриваєте, зберігаються тут."
 }

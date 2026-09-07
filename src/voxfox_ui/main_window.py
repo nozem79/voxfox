@@ -622,7 +622,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         """Keep the window above others, like the old Tk build's -topmost.
         GTK4 dropped a native always-on-top API, so this is best-effort
         via wmctrl, which needs an X server: either a real X11 session, or
-        a Wayland session started with the X11 backend (force_x11_backend).
+        a Wayland session started with the X11 backend (see _restart_on_xwayland
+        in voxfox_gtk.py).
         A plain Wayland window cannot be raised by anyone but the user."""
         if not self.state.get("always_on_top", True):
             return
@@ -737,9 +738,37 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         threading.Thread(target=worker, daemon=True).start()
 
     def set_current_document(self, name, folder):
-        """Remember which document is playing, or None for loose text."""
+        """Remember which document is playing, or None for loose text.
+
+        While a document is set, a once-a-second check watches for the
+        speech to end and saves the position when it does. That covers
+        the cases the Stop button does not: a document read to its end,
+        a stop from the hotkey or the command line, and speech replaced
+        by something else entirely."""
         self.current_document = name
         self.current_document_dir = folder
+        self._doc_watch_tries = 0
+        if name and not getattr(self, "_doc_watch_id", None):
+            self._doc_watch_id = GLib.timeout_add_seconds(
+                1, self._watch_document_end)
+
+    def _watch_document_end(self):
+        if not self.current_document:
+            self._doc_watch_id = None
+            return False
+        started = (vf.get_position().get("token") == self.current_document)
+        if vf.is_speaking() or not started:
+            # Still going -- or not yet going: speak() may spend up to
+            # two seconds waiting for the previous speech to wind down,
+            # and during that gap nothing is speaking yet. Do not mistake
+            # that for the end. Give up only after a generous wait.
+            self._doc_watch_tries = getattr(self, "_doc_watch_tries", 0) + 1
+            if started or self._doc_watch_tries < 30:
+                return True
+        self._doc_watch_tries = 0
+        self.save_reading_position()
+        self._doc_watch_id = None
+        return False
 
     def save_reading_position(self):
         """Write where the listener got to back to the document.

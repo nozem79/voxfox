@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} dokumentum áthelyezve",
   "Back {seconds} seconds": "{seconds} másodperccel vissza",
   "Forward {seconds} seconds": "{seconds} másodperccel előre",
-  "End of document": "A dokumentum vége"
+  "End of document": "A dokumentum vége",
+  "No documents yet. Files you open are kept here.": "Még nincs dokumentum. A megnyitott fájlok ide kerülnek."
 }

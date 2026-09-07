@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} dokumen dipindahkan",
   "Back {seconds} seconds": "Mundur {seconds} detik",
   "Forward {seconds} seconds": "Maju {seconds} detik",
-  "End of document": "Akhir dokumen"
+  "End of document": "Akhir dokumen",
+  "No documents yet. Files you open are kept here.": "Belum ada dokumen. Berkas yang Anda buka disimpan di sini."
 }

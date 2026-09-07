@@ -412,6 +412,51 @@ def chunk_text(text, max_chars=CHUNK_SIZE):
             chunks.append(buf)
         return chunks
 
+    def _looks_like_list_item(s):
+        """Bullets and numbered items, which should keep their pause."""
+        s = s.lstrip()
+        if not s:
+            return False
+        if s[0] in "\u2022\u2023\u25e6*-\u2013\u2014\u00b7":
+            return True
+        return bool(re.match(r"^(\d{1,3}|[a-zA-Z]|[ivxIVX]{1,4})[.)]\s", s))
+
+    def _pack_short(pairs):
+        """Join runs of short fragments into chunks of a normal size.
+
+        Every chunk is spoken as its own utterance, so a document laid
+        out as headings, captions and table cells turns into hundreds
+        of one-line utterances with a gap after each. Packing them back
+        together restores the flow.
+
+        Only genuinely short fragments are packed: anything already at
+        a reasonable length is a real paragraph and keeps its pause, so
+        ordinary prose is unaffected. List items are never packed --
+        the pause between them is the whole point of having it.
+        """
+        # Deliberately well below max_chars: this should catch headings,
+        # captions and table cells, not ordinary short paragraphs, which
+        # have earned their pause.
+        limit = max(60, max_chars // 8)
+        packed, buf, buf_ends = [], "", False
+        for chunk, ends in pairs:
+            joinable = (len(chunk) < limit
+                        and not _looks_like_list_item(chunk))
+            if joinable and buf and len(buf) + 1 + len(chunk) <= max_chars:
+                buf = buf + " " + chunk
+                buf_ends = ends
+                continue
+            if buf:
+                packed.append((buf, buf_ends))
+                buf, buf_ends = "", False
+            if joinable:
+                buf, buf_ends = chunk, ends
+            else:
+                packed.append((chunk, ends))
+        if buf:
+            packed.append((buf, buf_ends))
+        return packed
+
     # Walk over blocks separated by blank lines. Each block can contain
     # multiple inner lines (e.g. a bullet list). Mark ends_paragraph=True
     # only on the last chunk of each blank-line-delimited block.
@@ -427,7 +472,7 @@ def chunk_text(text, max_chars=CHUNK_SIZE):
         # last one in this blank-line block.
         for i, c in enumerate(block_chunks):
             out.append((c, i == len(block_chunks) - 1))
-    return out
+    return _pack_short(out)
 
 
 def chunk_offsets(text, chunks):
@@ -534,11 +579,13 @@ def speak(text, slot_config, start_offset=0, token=None):
     written back to the document that actually produced it."""
     global _speak_thread, _stop_event, _progress, _position
     text = text[:MAX_TEXT_LEN]
-    text = apply_pronunciations(
-        text, app.pron_for((slot_config or {}).get("lang", "")))
+    # Pronunciation replacements are applied per chunk in the worker,
+    # not here: they change the length of the text, and every position
+    # we hand out must refer to the text the caller gave us, or a saved
+    # bookmark would drift by the length of every replacement before it.
     # Cut the text at the starting point and chunk what is left, so any
-    # character can be a starting point. Skipping back three seconds
-    # lands three seconds back, not at the top of the sentence.
+    # character can be a starting point. Skipping back thirty seconds
+    # lands thirty seconds back, not at the top of the sentence.
     start_offset = _word_boundary_at_or_before(text, max(0, start_offset))
     body = text[start_offset:] if start_offset else text
     chunks = chunk_text(body)
@@ -797,10 +844,14 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt,
             time.sleep(0.05)
         return False
 
+    pron = app.pron_for((slot_config or {}).get("lang", ""))
+
     def _synth(text):
-        """Synthesise via the persistent Piper server (model stays loaded)."""
+        """Synthesise via the persistent Piper server (model stays loaded).
+        Pronunciation replacements happen here, on the chunk, so that the
+        positions reported by this worker stay true to the original text."""
         path = _piper_server.synth(
-            text, model,
+            apply_pronunciations(text, pron), model,
             length_scale=round(pitch_factor / speed, 4),
             sentence_silence=0.1,
             stop_evt=stop_evt,
@@ -902,6 +953,12 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt,
                     break
 
             current = _collect_prefetch()
+        else:
+            # Every chunk played and nothing interrupted: the document
+            # has been read to the end. Reporting the position as the
+            # full length is what lets the bookmark reset to the start.
+            _position = {"offset": total_chars, "length": total_chars,
+                         "token": token}
     finally:
         # Clean up anything that never played (stop mid-way or an error).
         leftover = _collect_prefetch()

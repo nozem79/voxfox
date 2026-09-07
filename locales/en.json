@@ -331,5 +331,6 @@
   "{moved} document(s) moved": "{moved} document(s) moved",
   "Back {seconds} seconds": "Back {seconds} seconds",
   "Forward {seconds} seconds": "Forward {seconds} seconds",
-  "End of document": "End of document"
+  "End of document": "End of document",
+  "No documents yet. Files you open are kept here.": "No documents yet. Files you open are kept here."
 }

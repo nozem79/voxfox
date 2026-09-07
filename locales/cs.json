@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "Přesunuto dokumentů: {moved}",
   "Back {seconds} seconds": "Zpět o {seconds} sekundy",
   "Forward {seconds} seconds": "Vpřed o {seconds} sekundy",
-  "End of document": "Konec dokumentu"
+  "End of document": "Konec dokumentu",
+  "No documents yet. Files you open are kept here.": "Zatím žádné dokumenty. Soubory, které otevřete, se ukládají sem."
 }

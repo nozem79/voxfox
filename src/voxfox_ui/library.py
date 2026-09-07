@@ -42,7 +42,7 @@ from voxfox_ui.widgets import _a11y  # noqa: E402
 
 
 class LibraryWindow(Gtk.Window):
-    """Documents captured with OCR, with their reading positions."""
+    """Files the user opened, with their reading positions."""
 
     def __init__(self, win):
         super().__init__(title=_("Library"), transient_for=win)
@@ -100,8 +100,7 @@ class LibraryWindow(Gtk.Window):
             row = Gtk.ListBoxRow()
             row.set_selectable(False)
             lbl = Gtk.Label(
-                label=_("No documents yet. Text you capture with OCR is "
-                        "kept here."))
+                label=_("No documents yet. Files you open are kept here."))
             lbl.add_css_class("dim-label")
             lbl.set_wrap(True)
             lbl.set_margin_top(16)
@@ -217,6 +216,13 @@ class LibraryWindow(Gtk.Window):
             sub_lbl.set_text(_("Not started"))
 
     def _tick(self):
+        # When playback stops or moves to another document, the saved
+        # positions on disk are newer than the copies these rows hold,
+        # so rebuild the list from disk rather than showing stale numbers.
+        playing = self._playing_name()
+        if playing != getattr(self, "_last_playing", playing):
+            self._reload()
+        self._last_playing = playing
         for name in list(self._rows):
             self._refresh_row(name)
         return True

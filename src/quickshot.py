@@ -660,7 +660,13 @@ def main():
 
     # Ask the display what it actually is rather than what we asked for:
     # the restart above may have been skipped or may have failed.
-    x11_window = type(Gdk.Display.get_default()).__name__.startswith("X11")
+    # Two independent signs, either is enough: the display class name
+    # (only specific when the GdkX11 typelib happens to be loaded) and
+    # the display name, which is ":0"-style on X11 and "wayland-0" on
+    # Wayland regardless of which typelibs are around.
+    _disp = Gdk.Display.get_default()
+    x11_window = (type(_disp).__name__.startswith("X11")
+                  or (_disp.get_name() or "").startswith(":"))
     if x11_window:
         # One window over the entire desktop, so a selection may cross
         # from one monitor to the next.

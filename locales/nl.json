@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} document(en) verplaatst",
   "Back {seconds} seconds": "{seconds} seconden terug",
   "Forward {seconds} seconds": "{seconds} seconden vooruit",
-  "End of document": "Einde van het document"
+  "End of document": "Einde van het document",
+  "No documents yet. Files you open are kept here.": "Nog geen documenten. Bestanden die u opent worden hier bewaard."
 }

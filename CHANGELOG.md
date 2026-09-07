@@ -1,3 +1,50 @@
+## 5.0.3
+
+Reading PDFs and documents laid out in text boxes
+
+- PDFs are read as flowing paragraphs instead of line by line. The wrap
+  width is estimated from the median length of running-text lines rather
+  than the longest line, so a table row, header or footer can no longer
+  make every ordinary line look like the end of a paragraph. pdftotext no
+  longer runs with -layout, which padded lines with spaces to imitate the
+  printed columns.
+- Documents made of separate text boxes -- proposals, brochures, slide
+  exports -- no longer stutter. Short fragments are packed back together
+  up to the normal chunk size, and a sentence broken across a box or page
+  boundary is rejoined when the first part does not end like a sentence and
+  the second starts in lower case. Bullets, numbered items, headings and
+  paragraphs of ordinary length keep their pauses.
+- A word hyphenated across a page break is joined without the hyphen.
+
+Library
+
+- A document read to its end is marked as finished and starts from the
+  beginning next time. Positions are also saved when speech ends for any
+  other reason: the hotkey, the command line, or speech replaced by
+  something else.
+- Pronunciation replacements are applied per chunk at synthesis time, so
+  saved positions always refer to the document's own text.
+- The Library refreshes its list when playback stops or moves on, so the
+  percentages never show a stale number, and its empty-state message says
+  files you open are kept there.
+
+Whisper models
+
+- Downloading a model works on systems that set HF_HUB_OFFLINE=1
+  system-wide, such as FoxOS. A model already on disk is loaded strictly
+  from disk; a missing one is fetched with the offline switch lifted for
+  that call only.
+- Models are looked for both in the configured location (HF_HOME) and in
+  the user's own cache, and are downloaded into whichever is writable. A
+  distribution can ship models under /usr and a user can still add their
+  own without needing write access there.
+
+Also
+
+- quickshot's X11 detection no longer depends on the GdkX11 typelib.
+- Old settings files get the stay-on-top and documents-folder keys filled
+  in on load.
+
 ## 5.0.2
 
 - Only files you open end up in the Library. Scanning a region of the

@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "تم نقل {moved} مستند",
   "Back {seconds} seconds": "إلى الوراء {seconds} ثوانٍ",
   "Forward {seconds} seconds": "إلى الأمام {seconds} ثوانٍ",
-  "End of document": "نهاية المستند"
+  "End of document": "نهاية المستند",
+  "No documents yet. Files you open are kept here.": "لا توجد مستندات بعد. تُحفظ هنا الملفات التي تفتحها."
 }

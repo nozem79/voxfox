@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "已移动 {moved} 个文档",
   "Back {seconds} seconds": "后退 {seconds} 秒",
   "Forward {seconds} seconds": "前进 {seconds} 秒",
-  "End of document": "文档结尾"
+  "End of document": "文档结尾",
+  "No documents yet. Files you open are kept here.": "还没有文档。您打开的文件会保存在这里。"
 }

@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} 件のドキュメントを移動しました",
   "Back {seconds} seconds": "{seconds} 秒戻る",
   "Forward {seconds} seconds": "{seconds} 秒進む",
-  "End of document": "ドキュメントの終わり"
+  "End of document": "ドキュメントの終わり",
+  "No documents yet. Files you open are kept here.": "まだドキュメントはありません。開いたファイルはここに保存されます。"
 }

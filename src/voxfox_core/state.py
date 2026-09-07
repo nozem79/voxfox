@@ -186,6 +186,9 @@ def load_state():
             s.setdefault("merge_lines",  DEFAULT_STATE["merge_lines"])
             s.setdefault("pronunciations", {})
             s.setdefault("win_pos", None)
+            # 5.0: stay-on-top and the document library.
+            s.setdefault("always_on_top", DEFAULT_STATE["always_on_top"])
+            s.setdefault("docs_dir", DEFAULT_STATE["docs_dir"])
             s.setdefault("shortcuts_installed", False)
             s.setdefault("cinnamon_shortcut_slots", {})
             s.setdefault("gnome_shortcut_slots", {})

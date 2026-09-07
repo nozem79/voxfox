@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} belge taşındı",
   "Back {seconds} seconds": "{seconds} saniye geri",
   "Forward {seconds} seconds": "{seconds} saniye ileri",
-  "End of document": "Belgenin sonu"
+  "End of document": "Belgenin sonu",
+  "No documents yet. Files you open are kept here.": "Henüz belge yok. Açtığınız dosyalar burada saklanır."
 }

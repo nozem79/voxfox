@@ -159,7 +159,11 @@ def ocr_pdf(pdf_path, tess_lang="eng", progress_cb=None):
             progress_cb(_("Extracting text from PDF..."))
         if _have_pdftotext():
             try:
-                r = subprocess.run(["pdftotext", "-layout", pdf_path, "-"],
+                # No -layout: it pads lines with spaces to imitate the
+                # printed columns, which is meant for reading with the
+                # eye. For speech we want the reading order and no
+                # invented whitespace.
+                r = subprocess.run(["pdftotext", pdf_path, "-"],
                                    capture_output=True, text=True, timeout=60)
                 if r.returncode == 0 and r.stdout.strip():
                     return r.stdout.strip(), None
@@ -262,10 +266,27 @@ def merge_wrapped_lines(text):
         return (text or "").strip()
     lines = [l.rstrip() for l in
              text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
-    widths = [len(l) for l in lines if l.strip()]
-    if not widths:
+    # Measure the text itself, not its indentation, and take a high
+    # percentile rather than the longest line. A single table row or a
+    # footer with a long path would otherwise set the threshold above
+    # every ordinary line, making each line look like the end of a
+    # paragraph -- which is how a PDF ended up being read line by line.
+    all_widths = sorted(len(l.strip()) for l in lines if l.strip())
+    if not all_widths:
         return text.strip()
-    width = max(widths)
+    # Estimate the wrap width from running text only. A document full of
+    # headings, labels and table cells has a median line length of about
+    # twenty characters, which would put the threshold below every line and
+    # make the test meaningless. Lines under thirty characters are almost
+    # never wrapped body text, so they do not get a say in how wide body
+    # text is -- but if there are hardly any longer lines, fall back to
+    # everything rather than to nothing.
+    body = [n for n in all_widths if n >= 30]
+    widths = body if len(body) >= 5 else all_widths
+    # The median: in wrapped text most lines run to nearly the full width,
+    # while the short ones are the paragraph endings we are looking for.
+    # Outliers on either side cannot move it.
+    width = widths[len(widths) // 2]
     threshold = max(12, int(width * 0.7))
 
     paras, cur = [], ""
@@ -291,10 +312,46 @@ def merge_wrapped_lines(text):
             cur = cur[:-1] + s          # de-hyphenate across the wrap
         else:
             cur = cur + " " + s
-        if len(l) < threshold:          # short line ⇒ end of paragraph
+        if len(s) < threshold:          # short line ⇒ end of paragraph
             flush()
     flush()
-    return "\n\n".join(paras)
+    return "\n\n".join(_rejoin_continuations(paras))
+
+
+def _continues(previous, following):
+    """True when `following` finishes the sentence `previous` started.
+
+    Text extracted from a PDF is broken up by whatever boxes the designer
+    used and by page breaks, so a single sentence regularly arrives as two
+    blocks. Both signs have to agree before they are put back together: the
+    first block does not end the way a sentence ends, and the second starts
+    the way a continuation starts, in lower case. That keeps headings,
+    labels and list items apart, which is what the blank line was really
+    marking.
+    """
+    if not previous or not following:
+        return False
+    if _is_list_or_heading(following):
+        return False
+    if previous[-1] in ".!?:;\u2026\"')\u201d\u2019":
+        return False
+    head = following.lstrip()[:1]
+    return bool(head) and head.islower()
+
+
+def _rejoin_continuations(paras):
+    """Put sentences back together that a blank line had split."""
+    out = []
+    for p in paras:
+        if out and _continues(out[-1], p):
+            prev = out[-1]
+            if prev.endswith("-") and len(prev) >= 2 and prev[-2].isalpha():
+                out[-1] = prev[:-1] + p     # de-hyphenate, as within a paragraph
+            else:
+                out[-1] = prev + " " + p
+        else:
+            out.append(p)
+    return out
 
 
 def _post_ocr(text):
@@ -438,6 +495,8 @@ __all__ = [
     "set_merge_lines",
     "merge_enabled",
     "_is_list_or_heading",
+    "_continues",
+    "_rejoin_continuations",
     "merge_wrapped_lines",
     "_post_ocr",
     "_paragraphs_from_tsv",

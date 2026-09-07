@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} سند منتقل شد",
   "Back {seconds} seconds": "{seconds} ثانیه به عقب",
   "Forward {seconds} seconds": "{seconds} ثانیه به جلو",
-  "End of document": "پایان سند"
+  "End of document": "پایان سند",
+  "No documents yet. Files you open are kept here.": "هنوز سندی وجود ندارد. پرونده‌هایی که باز می‌کنید اینجا نگهداری می‌شوند."
 }

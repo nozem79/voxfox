@@ -330,5 +330,6 @@
   "{moved} document(s) moved": "{moved} document(e) mutate",
   "Back {seconds} seconds": "Înapoi {seconds} secunde",
   "Forward {seconds} seconds": "Înainte {seconds} secunde",
-  "End of document": "Sfârșitul documentului"
+  "End of document": "Sfârșitul documentului",
+  "No documents yet. Files you open are kept here.": "Încă niciun document. Fișierele pe care le deschideți se păstrează aici."
 }
