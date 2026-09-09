@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} seconden terug",
   "Forward {seconds} seconds": "{seconds} seconden vooruit",
   "End of document": "Einde van het document",
-  "No documents yet. Files you open are kept here.": "Nog geen documenten. Bestanden die u opent worden hier bewaard."
+  "No documents yet. Files you open are kept here.": "Nog geen documenten. Bestanden die u opent worden hier bewaard.",
+  "Install speech recognition": "Spraakherkenning installeren",
+  "Installs faster-whisper for your user account": "Installeert faster-whisper voor uw gebruikersaccount",
+  "Speech recognition is not installed yet": "Spraakherkenning is nog niet geïnstalleerd",
+  "python3-pip is missing": "python3-pip ontbreekt",
+  "Installing...": "Bezig met installeren...",
+  "Speech recognition installed": "Spraakherkenning geïnstalleerd",
+  "Installation failed; see the log": "Installatie mislukt; zie het logboek"
 }

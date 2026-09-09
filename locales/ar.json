@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "إلى الوراء {seconds} ثوانٍ",
   "Forward {seconds} seconds": "إلى الأمام {seconds} ثوانٍ",
   "End of document": "نهاية المستند",
-  "No documents yet. Files you open are kept here.": "لا توجد مستندات بعد. تُحفظ هنا الملفات التي تفتحها."
+  "No documents yet. Files you open are kept here.": "لا توجد مستندات بعد. تُحفظ هنا الملفات التي تفتحها.",
+  "Install speech recognition": "تثبيت التعرف على الكلام",
+  "Installs faster-whisper for your user account": "يثبّت faster-whisper لحساب المستخدم الخاص بك",
+  "Speech recognition is not installed yet": "لم يتم تثبيت التعرف على الكلام بعد",
+  "python3-pip is missing": "python3-pip غير موجود",
+  "Installing...": "جارٍ التثبيت...",
+  "Speech recognition installed": "تم تثبيت التعرف على الكلام",
+  "Installation failed; see the log": "فشل التثبيت؛ راجع السجل"
 }

@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} sekunder tilbage",
   "Forward {seconds} seconds": "{seconds} sekunder frem",
   "End of document": "Slutningen af dokumentet",
-  "No documents yet. Files you open are kept here.": "Ingen dokumenter endnu. Filer, du åbner, gemmes her."
+  "No documents yet. Files you open are kept here.": "Ingen dokumenter endnu. Filer, du åbner, gemmes her.",
+  "Install speech recognition": "Installér talegenkendelse",
+  "Installs faster-whisper for your user account": "Installerer faster-whisper til din brugerkonto",
+  "Speech recognition is not installed yet": "Talegenkendelse er ikke installeret endnu",
+  "python3-pip is missing": "python3-pip mangler",
+  "Installing...": "Installerer...",
+  "Speech recognition installed": "Talegenkendelse installeret",
+  "Installation failed; see the log": "Installationen mislykkedes; se loggen"
 }

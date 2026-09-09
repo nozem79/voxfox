@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "Mundur {seconds} detik",
   "Forward {seconds} seconds": "Maju {seconds} detik",
   "End of document": "Akhir dokumen",
-  "No documents yet. Files you open are kept here.": "Belum ada dokumen. Berkas yang Anda buka disimpan di sini."
+  "No documents yet. Files you open are kept here.": "Belum ada dokumen. Berkas yang Anda buka disimpan di sini.",
+  "Install speech recognition": "Pasang pengenalan suara",
+  "Installs faster-whisper for your user account": "Memasang faster-whisper untuk akun pengguna Anda",
+  "Speech recognition is not installed yet": "Pengenalan suara belum terpasang",
+  "python3-pip is missing": "python3-pip tidak ada",
+  "Installing...": "Memasang...",
+  "Speech recognition installed": "Pengenalan suara terpasang",
+  "Installation failed; see the log": "Pemasangan gagal; lihat log"
 }

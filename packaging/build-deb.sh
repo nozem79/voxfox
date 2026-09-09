@@ -171,8 +171,19 @@ have_pip() {
 pip_install() {
     # python3 -m pip, not a bare `pip` command -- only needs the pip module
     # to be importable, not a `pip`-named executable on PATH.
-    as_user "python3 -m pip install --user --break-system-packages $PKGS" 2>&1 || \
-    as_user "python3 -m pip install --user $PKGS" 2>&1
+    if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ]; then
+        # Interactive install: into that user's own site-packages.
+        as_user "python3 -m pip install --user --break-system-packages $PKGS" 2>&1 || \
+        as_user "python3 -m pip install --user $PKGS" 2>&1
+    else
+        # No real user: we are inside an image build (a live CD, FoxOS) or a
+        # root shell. A --user install here would land in /root, where the
+        # person who later logs in never sees it. Install system-wide so
+        # every account on the finished image gets dictation.
+        echo "VoxFox: no interactive user found; installing system-wide."
+        python3 -m pip install --break-system-packages $PKGS 2>&1 || \
+        python3 -m pip install $PKGS 2>&1
+    fi
 }
 
 # Check if packages are already importable

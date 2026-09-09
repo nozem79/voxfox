@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} ثانیه به عقب",
   "Forward {seconds} seconds": "{seconds} ثانیه به جلو",
   "End of document": "پایان سند",
-  "No documents yet. Files you open are kept here.": "هنوز سندی وجود ندارد. پرونده‌هایی که باز می‌کنید اینجا نگهداری می‌شوند."
+  "No documents yet. Files you open are kept here.": "هنوز سندی وجود ندارد. پرونده‌هایی که باز می‌کنید اینجا نگهداری می‌شوند.",
+  "Install speech recognition": "نصب تشخیص گفتار",
+  "Installs faster-whisper for your user account": "faster-whisper را برای حساب کاربری شما نصب می‌کند",
+  "Speech recognition is not installed yet": "تشخیص گفتار هنوز نصب نشده است",
+  "python3-pip is missing": "python3-pip موجود نیست",
+  "Installing...": "در حال نصب...",
+  "Speech recognition installed": "تشخیص گفتار نصب شد",
+  "Installation failed; see the log": "نصب ناموفق بود؛ گزارش را ببینید"
 }

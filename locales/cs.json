@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "Zpět o {seconds} sekundy",
   "Forward {seconds} seconds": "Vpřed o {seconds} sekundy",
   "End of document": "Konec dokumentu",
-  "No documents yet. Files you open are kept here.": "Zatím žádné dokumenty. Soubory, které otevřete, se ukládají sem."
+  "No documents yet. Files you open are kept here.": "Zatím žádné dokumenty. Soubory, které otevřete, se ukládají sem.",
+  "Install speech recognition": "Nainstalovat rozpoznávání řeči",
+  "Installs faster-whisper for your user account": "Nainstaluje faster-whisper pro váš uživatelský účet",
+  "Speech recognition is not installed yet": "Rozpoznávání řeči ještě není nainstalováno",
+  "python3-pip is missing": "Chybí python3-pip",
+  "Installing...": "Instaluje se...",
+  "Speech recognition installed": "Rozpoznávání řeči nainstalováno",
+  "Installation failed; see the log": "Instalace se nezdařila; viz protokol"
 }

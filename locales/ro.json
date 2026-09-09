@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "Înapoi {seconds} secunde",
   "Forward {seconds} seconds": "Înainte {seconds} secunde",
   "End of document": "Sfârșitul documentului",
-  "No documents yet. Files you open are kept here.": "Încă niciun document. Fișierele pe care le deschideți se păstrează aici."
+  "No documents yet. Files you open are kept here.": "Încă niciun document. Fișierele pe care le deschideți se păstrează aici.",
+  "Install speech recognition": "Instalează recunoașterea vocală",
+  "Installs faster-whisper for your user account": "Instalează faster-whisper pentru contul dvs. de utilizator",
+  "Speech recognition is not installed yet": "Recunoașterea vocală nu este încă instalată",
+  "python3-pip is missing": "python3-pip lipsește",
+  "Installing...": "Se instalează...",
+  "Speech recognition installed": "Recunoaștere vocală instalată",
+  "Installation failed; see the log": "Instalarea a eșuat; consultați jurnalul"
 }

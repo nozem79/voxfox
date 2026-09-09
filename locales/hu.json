@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} másodperccel vissza",
   "Forward {seconds} seconds": "{seconds} másodperccel előre",
   "End of document": "A dokumentum vége",
-  "No documents yet. Files you open are kept here.": "Még nincs dokumentum. A megnyitott fájlok ide kerülnek."
+  "No documents yet. Files you open are kept here.": "Még nincs dokumentum. A megnyitott fájlok ide kerülnek.",
+  "Install speech recognition": "Beszédfelismerés telepítése",
+  "Installs faster-whisper for your user account": "Telepíti a faster-whispert a felhasználói fiókjához",
+  "Speech recognition is not installed yet": "A beszédfelismerés még nincs telepítve",
+  "python3-pip is missing": "Hiányzik a python3-pip",
+  "Installing...": "Telepítés...",
+  "Speech recognition installed": "Beszédfelismerés telepítve",
+  "Installation failed; see the log": "A telepítés nem sikerült; lásd a naplót"
 }

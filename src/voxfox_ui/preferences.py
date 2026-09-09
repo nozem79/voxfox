@@ -31,7 +31,7 @@ from voxfox_core import _  # translation helper  # noqa: E402
 
 log = vf.log
 from voxfox_ui.common import TOOLBAR_BUTTONS, TOOLBAR_DEFAULT_HIDDEN, TOOLBAR_IDS  # noqa: E402
-from voxfox_ui.setup import apply_ui_language  # noqa: E402
+from voxfox_ui.setup import apply_ui_language, _pip_install, _have_pip  # noqa: E402
 from voxfox_ui.shortcuts import _SHORTCUT_ACTIONS, _SHORTCUT_LABELS, _binding_display, _binding_for, _cinnamon_reload, _install_shortcuts  # noqa: E402
 from voxfox_ui.widgets import _a11y, _dropdown, _dropdown_value, _hide_progress_bar, _set_dropdown_items, _set_progress_bar  # noqa: E402
 
@@ -637,7 +637,20 @@ class PreferencesWindow(Gtk.Window):
         grid.attach(model_box, 1, r, 1, 1)
         self.model_status = Gtk.Label(xalign=0.0)
         self.model_status.add_css_class("dim-label")
+        self.model_status.set_wrap(True)
         grid.attach(self.model_status, 0, r + 1, 2, 1)
+        # Shown only while faster-whisper itself is missing. Runs the
+        # same per-user pip install as the setup wizard, so nobody has
+        # to open a terminal -- and the terminal route no longer works
+        # as advertised on Ubuntu 24.04 anyway.
+        self.install_btn = Gtk.Button(label=_("Install speech recognition"))
+        self.install_btn.set_tooltip_text(
+            _("Installs faster-whisper for your user account"))
+        _a11y(self.install_btn, _("Install speech recognition"))
+        self.install_btn.set_halign(Gtk.Align.START)
+        self.install_btn.connect("clicked", self._on_install_whisper)
+        self.install_btn.set_visible(False)
+        grid.attach(self.install_btn, 1, r + 1, 1, 1)
         # Download progress for the model button, just below the status text.
         self.dl_progress = Gtk.ProgressBar(show_text=True)
         self.dl_progress.set_visible(False)
@@ -792,6 +805,17 @@ class PreferencesWindow(Gtk.Window):
 
     def _refresh_model_status(self):
         name = _dropdown_value(self.model_dd)
+        if not vf.faster_whisper_available():
+            self.model_status.set_text(
+                f"\u2717 {_('Speech recognition is not installed yet')}")
+            self.install_btn.set_visible(True)
+            self.install_btn.set_sensitive(_have_pip())
+            if not _have_pip():
+                self.model_status.set_text(
+                    f"\u2717 {_('Speech recognition is not installed yet')} "
+                    f"({_('python3-pip is missing')})")
+            return
+        self.install_btn.set_visible(False)
         if vf._whisper_model_is_cached(name):
             self.model_status.set_text(f"✓ {_('model downloaded')}")
         else:
@@ -1452,6 +1476,35 @@ class PreferencesWindow(Gtk.Window):
 
     def _hide_dl_progress(self):
         return _hide_progress_bar(self.dl_progress)
+
+    def _on_install_whisper(self, btn):
+        """Install faster-whisper (plus the audio libraries dictation
+        needs) into the user's own site-packages, with a pulsing bar."""
+        btn.set_sensitive(False)
+        self.dl_progress.set_visible(True)
+        self.dl_progress.set_text(_("Installing..."))
+
+        def worker():
+            ok = _pip_install(
+                ["faster-whisper", "sounddevice", "soundfile"],
+                progress=lambda m: GLib.idle_add(self.model_status.set_text, m),
+                pulse=lambda: GLib.idle_add(self.dl_progress.pulse))
+
+            def done():
+                self.dl_progress.set_visible(False)
+                btn.set_sensitive(True)
+                if ok:
+                    # A fresh import picks up the new package; nothing
+                    # is cached yet because the import kept failing.
+                    self._refresh_model_status()
+                    self.win.set_status(_("Speech recognition installed"))
+                else:
+                    self.model_status.set_text(
+                        f"\u2717 {_('Installation failed; see the log')}")
+                return False
+            GLib.idle_add(done)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def _on_model_download(self, _btn):
         name = _dropdown_value(self.model_dd)

@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "Πίσω {seconds} δευτερόλεπτα",
   "Forward {seconds} seconds": "Μπροστά {seconds} δευτερόλεπτα",
   "End of document": "Τέλος του εγγράφου",
-  "No documents yet. Files you open are kept here.": "Δεν υπάρχουν ακόμη έγγραφα. Τα αρχεία που ανοίγετε φυλάσσονται εδώ."
+  "No documents yet. Files you open are kept here.": "Δεν υπάρχουν ακόμη έγγραφα. Τα αρχεία που ανοίγετε φυλάσσονται εδώ.",
+  "Install speech recognition": "Εγκατάσταση αναγνώρισης ομιλίας",
+  "Installs faster-whisper for your user account": "Εγκαθιστά το faster-whisper για τον λογαριασμό χρήστη σας",
+  "Speech recognition is not installed yet": "Η αναγνώριση ομιλίας δεν έχει εγκατασταθεί ακόμη",
+  "python3-pip is missing": "Λείπει το python3-pip",
+  "Installing...": "Γίνεται εγκατάσταση...",
+  "Speech recognition installed": "Η αναγνώριση ομιλίας εγκαταστάθηκε",
+  "Installation failed; see the log": "Η εγκατάσταση απέτυχε· δείτε το αρχείο καταγραφής"
 }

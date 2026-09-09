@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} saniye geri",
   "Forward {seconds} seconds": "{seconds} saniye ileri",
   "End of document": "Belgenin sonu",
-  "No documents yet. Files you open are kept here.": "Henüz belge yok. Açtığınız dosyalar burada saklanır."
+  "No documents yet. Files you open are kept here.": "Henüz belge yok. Açtığınız dosyalar burada saklanır.",
+  "Install speech recognition": "Konuşma tanımayı kur",
+  "Installs faster-whisper for your user account": "faster-whisper'ı kullanıcı hesabınız için kurar",
+  "Speech recognition is not installed yet": "Konuşma tanıma henüz kurulu değil",
+  "python3-pip is missing": "python3-pip eksik",
+  "Installing...": "Kuruluyor...",
+  "Speech recognition installed": "Konuşma tanıma kuruldu",
+  "Installation failed; see the log": "Kurulum başarısız; günlüğe bakın"
 }

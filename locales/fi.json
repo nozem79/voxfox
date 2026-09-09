@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "{seconds} sekuntia taaksepäin",
   "Forward {seconds} seconds": "{seconds} sekuntia eteenpäin",
   "End of document": "Asiakirjan loppu",
-  "No documents yet. Files you open are kept here.": "Ei vielä asiakirjoja. Avaamasi tiedostot säilytetään täällä."
+  "No documents yet. Files you open are kept here.": "Ei vielä asiakirjoja. Avaamasi tiedostot säilytetään täällä.",
+  "Install speech recognition": "Asenna puheentunnistus",
+  "Installs faster-whisper for your user account": "Asentaa faster-whisperin käyttäjätilillesi",
+  "Speech recognition is not installed yet": "Puheentunnistusta ei ole vielä asennettu",
+  "python3-pip is missing": "python3-pip puuttuu",
+  "Installing...": "Asennetaan...",
+  "Speech recognition installed": "Puheentunnistus asennettu",
+  "Installation failed; see the log": "Asennus epäonnistui; katso loki"
 }

@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "Назад на {seconds} секунди",
   "Forward {seconds} seconds": "Уперед на {seconds} секунди",
   "End of document": "Кінець документа",
-  "No documents yet. Files you open are kept here.": "Документів поки немає. Файли, які ви відкриваєте, зберігаються тут."
+  "No documents yet. Files you open are kept here.": "Документів поки немає. Файли, які ви відкриваєте, зберігаються тут.",
+  "Install speech recognition": "Установити розпізнавання мовлення",
+  "Installs faster-whisper for your user account": "Установлює faster-whisper для вашого облікового запису",
+  "Speech recognition is not installed yet": "Розпізнавання мовлення ще не встановлено",
+  "python3-pip is missing": "Відсутній python3-pip",
+  "Installing...": "Установлення...",
+  "Speech recognition installed": "Розпізнавання мовлення встановлено",
+  "Installation failed; see the log": "Не вдалося встановити; див. журнал"
 }

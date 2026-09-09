@@ -332,5 +332,12 @@
   "Back {seconds} seconds": "Back {seconds} seconds",
   "Forward {seconds} seconds": "Forward {seconds} seconds",
   "End of document": "End of document",
-  "No documents yet. Files you open are kept here.": "No documents yet. Files you open are kept here."
+  "No documents yet. Files you open are kept here.": "No documents yet. Files you open are kept here.",
+  "Install speech recognition": "Install speech recognition",
+  "Installs faster-whisper for your user account": "Installs faster-whisper for your user account",
+  "Speech recognition is not installed yet": "Speech recognition is not installed yet",
+  "python3-pip is missing": "python3-pip is missing",
+  "Installing...": "Installing...",
+  "Speech recognition installed": "Speech recognition installed",
+  "Installation failed; see the log": "Installation failed; see the log"
 }

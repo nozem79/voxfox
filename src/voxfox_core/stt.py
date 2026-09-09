@@ -184,6 +184,16 @@ def _dir_size(path):
     return total
 
 
+def faster_whisper_available():
+    """Whether faster-whisper can be imported at all, without importing
+    it (that pulls in ctranslate2 and takes a moment)."""
+    import importlib.util
+    try:
+        return importlib.util.find_spec("faster_whisper") is not None
+    except Exception:
+        return False
+
+
 def _whisper_model_is_cached(name):
     """True when a complete copy of the model exists in any hub cache."""
     return _cached_hub_for(name) is not None
@@ -217,8 +227,12 @@ def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
         try:
             from faster_whisper import WhisperModel
         except ImportError:
-            return None, ("faster-whisper not installed. "
-                          "Run: pip install --user faster-whisper")
+            # The --break-system-packages flag is what makes this work
+            # on Ubuntu 24.04 and later; without it pip refuses (PEP 668).
+            return None, ("faster-whisper not installed. Use the Install "
+                          "button in Settings, or run: python3 -m pip "
+                          "install --user --break-system-packages "
+                          "faster-whisper")
 
         # First-time download: poll the cache directory growing toward the
         # model's expected size and report it as a fraction. Self-contained, so
@@ -886,6 +900,7 @@ __all__ = [
     "_dir_size",
     "_whisper_model_is_cached",
     "load_whisper_model",
+    "faster_whisper_available",
     "list_microphones",
     "record_audio",
     "transcribe_remote",

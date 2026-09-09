@@ -1,3 +1,24 @@
+## 5.0.4
+
+Dictation on FoxOS and other fresh installs
+
+- Downloading a model works on systems that set HF_HUB_OFFLINE=1
+  system-wide, such as FoxOS. A model already on disk is loaded strictly
+  from disk; a missing one is fetched with the offline switch lifted for
+  that call only.
+- Models are looked for both in the configured location (HF_HOME) and in
+  the user's own cache, and are downloaded into whichever is writable. A
+  distribution can ship models under /usr and a user can still add their
+  own without needing write access there.
+- When faster-whisper itself is missing, the Dictation tab shows an
+  Install button that installs it for your user account, with a progress
+  indicator. The old hint told you to run pip by hand, which Ubuntu 24.04
+  and everything built on it refuses (PEP 668).
+- The package's post-install step installs the dictation libraries
+  system-wide when there is no interactive user -- which is the case
+  inside an image build such as FoxOS. Previously they went to /root,
+  where the person who later logged in never saw them.
+
 ## 5.0.3
 
 Reading PDFs and documents laid out in text boxes
@@ -27,17 +48,6 @@ Library
 - The Library refreshes its list when playback stops or moves on, so the
   percentages never show a stale number, and its empty-state message says
   files you open are kept there.
-
-Whisper models
-
-- Downloading a model works on systems that set HF_HUB_OFFLINE=1
-  system-wide, such as FoxOS. A model already on disk is loaded strictly
-  from disk; a missing one is fetched with the offline switch lifted for
-  that call only.
-- Models are looked for both in the configured location (HF_HOME) and in
-  the user's own cache, and are downloaded into whichever is writable. A
-  distribution can ship models under /usr and a user can still add their
-  own without needing write access there.
 
 Also
 

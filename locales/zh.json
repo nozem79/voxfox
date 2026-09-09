@@ -331,5 +331,12 @@
   "Back {seconds} seconds": "后退 {seconds} 秒",
   "Forward {seconds} seconds": "前进 {seconds} 秒",
   "End of document": "文档结尾",
-  "No documents yet. Files you open are kept here.": "还没有文档。您打开的文件会保存在这里。"
+  "No documents yet. Files you open are kept here.": "还没有文档。您打开的文件会保存在这里。",
+  "Install speech recognition": "安装语音识别",
+  "Installs faster-whisper for your user account": "为您的用户账户安装 faster-whisper",
+  "Speech recognition is not installed yet": "尚未安装语音识别",
+  "python3-pip is missing": "缺少 python3-pip",
+  "Installing...": "正在安装...",
+  "Speech recognition installed": "语音识别已安装",
+  "Installation failed; see the log": "安装失败，请查看日志"
 }
