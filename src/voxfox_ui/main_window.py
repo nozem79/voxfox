@@ -972,12 +972,12 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def do_ocr_file(self):
         dialog = Gtk.FileChooserNative(
-            title=_("Open a PDF or image"), transient_for=self,
+            title=_("Open a document, PDF, or image"), transient_for=self,
             action=Gtk.FileChooserAction.OPEN)
         flt = Gtk.FileFilter()
         flt.set_name(_("Documents and images"))
         for pat in ("*.pdf", "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tiff",
-                    "*.webp"):
+                    "*.webp", "*.docx", "*.odt", "*.rtf", "*.txt", "*.md"):
             flt.add_pattern(pat)
         dialog.add_filter(flt)
 
@@ -1110,6 +1110,21 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         threading.Thread(target=worker, daemon=True).start()
 
     def _run_ocr_path(self, path):
+        """Open a file for reading: OCR for PDFs and images, direct text
+        extraction for Word/LibreOffice/RTF/plain-text documents. Both ends
+        of this go through the same _after_ocr, since from there on -- merge
+        setting, history, the document library -- a recognised page and an
+        extracted paragraph are treated identically."""
+        ext = os.path.splitext(path)[1].lower()
+        if ext in vf.docreader.DOCUMENT_SUPPORTED_EXTS:
+            self.set_status(_("Reading text..."), duration=0)
+
+            def worker():
+                text, err = vf.docreader.read_document(path)
+                self.root.after(0, self._after_ocr, text, err, path)
+            threading.Thread(target=worker, daemon=True).start()
+            return
+
         tess = vf._tess_lang(self._active_cfg().get("lang", ""))
         self.set_status(_("Reading text..."), duration=0)
 
@@ -1121,7 +1136,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         threading.Thread(target=worker, daemon=True).start()
 
     def _after_ocr(self, text, err, source_path=None):
-        """Handle recognised text.
+        """Handle recognised or extracted text.
 
         source_path is set when the text came from a file the user
         opened, and is what separates the two kinds of OCR. A file is
@@ -1135,10 +1150,20 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         if not text or not text.strip():
             self.set_status(_("No text found"))
             return
-        # OCR keeps the hard line breaks of the scan, so a paragraph
-        # arrives as a stack of short lines and is read as such. Same
-        # treatment as page text, under the same setting.
-        if vf.merge_enabled():
+        ext = os.path.splitext(source_path)[1].lower() if source_path else ""
+        if ext in vf.docreader.DOCUMENT_SUPPORTED_EXTS:
+            # A Word/LibreOffice/RTF/plain-text paragraph break comes from
+            # the file format itself and is never in doubt, unlike a page
+            # scanned with OCR. merge_wrapped_lines() also rejoins a short
+            # paragraph into the next one when it doesn't look like a
+            # finished sentence -- built to recover a sentence OCR split
+            # across a page or text-box boundary -- which would wrongly
+            # fuse two genuinely separate list items or headings here.
+            pass
+        elif vf.merge_enabled():
+            # OCR keeps the hard line breaks of the scan, so a paragraph
+            # arrives as a stack of short lines and is read as such. Same
+            # treatment as page text, under the same setting.
             text = vf.merge_wrapped_lines(text)
         vf.add_history("read", text)
 

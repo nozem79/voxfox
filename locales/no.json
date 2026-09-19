@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip mangler",
   "Installing...": "Installerer...",
   "Speech recognition installed": "Talegjenkjenning installert",
-  "Installation failed; see the log": "Installasjonen mislyktes; se loggen"
+  "Installation failed; see the log": "Installasjonen mislyktes; se loggen",
+  "Open a document, PDF, or image and read the text aloud": "Åpne et dokument, en PDF eller et bilde og les teksten høyt",
+  "Open a document, PDF, or image to read aloud": "Åpne et dokument, en PDF eller et bilde som skal leses høyt",
+  "Open a document, PDF, or image": "Åpne et dokument, en PDF eller et bilde",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Kunne ikke åpne denne .docx-filen; den kan være skadet eller er ikke en ekte Word-fil.",
+  "Could not read this .docx file: {error}": "Kunne ikke lese denne .docx-filen: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Kunne ikke åpne denne .odt-filen; den kan være skadet eller er ikke en ekte OpenDocument-fil.",
+  "Could not read this .odt file: {error}": "Kunne ikke lese denne .odt-filen: {error}",
+  "This does not look like an RTF file.": "Dette ser ikke ut som en RTF-fil.",
+  "Could not open this file: {error}": "Kunne ikke åpne denne filen: {error}",
+  "Could not determine this file's text encoding.": "Kunne ikke fastslå tegnkodingen til denne filen.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Det gamle .doc-formatet (Word 97-2003) støttes ikke. Åpne den i Word eller LibreOffice og lagre den som .docx eller .odt, eller eksporter den som ren tekst.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-filer støttes ikke. Åpne filen i tekstbehandleren din og lagre den som .docx, .odt eller ren tekst.",
+  "Unsupported file type: {ext}": "Filtypen støttes ikke: {ext}"
 }

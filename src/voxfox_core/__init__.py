@@ -34,3 +34,4 @@ from .ipc import *  # noqa: F401,F403
 # Short, generic names (add, delete, progress), so this one is reached as
 # vf.documents.* instead of being pulled into the top-level namespace.
 from . import documents  # noqa: F401
+from . import docreader  # noqa: F401

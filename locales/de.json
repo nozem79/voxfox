@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip fehlt",
   "Installing...": "Wird installiert...",
   "Speech recognition installed": "Spracherkennung installiert",
-  "Installation failed; see the log": "Installation fehlgeschlagen; siehe Protokoll"
+  "Installation failed; see the log": "Installation fehlgeschlagen; siehe Protokoll",
+  "Open a document, PDF, or image and read the text aloud": "Ein Dokument, PDF oder Bild öffnen und den Text vorlesen",
+  "Open a document, PDF, or image to read aloud": "Ein Dokument, PDF oder Bild zum Vorlesen öffnen",
+  "Open a document, PDF, or image": "Dokument, PDF oder Bild öffnen",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Diese .docx-Datei konnte nicht geöffnet werden; sie ist möglicherweise beschädigt oder keine echte Word-Datei.",
+  "Could not read this .docx file: {error}": "Diese .docx-Datei konnte nicht gelesen werden: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Diese .odt-Datei konnte nicht geöffnet werden; sie ist möglicherweise beschädigt oder keine echte OpenDocument-Datei.",
+  "Could not read this .odt file: {error}": "Diese .odt-Datei konnte nicht gelesen werden: {error}",
+  "This does not look like an RTF file.": "Dies scheint keine RTF-Datei zu sein.",
+  "Could not open this file: {error}": "Diese Datei konnte nicht geöffnet werden: {error}",
+  "Could not determine this file's text encoding.": "Die Textkodierung dieser Datei konnte nicht bestimmt werden.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Das alte .doc-Format (Word 97-2003) wird nicht unterstützt. Öffnen Sie es in Word oder LibreOffice und speichern Sie es als .docx oder .odt, oder exportieren Sie es als reinen Text.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-Dateien werden nicht unterstützt. Öffnen Sie die Datei in Ihrer Textverarbeitung und speichern Sie sie als .docx, .odt oder Klartext.",
+  "Unsupported file type: {ext}": "Nicht unterstützter Dateityp: {ext}"
 }

@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip موجود نیست",
   "Installing...": "در حال نصب...",
   "Speech recognition installed": "تشخیص گفتار نصب شد",
-  "Installation failed; see the log": "نصب ناموفق بود؛ گزارش را ببینید"
+  "Installation failed; see the log": "نصب ناموفق بود؛ گزارش را ببینید",
+  "Open a document, PDF, or image and read the text aloud": "یک سند، PDF یا تصویر را باز کنید و متن را با صدای بلند بخوانید",
+  "Open a document, PDF, or image to read aloud": "برای خواندن با صدای بلند، یک سند، PDF یا تصویر باز کنید",
+  "Open a document, PDF, or image": "باز کردن سند، PDF یا تصویر",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "این فایل .docx باز نشد؛ ممکن است خراب باشد یا واقعاً یک فایل Word نباشد.",
+  "Could not read this .docx file: {error}": "این فایل .docx خوانده نشد: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "این فایل .odt باز نشد؛ ممکن است خراب باشد یا واقعاً یک فایل OpenDocument نباشد.",
+  "Could not read this .odt file: {error}": "این فایل .odt خوانده نشد: {error}",
+  "This does not look like an RTF file.": "این فایل شبیه یک فایل RTF نیست.",
+  "Could not open this file: {error}": "این فایل باز نشد: {error}",
+  "Could not determine this file's text encoding.": "کدگذاری متن این فایل مشخص نشد.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "فرمت قدیمی .doc (Word 97-2003) پشتیبانی نمی‌شود. آن را در Word یا LibreOffice باز کنید و به‌صورت .docx یا .odt ذخیره کنید، یا آن را به‌صورت متن ساده خروجی بگیرید.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "فایل‌های WordPerfect پشتیبانی نمی‌شوند. آن را در واژه‌پرداز خود باز کنید و به‌صورت .docx، .odt یا متن ساده ذخیره کنید.",
+  "Unsupported file type: {ext}": "نوع فایل پشتیبانی نمی‌شود: {ext}"
 }

@@ -338,5 +338,18 @@
   "python3-pip is missing": "Відсутній python3-pip",
   "Installing...": "Установлення...",
   "Speech recognition installed": "Розпізнавання мовлення встановлено",
-  "Installation failed; see the log": "Не вдалося встановити; див. журнал"
+  "Installation failed; see the log": "Не вдалося встановити; див. журнал",
+  "Open a document, PDF, or image and read the text aloud": "Відкрити документ, PDF або зображення та прочитати текст уголос",
+  "Open a document, PDF, or image to read aloud": "Відкрити документ, PDF або зображення для читання вголос",
+  "Open a document, PDF, or image": "Відкрити документ, PDF або зображення",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Не вдалося відкрити цей файл .docx; можливо, він пошкоджений або насправді не є файлом Word.",
+  "Could not read this .docx file: {error}": "Не вдалося прочитати цей файл .docx: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Не вдалося відкрити цей файл .odt; можливо, він пошкоджений або насправді не є файлом OpenDocument.",
+  "Could not read this .odt file: {error}": "Не вдалося прочитати цей файл .odt: {error}",
+  "This does not look like an RTF file.": "Це не схоже на файл RTF.",
+  "Could not open this file: {error}": "Не вдалося відкрити цей файл: {error}",
+  "Could not determine this file's text encoding.": "Не вдалося визначити кодування тексту цього файлу.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Старий формат .doc (Word 97-2003) не підтримується. Відкрийте його у Word або LibreOffice і збережіть як .docx або .odt, або експортуйте як звичайний текст.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Файли WordPerfect не підтримуються. Відкрийте файл у текстовому редакторі та збережіть як .docx, .odt або звичайний текст.",
+  "Unsupported file type: {ext}": "Непідтримуваний тип файлу: {ext}"
 }

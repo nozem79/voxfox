@@ -338,5 +338,18 @@
   "python3-pip is missing": "Λείπει το python3-pip",
   "Installing...": "Γίνεται εγκατάσταση...",
   "Speech recognition installed": "Η αναγνώριση ομιλίας εγκαταστάθηκε",
-  "Installation failed; see the log": "Η εγκατάσταση απέτυχε· δείτε το αρχείο καταγραφής"
+  "Installation failed; see the log": "Η εγκατάσταση απέτυχε· δείτε το αρχείο καταγραφής",
+  "Open a document, PDF, or image and read the text aloud": "Ανοίξτε ένα έγγραφο, PDF ή εικόνα και διαβάστε το κείμενο δυνατά",
+  "Open a document, PDF, or image to read aloud": "Ανοίξτε ένα έγγραφο, PDF ή εικόνα για ανάγνωση δυνατά",
+  "Open a document, PDF, or image": "Άνοιγμα εγγράφου, PDF ή εικόνας",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Δεν ήταν δυνατό το άνοιγμα αυτού του αρχείου .docx· ενδέχεται να έχει καταστραφεί ή να μην είναι πραγματικό αρχείο Word.",
+  "Could not read this .docx file: {error}": "Δεν ήταν δυνατή η ανάγνωση αυτού του αρχείου .docx: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Δεν ήταν δυνατό το άνοιγμα αυτού του αρχείου .odt· ενδέχεται να έχει καταστραφεί ή να μην είναι πραγματικό αρχείο OpenDocument.",
+  "Could not read this .odt file: {error}": "Δεν ήταν δυνατή η ανάγνωση αυτού του αρχείου .odt: {error}",
+  "This does not look like an RTF file.": "Αυτό δεν μοιάζει με αρχείο RTF.",
+  "Could not open this file: {error}": "Δεν ήταν δυνατό το άνοιγμα αυτού του αρχείου: {error}",
+  "Could not determine this file's text encoding.": "Δεν ήταν δυνατός ο προσδιορισμός της κωδικοποίησης κειμένου αυτού του αρχείου.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Η παλιά μορφή .doc (Word 97-2003) δεν υποστηρίζεται. Ανοίξτε το στο Word ή στο LibreOffice και αποθηκεύστε το ως .docx ή .odt, ή εξαγάγετέ το ως απλό κείμενο.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Τα αρχεία WordPerfect δεν υποστηρίζονται. Ανοίξτε το στον επεξεργαστή κειμένου σας και αποθηκεύστε το ως .docx, .odt ή απλό κείμενο.",
+  "Unsupported file type: {ext}": "Μη υποστηριζόμενος τύπος αρχείου: {ext}"
 }

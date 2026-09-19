@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip puuttuu",
   "Installing...": "Asennetaan...",
   "Speech recognition installed": "Puheentunnistus asennettu",
-  "Installation failed; see the log": "Asennus epäonnistui; katso loki"
+  "Installation failed; see the log": "Asennus epäonnistui; katso loki",
+  "Open a document, PDF, or image and read the text aloud": "Avaa asiakirja, PDF tai kuva ja lue teksti ääneen",
+  "Open a document, PDF, or image to read aloud": "Avaa asiakirja, PDF tai kuva luettavaksi ääneen",
+  "Open a document, PDF, or image": "Avaa asiakirja, PDF tai kuva",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Tätä .docx-tiedostoa ei voitu avata; se saattaa olla vioittunut tai ei ole todellinen Word-tiedosto.",
+  "Could not read this .docx file: {error}": "Tätä .docx-tiedostoa ei voitu lukea: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Tätä .odt-tiedostoa ei voitu avata; se saattaa olla vioittunut tai ei ole todellinen OpenDocument-tiedosto.",
+  "Could not read this .odt file: {error}": "Tätä .odt-tiedostoa ei voitu lukea: {error}",
+  "This does not look like an RTF file.": "Tämä ei näytä olevan RTF-tiedosto.",
+  "Could not open this file: {error}": "Tätä tiedostoa ei voitu avata: {error}",
+  "Could not determine this file's text encoding.": "Tämän tiedoston merkistökoodausta ei voitu määrittää.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Vanhaa .doc-muotoa (Word 97-2003) ei tueta. Avaa se Wordissa tai LibreOfficessa ja tallenna muodossa .docx tai .odt, tai vie se pelkkänä tekstinä.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-tiedostoja ei tueta. Avaa tiedosto tekstinkäsittelyohjelmassasi ja tallenna se muodossa .docx, .odt tai pelkkä teksti.",
+  "Unsupported file type: {ext}": "Tiedostotyyppiä ei tueta: {ext}"
 }

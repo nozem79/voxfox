@@ -69,7 +69,7 @@ def log(message):
         sys.stderr.flush()
 
 
-HELP = """Gebruik: quickshot [opties] [bestand.png]
+HELP = """Gebruik: voxfox-quickshot [opties] [bestand.png]
 
 Sleep een rechthoek over het scherm. Bij loslaten wordt die selectie
 meteen opgeslagen. Escape of de rechtermuisknop annuleert.
@@ -102,11 +102,11 @@ def parse_args():
             sys.stdout.write(HELP)
             sys.exit(0)
         elif arg in ("-V", "--version"):
-            sys.stdout.write("quickshot %s\n" % VERSION)
+            sys.stdout.write("voxfox-quickshot %s\n" % VERSION)
             sys.exit(0)
         elif arg.startswith("-"):
             sys.stderr.write("Onbekende optie: %s\n" % arg)
-            sys.stderr.write("Gebruik quickshot --help voor uitleg.\n")
+            sys.stderr.write("Gebruik voxfox-quickshot --help voor uitleg.\n")
             sys.exit(2)
         else:
             TARGET = os.path.abspath(arg)

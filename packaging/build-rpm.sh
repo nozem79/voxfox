@@ -88,11 +88,11 @@ exec python3 /usr/lib/voxfox/voxfox_gtk.py "$@"
 LAUNCHER
 chmod 755 "$INST/usr/bin/voxfox"
 
-cat > "$INST/usr/bin/quickshot" <<'LAUNCHER'
+cat > "$INST/usr/bin/voxfox-quickshot" <<'LAUNCHER'
 #!/bin/sh
 exec python3 /usr/lib/voxfox/quickshot.py "$@"
 LAUNCHER
-chmod 755 "$INST/usr/bin/quickshot"
+chmod 755 "$INST/usr/bin/voxfox-quickshot"
 
 # Desktop entry — identical to the deb.
 cat > "$INST/usr/share/applications/voxfox.desktop" <<'DESKTOP'
@@ -213,7 +213,7 @@ exit 0
 
 %files
 /usr/bin/voxfox
-/usr/bin/quickshot
+/usr/bin/voxfox-quickshot
 /usr/lib/voxfox/
 /usr/share/voxfox/
 /usr/share/applications/voxfox.desktop

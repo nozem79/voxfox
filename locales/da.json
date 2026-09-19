@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip mangler",
   "Installing...": "Installerer...",
   "Speech recognition installed": "Talegenkendelse installeret",
-  "Installation failed; see the log": "Installationen mislykkedes; se loggen"
+  "Installation failed; see the log": "Installationen mislykkedes; se loggen",
+  "Open a document, PDF, or image and read the text aloud": "Åbn et dokument, en PDF eller et billede, og læs teksten højt",
+  "Open a document, PDF, or image to read aloud": "Åbn et dokument, en PDF eller et billede, der skal læses højt",
+  "Open a document, PDF, or image": "Åbn et dokument, en PDF eller et billede",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Kunne ikke åbne denne .docx-fil; den kan være beskadiget eller er ikke en rigtig Word-fil.",
+  "Could not read this .docx file: {error}": "Kunne ikke læse denne .docx-fil: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Kunne ikke åbne denne .odt-fil; den kan være beskadiget eller er ikke en rigtig OpenDocument-fil.",
+  "Could not read this .odt file: {error}": "Kunne ikke læse denne .odt-fil: {error}",
+  "This does not look like an RTF file.": "Dette ligner ikke en RTF-fil.",
+  "Could not open this file: {error}": "Kunne ikke åbne denne fil: {error}",
+  "Could not determine this file's text encoding.": "Kunne ikke bestemme denne fils tegnkodning.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Det gamle .doc-format (Word 97-2003) understøttes ikke. Åbn den i Word eller LibreOffice, og gem den som .docx eller .odt, eller eksportér den som almindelig tekst.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-filer understøttes ikke. Åbn filen i dit tekstbehandlingsprogram, og gem den som .docx, .odt eller almindelig tekst.",
+  "Unsupported file type: {ext}": "Filtype understøttes ikke: {ext}"
 }

@@ -1,3 +1,65 @@
+## 5.0.5
+
+Fedora installation conflict
+
+- The bundled screenshot helper is now installed as
+  /usr/bin/voxfox-quickshot instead of the generic /usr/bin/quickshot.
+  On a Fedora test machine, installing VoxFox's RPM failed outright
+  because an unrelated package already installed there also owned
+  /usr/bin/quickshot. Beyond fixing that specific conflict, claiming a
+  generic name on the system PATH always carried a quieter risk: if some
+  other package with the same name got installed first, VoxFox could end
+  up running that program instead of its own.
+
+Code review fixes
+
+- A footnote or a margin comment in an .odt file no longer leaks into the
+  middle of the sentence it is anchored to, and is no longer read twice.
+  Both are now skipped entirely, the same choice already made for headers,
+  footers, comments and footnotes in .docx.
+- Pronunciation replacements are cached instead of being recompiled for
+  every chunk of every document. Applying them per chunk (rather than once
+  for the whole text) was needed to keep saved reading positions accurate;
+  caching removes the extra cost that came with doing it that way -- about
+  a 7x speed-up on a realistic pronunciation dictionary, measured across
+  the roughly 500 chunks a longer document produces.
+- Removed a dead constant in the new document reader that duplicated,
+  and could have drifted from, the file-type list actually used to decide
+  which files VoxFox explains it cannot open.
+
+Startup crash on NVIDIA graphics cards
+
+- VoxFox now uses GTK4's software (cairo) renderer instead of the default
+  OpenGL one. On NVIDIA's proprietary driver, GTK4's GL renderer talks to
+  the X Present extension in a way that can throw a BadDrawable error
+  during startup, which GDK treats as fatal -- even with VoxFox's own
+  non-fatal X error handler installed, something in GL context setup
+  appears to save and later restore the handler that was active before it,
+  undoing the override. Confirmed on an RTX 3090. VoxFox's interface is a
+  plain toolbar with no need for GPU-accelerated drawing, so there is no
+  downside to always using the software renderer.
+
+Reading documents, not just PDFs and photographs
+
+- VoxFox can now open and read Word (.docx), OpenDocument (.odt), RTF and
+  plain-text (.txt, .md) files, alongside the existing PDF and image
+  support. The "OCR" button opens the same file dialog as before, now also
+  listing document formats.
+- Documents keep their own paragraph structure, since the file format
+  states it directly (unlike a scanned page, where paragraph breaks have
+  to be guessed at). The OCR line-merging and sentence-rejoining logic --
+  built to repair the ambiguous line breaks of a scan -- is not applied to
+  them, so a real short paragraph or list item is never fused into its
+  neighbour.
+- .docx and .odt are read with Python's standard library only (no new
+  package dependency): both formats are zipped XML under the hood.
+- The old binary .doc format (Word 97-2003) and WordPerfect files are
+  recognised but not read; VoxFox explains why and suggests saving as
+  .docx, .odt, or plain text instead.
+- Every opened document, of any of these types, is filed in the Library
+  exactly like an opened PDF or image: with its own reading position, its
+  own entry, never merged with an earlier one.
+
 ## 5.0.4
 
 Dictation on FoxOS and other fresh installs

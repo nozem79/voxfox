@@ -338,5 +338,18 @@
   "python3-pip is missing": "缺少 python3-pip",
   "Installing...": "正在安装...",
   "Speech recognition installed": "语音识别已安装",
-  "Installation failed; see the log": "安装失败，请查看日志"
+  "Installation failed; see the log": "安装失败，请查看日志",
+  "Open a document, PDF, or image and read the text aloud": "打开文档、PDF 或图片并朗读文字",
+  "Open a document, PDF, or image to read aloud": "打开要朗读的文档、PDF 或图片",
+  "Open a document, PDF, or image": "打开文档、PDF 或图片",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "无法打开此 .docx 文件；文件可能已损坏，或并非真正的 Word 文件。",
+  "Could not read this .docx file: {error}": "无法读取此 .docx 文件：{error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "无法打开此 .odt 文件；文件可能已损坏，或并非真正的 OpenDocument 文件。",
+  "Could not read this .odt file: {error}": "无法读取此 .odt 文件：{error}",
+  "This does not look like an RTF file.": "这似乎不是 RTF 文件。",
+  "Could not open this file: {error}": "无法打开此文件：{error}",
+  "Could not determine this file's text encoding.": "无法确定此文件的文本编码。",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "不支持旧版 .doc 格式（Word 97-2003）。请在 Word 或 LibreOffice 中打开并另存为 .docx 或 .odt，或导出为纯文本。",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "不支持 WordPerfect 文件。请在文字处理软件中打开，并另存为 .docx、.odt 或纯文本。",
+  "Unsupported file type: {ext}": "不支持的文件类型：{ext}"
 }

@@ -76,11 +76,11 @@ exec python3 /usr/lib/voxfox/voxfox_gtk.py "$@"
 LAUNCHER
 chmod 755 "$INST/usr/bin/voxfox"
 
-cat > "$INST/usr/bin/quickshot" <<'LAUNCHER'
+cat > "$INST/usr/bin/voxfox-quickshot" <<'LAUNCHER'
 #!/bin/sh
 exec python3 /usr/lib/voxfox/quickshot.py "$@"
 LAUNCHER
-chmod 755 "$INST/usr/bin/quickshot"
+chmod 755 "$INST/usr/bin/voxfox-quickshot"
 
 # Desktop entry
 cat > "$INST/usr/share/applications/voxfox.desktop" <<'DESKTOP'

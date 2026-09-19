@@ -169,7 +169,7 @@ def _grab_region_to_file(dest_png):
     here: it is a Wayland workaround, and its capture-first-then-select
     design buys nothing on X11 where maim can drag on the live screen.
 
-    Wayland: quickshot (bundled, /usr/bin/quickshot) first -- it captures
+    Wayland: quickshot (bundled as /usr/bin/voxfox-quickshot) first -- it captures
     the screen non-interactively, then handles region selection itself in
     an ordinary window instead of asking the compositor's portal for an
     interactive one. That matters because some xdg-desktop-portal-kde
@@ -189,10 +189,10 @@ def _grab_region_to_file(dest_png):
     the WM's own pointer grab on the hotkey; retried briefly, and
     distinguished from a genuine user cancel (Escape) via "grab" in
     stderr."""
-    if vf.IS_WAYLAND and vf._have("quickshot"):
+    if vf.IS_WAYLAND and vf._have("voxfox-quickshot"):
         log.debug("OCR-select: trying quickshot")
         try:
-            r = subprocess.run(["quickshot", dest_png], timeout=120,
+            r = subprocess.run(["voxfox-quickshot", dest_png], timeout=120,
                                capture_output=True, text=True,
                                env=vf.gui_child_env())
             if r.returncode == 0 and os.path.exists(dest_png) \
@@ -254,7 +254,7 @@ def _grab_region_to_file(dest_png):
             ("scrot", ["-s", dest_png]),
         ]
         # Only if nothing else on this machine can select a region.
-        fallbacks = fallbacks + [("quickshot", [dest_png])]
+        fallbacks = fallbacks + [("voxfox-quickshot", [dest_png])]
         considered = [b for b, _a in grabbers + fallbacks]
         log.debug(f"OCR-select: X11, tools present: "
                  f"{[b for b in considered if vf._have(b)]} (of {considered} "

@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip saknas",
   "Installing...": "Installerar...",
   "Speech recognition installed": "Taligenkänning installerad",
-  "Installation failed; see the log": "Installationen misslyckades; se loggen"
+  "Installation failed; see the log": "Installationen misslyckades; se loggen",
+  "Open a document, PDF, or image and read the text aloud": "Öppna ett dokument, en PDF eller en bild och läs texten högt",
+  "Open a document, PDF, or image to read aloud": "Öppna ett dokument, en PDF eller en bild att läsa högt",
+  "Open a document, PDF, or image": "Öppna ett dokument, en PDF eller en bild",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Det gick inte att öppna den här .docx-filen; den kan vara skadad eller är inte en riktig Word-fil.",
+  "Could not read this .docx file: {error}": "Det gick inte att läsa den här .docx-filen: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Det gick inte att öppna den här .odt-filen; den kan vara skadad eller är inte en riktig OpenDocument-fil.",
+  "Could not read this .odt file: {error}": "Det gick inte att läsa den här .odt-filen: {error}",
+  "This does not look like an RTF file.": "Det här verkar inte vara en RTF-fil.",
+  "Could not open this file: {error}": "Det gick inte att öppna den här filen: {error}",
+  "Could not determine this file's text encoding.": "Det gick inte att fastställa filens teckenkodning.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Det gamla .doc-formatet (Word 97-2003) stöds inte. Öppna filen i Word eller LibreOffice och spara den som .docx eller .odt, eller exportera den som vanlig text.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-filer stöds inte. Öppna filen i ditt ordbehandlingsprogram och spara den som .docx, .odt eller vanlig text.",
+  "Unsupported file type: {ext}": "Filtypen stöds inte: {ext}"
 }

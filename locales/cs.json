@@ -338,5 +338,18 @@
   "python3-pip is missing": "Chybí python3-pip",
   "Installing...": "Instaluje se...",
   "Speech recognition installed": "Rozpoznávání řeči nainstalováno",
-  "Installation failed; see the log": "Instalace se nezdařila; viz protokol"
+  "Installation failed; see the log": "Instalace se nezdařila; viz protokol",
+  "Open a document, PDF, or image and read the text aloud": "Otevřít dokument, PDF nebo obrázek a přečíst text nahlas",
+  "Open a document, PDF, or image to read aloud": "Otevřít dokument, PDF nebo obrázek k přečtení nahlas",
+  "Open a document, PDF, or image": "Otevřít dokument, PDF nebo obrázek",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Tento soubor .docx se nepodařilo otevřít; může být poškozený nebo se nejedná o soubor aplikace Word.",
+  "Could not read this .docx file: {error}": "Tento soubor .docx se nepodařilo přečíst: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Tento soubor .odt se nepodařilo otevřít; může být poškozený nebo se nejedná o soubor OpenDocument.",
+  "Could not read this .odt file: {error}": "Tento soubor .odt se nepodařilo přečíst: {error}",
+  "This does not look like an RTF file.": "Toto nevypadá jako soubor RTF.",
+  "Could not open this file: {error}": "Tento soubor se nepodařilo otevřít: {error}",
+  "Could not determine this file's text encoding.": "Nepodařilo se určit kódování textu tohoto souboru.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Starý formát .doc (Word 97-2003) není podporován. Otevřete jej ve Wordu nebo LibreOffice a uložte jako .docx nebo .odt, případně exportujte jako čistý text.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Soubory WordPerfect nejsou podporovány. Otevřete jej v textovém editoru a uložte jako .docx, .odt nebo čistý text.",
+  "Unsupported file type: {ext}": "Nepodporovaný typ souboru: {ext}"
 }

@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip がありません",
   "Installing...": "インストール中...",
   "Speech recognition installed": "音声認識をインストールしました",
-  "Installation failed; see the log": "インストールに失敗しました。ログを確認してください"
+  "Installation failed; see the log": "インストールに失敗しました。ログを確認してください",
+  "Open a document, PDF, or image and read the text aloud": "ドキュメント、PDF、または画像を開いてテキストを読み上げます",
+  "Open a document, PDF, or image to read aloud": "読み上げるドキュメント、PDF、または画像を開く",
+  "Open a document, PDF, or image": "ドキュメント、PDF、または画像を開く",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "この .docx ファイルを開けませんでした。破損しているか、実際には Word ファイルではない可能性があります。",
+  "Could not read this .docx file: {error}": "この .docx ファイルを読み取れませんでした: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "この .odt ファイルを開けませんでした。破損しているか、実際には OpenDocument ファイルではない可能性があります。",
+  "Could not read this .odt file: {error}": "この .odt ファイルを読み取れませんでした: {error}",
+  "This does not look like an RTF file.": "これは RTF ファイルではないようです。",
+  "Could not open this file: {error}": "このファイルを開けませんでした: {error}",
+  "Could not determine this file's text encoding.": "このファイルの文字エンコーディングを特定できませんでした。",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "古い .doc 形式（Word 97-2003）はサポートされていません。Word または LibreOffice で開き、.docx または .odt として保存するか、プレーンテキストとしてエクスポートしてください。",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect ファイルはサポートされていません。ワープロソフトで開き、.docx、.odt、またはプレーンテキストとして保存してください。",
+  "Unsupported file type: {ext}": "サポートされていないファイル形式です: {ext}"
 }

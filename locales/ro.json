@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip lipsește",
   "Installing...": "Se instalează...",
   "Speech recognition installed": "Recunoaștere vocală instalată",
-  "Installation failed; see the log": "Instalarea a eșuat; consultați jurnalul"
+  "Installation failed; see the log": "Instalarea a eșuat; consultați jurnalul",
+  "Open a document, PDF, or image and read the text aloud": "Deschideți un document, PDF sau imagine și citiți textul cu voce tare",
+  "Open a document, PDF, or image to read aloud": "Deschideți un document, PDF sau imagine pentru a fi citit cu voce tare",
+  "Open a document, PDF, or image": "Deschideți un document, PDF sau imagine",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Acest fișier .docx nu a putut fi deschis; poate fi deteriorat sau nu este cu adevărat un fișier Word.",
+  "Could not read this .docx file: {error}": "Acest fișier .docx nu a putut fi citit: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Acest fișier .odt nu a putut fi deschis; poate fi deteriorat sau nu este cu adevărat un fișier OpenDocument.",
+  "Could not read this .odt file: {error}": "Acest fișier .odt nu a putut fi citit: {error}",
+  "This does not look like an RTF file.": "Acesta nu pare a fi un fișier RTF.",
+  "Could not open this file: {error}": "Acest fișier nu a putut fi deschis: {error}",
+  "Could not determine this file's text encoding.": "Nu s-a putut determina codificarea textului acestui fișier.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Vechiul format .doc (Word 97-2003) nu este acceptat. Deschideți-l în Word sau LibreOffice și salvați-l ca .docx sau .odt, ori exportați-l ca text simplu.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Fișierele WordPerfect nu sunt acceptate. Deschideți-l în procesorul de text și salvați-l ca .docx, .odt sau text simplu.",
+  "Unsupported file type: {ext}": "Tip de fișier neacceptat: {ext}"
 }

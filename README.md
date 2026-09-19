@@ -582,8 +582,8 @@ Packaging and release helpers live in `packaging/`:
   capture, then handles region selection itself in a plain window rather
   than asking the desktop's portal backend for an interactive one — see
   `_grab_region_to_file()`'s docstring in `voxfox_ui/screenshot.py` for why
-  that matters on KDE specifically. Built and packaged as `/usr/bin/quickshot`
-  alongside `voxfox`; it can also be run standalone (`quickshot --help`).
+  that matters on KDE specifically. Built and packaged as `/usr/bin/voxfox-quickshot`
+  alongside `voxfox`; it can also be run standalone (`voxfox-quickshot --help`).
 
 ## Troubleshooting
 

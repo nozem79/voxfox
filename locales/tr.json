@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip eksik",
   "Installing...": "Kuruluyor...",
   "Speech recognition installed": "Konuşma tanıma kuruldu",
-  "Installation failed; see the log": "Kurulum başarısız; günlüğe bakın"
+  "Installation failed; see the log": "Kurulum başarısız; günlüğe bakın",
+  "Open a document, PDF, or image and read the text aloud": "Bir belge, PDF veya görsel açıp metni sesli okuyun",
+  "Open a document, PDF, or image to read aloud": "Sesli okumak için bir belge, PDF veya görsel açın",
+  "Open a document, PDF, or image": "Belge, PDF veya görsel aç",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Bu .docx dosyası açılamadı; bozuk olabilir veya gerçek bir Word dosyası olmayabilir.",
+  "Could not read this .docx file: {error}": "Bu .docx dosyası okunamadı: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Bu .odt dosyası açılamadı; bozuk olabilir veya gerçek bir OpenDocument dosyası olmayabilir.",
+  "Could not read this .odt file: {error}": "Bu .odt dosyası okunamadı: {error}",
+  "This does not look like an RTF file.": "Bu bir RTF dosyasına benzemiyor.",
+  "Could not open this file: {error}": "Bu dosya açılamadı: {error}",
+  "Could not determine this file's text encoding.": "Bu dosyanın metin kodlaması belirlenemedi.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Eski .doc biçimi (Word 97-2003) desteklenmiyor. Word veya LibreOffice'te açıp .docx ya da .odt olarak kaydedin, veya düz metin olarak dışa aktarın.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect dosyaları desteklenmiyor. Kelime işlemcinizde açıp .docx, .odt veya düz metin olarak kaydedin.",
+  "Unsupported file type: {ext}": "Desteklenmeyen dosya türü: {ext}"
 }

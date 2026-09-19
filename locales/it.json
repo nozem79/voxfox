@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip mancante",
   "Installing...": "Installazione...",
   "Speech recognition installed": "Riconoscimento vocale installato",
-  "Installation failed; see the log": "Installazione non riuscita; vedi il log"
+  "Installation failed; see the log": "Installazione non riuscita; vedi il log",
+  "Open a document, PDF, or image and read the text aloud": "Apri un documento, PDF o immagine e leggi il testo ad alta voce",
+  "Open a document, PDF, or image to read aloud": "Apri un documento, PDF o immagine da leggere ad alta voce",
+  "Open a document, PDF, or image": "Apri un documento, PDF o immagine",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Impossibile aprire questo file .docx; potrebbe essere danneggiato o non essere realmente un file Word.",
+  "Could not read this .docx file: {error}": "Impossibile leggere questo file .docx: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Impossibile aprire questo file .odt; potrebbe essere danneggiato o non essere realmente un file OpenDocument.",
+  "Could not read this .odt file: {error}": "Impossibile leggere questo file .odt: {error}",
+  "This does not look like an RTF file.": "Questo non sembra un file RTF.",
+  "Could not open this file: {error}": "Impossibile aprire questo file: {error}",
+  "Could not determine this file's text encoding.": "Impossibile determinare la codifica del testo di questo file.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Il vecchio formato .doc (Word 97-2003) non è supportato. Aprilo in Word o LibreOffice e salvalo come .docx o .odt, oppure esportalo come testo semplice.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "I file WordPerfect non sono supportati. Aprilo nel tuo elaboratore di testi e salvalo come .docx, .odt o testo semplice.",
+  "Unsupported file type: {ext}": "Tipo di file non supportato: {ext}"
 }

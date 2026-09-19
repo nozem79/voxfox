@@ -603,8 +603,8 @@ Scripts voor verpakken en uitbrengen staan in `packaging/`:
   een gewoon venster, in plaats van de portal-achtergrond van de
   desktopomgeving om een interactieve versie te vragen — zie de docstring
   van `_grab_region_to_file()` in `voxfox_ui/screenshot.py` voor waarom dat
-  op KDE specifiek uitmaakt. Gebouwd en verpakt als `/usr/bin/quickshot`
-  naast `voxfox`; ook los te gebruiken (`quickshot --help`).
+  op KDE specifiek uitmaakt. Gebouwd en verpakt als `/usr/bin/voxfox-quickshot`
+  naast `voxfox`; ook los te gebruiken (`voxfox-quickshot --help`).
 
 ## Probleemoplossing
 

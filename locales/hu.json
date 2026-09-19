@@ -338,5 +338,18 @@
   "python3-pip is missing": "Hiányzik a python3-pip",
   "Installing...": "Telepítés...",
   "Speech recognition installed": "Beszédfelismerés telepítve",
-  "Installation failed; see the log": "A telepítés nem sikerült; lásd a naplót"
+  "Installation failed; see the log": "A telepítés nem sikerült; lásd a naplót",
+  "Open a document, PDF, or image and read the text aloud": "Nyisson meg egy dokumentumot, PDF-et vagy képet, és olvassa fel a szöveget",
+  "Open a document, PDF, or image to read aloud": "Dokumentum, PDF vagy kép megnyitása felolvasáshoz",
+  "Open a document, PDF, or image": "Dokumentum, PDF vagy kép megnyitása",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Ezt a .docx fájlt nem sikerült megnyitni; lehet, hogy sérült, vagy nem valódi Word-fájl.",
+  "Could not read this .docx file: {error}": "Ezt a .docx fájlt nem sikerült beolvasni: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Ezt az .odt fájlt nem sikerült megnyitni; lehet, hogy sérült, vagy nem valódi OpenDocument-fájl.",
+  "Could not read this .odt file: {error}": "Ezt az .odt fájlt nem sikerült beolvasni: {error}",
+  "This does not look like an RTF file.": "Ez nem tűnik RTF-fájlnak.",
+  "Could not open this file: {error}": "Ezt a fájlt nem sikerült megnyitni: {error}",
+  "Could not determine this file's text encoding.": "Nem sikerült megállapítani a fájl szövegkódolását.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "A régi .doc formátum (Word 97-2003) nem támogatott. Nyissa meg Wordben vagy LibreOffice-ban, és mentse .docx vagy .odt formátumban, vagy exportálja egyszerű szövegként.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "A WordPerfect fájlok nem támogatottak. Nyissa meg szövegszerkesztőjében, és mentse .docx, .odt vagy egyszerű szöveg formátumban.",
+  "Unsupported file type: {ext}": "Nem támogatott fájltípus: {ext}"
 }

@@ -338,5 +338,18 @@
   "python3-pip is missing": "Falta python3-pip",
   "Installing...": "Instalando...",
   "Speech recognition installed": "Reconocimiento de voz instalado",
-  "Installation failed; see the log": "La instalación falló; consulte el registro"
+  "Installation failed; see the log": "La instalación falló; consulte el registro",
+  "Open a document, PDF, or image and read the text aloud": "Abrir un documento, PDF o imagen y leer el texto en voz alta",
+  "Open a document, PDF, or image to read aloud": "Abrir un documento, PDF o imagen para leer en voz alta",
+  "Open a document, PDF, or image": "Abrir un documento, PDF o imagen",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "No se pudo abrir este archivo .docx; puede estar dañado o no ser realmente un archivo de Word.",
+  "Could not read this .docx file: {error}": "No se pudo leer este archivo .docx: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "No se pudo abrir este archivo .odt; puede estar dañado o no ser realmente un archivo OpenDocument.",
+  "Could not read this .odt file: {error}": "No se pudo leer este archivo .odt: {error}",
+  "This does not look like an RTF file.": "Esto no parece ser un archivo RTF.",
+  "Could not open this file: {error}": "No se pudo abrir este archivo: {error}",
+  "Could not determine this file's text encoding.": "No se pudo determinar la codificación de texto de este archivo.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "El formato antiguo .doc (Word 97-2003) no es compatible. Ábralo en Word o LibreOffice y guárdelo como .docx o .odt, o expórtelo como texto sin formato.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Los archivos de WordPerfect no son compatibles. Ábralo en su procesador de textos y guárdelo como .docx, .odt o texto sin formato.",
+  "Unsupported file type: {ext}": "Tipo de archivo no compatible: {ext}"
 }

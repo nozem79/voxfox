@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip ontbreekt",
   "Installing...": "Bezig met installeren...",
   "Speech recognition installed": "Spraakherkenning geïnstalleerd",
-  "Installation failed; see the log": "Installatie mislukt; zie het logboek"
+  "Installation failed; see the log": "Installatie mislukt; zie het logboek",
+  "Open a document, PDF, or image and read the text aloud": "Open een document, pdf of afbeelding en lees de tekst voor",
+  "Open a document, PDF, or image to read aloud": "Open een document, pdf of afbeelding om voor te lezen",
+  "Open a document, PDF, or image": "Open een document, pdf of afbeelding",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Kon dit .docx-bestand niet openen; het is mogelijk beschadigd of geen echt Word-bestand.",
+  "Could not read this .docx file: {error}": "Kon dit .docx-bestand niet lezen: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Kon dit .odt-bestand niet openen; het is mogelijk beschadigd of geen echt OpenDocument-bestand.",
+  "Could not read this .odt file: {error}": "Kon dit .odt-bestand niet lezen: {error}",
+  "This does not look like an RTF file.": "Dit lijkt geen RTF-bestand te zijn.",
+  "Could not open this file: {error}": "Kon dit bestand niet openen: {error}",
+  "Could not determine this file's text encoding.": "Kon de tekstcodering van dit bestand niet bepalen.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Het oude .doc-formaat (Word 97-2003) wordt niet ondersteund. Open het in Word of LibreOffice en sla het op als .docx of .odt, of exporteer het als platte tekst.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-bestanden worden niet ondersteund. Open het bestand in uw tekstverwerker en sla het op als .docx, .odt of platte tekst.",
+  "Unsupported file type: {ext}": "Niet-ondersteund bestandstype: {ext}"
 }

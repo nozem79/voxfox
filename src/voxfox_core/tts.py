@@ -17,7 +17,7 @@
 
 """voxfox_core.tts — Text-to-speech: Piper voices, chunking, the speaking worker."""
 
-import json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
+import functools, json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
 from .common import BASE_URL, CHUNK_SIZE, CONFIG_DIR, DATA_DIR, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
 
 
@@ -319,19 +319,37 @@ def set_pronunciations(mapping):
     app.set_pronunciations(mapping)
 
 
+@functools.lru_cache(maxsize=8)
+def _compiled_pronunciation_pattern(items):
+    """Build (compiled regex, lowercase-key lookup) for a pronunciation
+    mapping, given as a hashable tuple of its (key, value) pairs.
+
+    Cached because apply_pronunciations() runs once per chunk -- a few
+    hundred times over a long document, all with the same mapping -- and
+    rebuilding the same alternation regex from scratch every time was pure
+    waste. Bounded to a handful of entries: in practice there is one
+    mapping per language slot, and this only grows if the user edits their
+    pronunciation dictionary mid-session."""
+    keys = sorted((k for k, _v in items if k and k.strip()),
+                  key=len, reverse=True)
+    if not keys:
+        return None, {}
+    lower = {k.lower(): v for k, v in items if k and k.strip()}
+    pattern = re.compile(
+        r"(?<!\w)(" + "|".join(re.escape(k) for k in keys) + r")(?!\w)",
+        re.IGNORECASE)
+    return pattern, lower
+
+
 def apply_pronunciations(text, mapping):
     """Rewrite whole-word occurrences of each dictionary key with its respelling
     before the text goes to TTS. Case-insensitive, longest key first, single
     pass (so a replacement is never itself re-substituted)."""
     if not mapping:
         return text
-    keys = sorted((k for k in mapping if k and k.strip()), key=len, reverse=True)
-    if not keys:
+    pattern, lower = _compiled_pronunciation_pattern(tuple(sorted(mapping.items())))
+    if pattern is None:
         return text
-    lower = {k.lower(): mapping[k] for k in keys}
-    pattern = re.compile(
-        r"(?<!\w)(" + "|".join(re.escape(k) for k in keys) + r")(?!\w)",
-        re.IGNORECASE)
     return pattern.sub(lambda m: lower[m.group(0).lower()], text)
 
 

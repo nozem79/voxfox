@@ -51,7 +51,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "5.0.4"
+APP_VERSION = "5.0.5"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -95,8 +95,8 @@ TOOLBAR_BUTTONS = [
      "Select a screen region and read its text aloud via OCR",
      "Select a screen region to read via OCR", "do_ocr_select", None),
     ("ocr",     "ocr_btn",     "OCR",
-     "OCR: open a PDF or image and read the text aloud",
-     "Open a PDF or image to read via OCR", "do_ocr_file", None),
+     "Open a document, PDF, or image and read the text aloud",
+     "Open a document, PDF, or image to read aloud", "do_ocr_file", None),
     ("translate", "translate_btn", "Translate",
      "Translate selected text into your language and read it aloud",
      "Translate selection and read aloud", "do_translate", None),

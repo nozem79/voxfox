@@ -338,5 +338,18 @@
   "python3-pip is missing": "Brak python3-pip",
   "Installing...": "Instalowanie...",
   "Speech recognition installed": "Rozpoznawanie mowy zainstalowane",
-  "Installation failed; see the log": "Instalacja nie powiodła się; zobacz dziennik"
+  "Installation failed; see the log": "Instalacja nie powiodła się; zobacz dziennik",
+  "Open a document, PDF, or image and read the text aloud": "Otwórz dokument, plik PDF lub obraz i odczytaj tekst na głos",
+  "Open a document, PDF, or image to read aloud": "Otwórz dokument, plik PDF lub obraz do odczytania na głos",
+  "Open a document, PDF, or image": "Otwórz dokument, plik PDF lub obraz",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Nie można otworzyć tego pliku .docx; może być uszkodzony lub nie jest to plik programu Word.",
+  "Could not read this .docx file: {error}": "Nie można odczytać tego pliku .docx: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Nie można otworzyć tego pliku .odt; może być uszkodzony lub nie jest to plik OpenDocument.",
+  "Could not read this .odt file: {error}": "Nie można odczytać tego pliku .odt: {error}",
+  "This does not look like an RTF file.": "To nie wygląda na plik RTF.",
+  "Could not open this file: {error}": "Nie można otworzyć tego pliku: {error}",
+  "Could not determine this file's text encoding.": "Nie można ustalić kodowania tekstu tego pliku.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Stary format .doc (Word 97-2003) nie jest obsługiwany. Otwórz go w programie Word lub LibreOffice i zapisz jako .docx lub .odt, albo wyeksportuj jako zwykły tekst.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Pliki WordPerfect nie są obsługiwane. Otwórz plik w edytorze tekstu i zapisz go jako .docx, .odt lub zwykły tekst.",
+  "Unsupported file type: {ext}": "Nieobsługiwany typ pliku: {ext}"
 }

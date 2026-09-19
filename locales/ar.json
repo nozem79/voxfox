@@ -338,5 +338,18 @@
   "python3-pip is missing": "python3-pip غير موجود",
   "Installing...": "جارٍ التثبيت...",
   "Speech recognition installed": "تم تثبيت التعرف على الكلام",
-  "Installation failed; see the log": "فشل التثبيت؛ راجع السجل"
+  "Installation failed; see the log": "فشل التثبيت؛ راجع السجل",
+  "Open a document, PDF, or image and read the text aloud": "افتح مستندًا أو PDF أو صورة واقرأ النص بصوت عالٍ",
+  "Open a document, PDF, or image to read aloud": "افتح مستندًا أو PDF أو صورة لقراءته بصوت عالٍ",
+  "Open a document, PDF, or image": "افتح مستندًا أو PDF أو صورة",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "تعذّر فتح ملف .docx هذا؛ قد يكون تالفًا أو ليس ملف Word فعليًا.",
+  "Could not read this .docx file: {error}": "تعذّرت قراءة ملف .docx هذا: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "تعذّر فتح ملف .odt هذا؛ قد يكون تالفًا أو ليس ملف OpenDocument فعليًا.",
+  "Could not read this .odt file: {error}": "تعذّرت قراءة ملف .odt هذا: {error}",
+  "This does not look like an RTF file.": "لا يبدو هذا ملف RTF.",
+  "Could not open this file: {error}": "تعذّر فتح هذا الملف: {error}",
+  "Could not determine this file's text encoding.": "تعذّر تحديد ترميز نص هذا الملف.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "التنسيق القديم .doc (Word 97-2003) غير مدعوم. افتحه في Word أو LibreOffice واحفظه بصيغة .docx أو .odt، أو صدّره كنص عادي.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "ملفات WordPerfect غير مدعومة. افتحه في معالج النصوص لديك واحفظه بصيغة ‎.docx أو ‎.odt أو نص عادي.",
+  "Unsupported file type: {ext}": "نوع الملف غير مدعوم: {ext}"
 }

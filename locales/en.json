@@ -339,5 +339,18 @@
   "python3-pip is missing": "python3-pip is missing",
   "Installing...": "Installing...",
   "Speech recognition installed": "Speech recognition installed",
-  "Installation failed; see the log": "Installation failed; see the log"
+  "Installation failed; see the log": "Installation failed; see the log",
+  "Open a document, PDF, or image and read the text aloud": "Open a document, PDF, or image and read the text aloud",
+  "Open a document, PDF, or image to read aloud": "Open a document, PDF, or image to read aloud",
+  "Open a document, PDF, or image": "Open a document, PDF, or image",
+  "Could not open this .docx file; it may be damaged or not really a Word file.": "Could not open this .docx file; it may be damaged or not really a Word file.",
+  "Could not read this .docx file: {error}": "Could not read this .docx file: {error}",
+  "Could not open this .odt file; it may be damaged or not really an OpenDocument file.": "Could not open this .odt file; it may be damaged or not really an OpenDocument file.",
+  "Could not read this .odt file: {error}": "Could not read this .odt file: {error}",
+  "This does not look like an RTF file.": "This does not look like an RTF file.",
+  "Could not open this file: {error}": "Could not open this file: {error}",
+  "Could not determine this file's text encoding.": "Could not determine this file's text encoding.",
+  "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.",
+  "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.",
+  "Unsupported file type: {ext}": "Unsupported file type: {ext}"
 }

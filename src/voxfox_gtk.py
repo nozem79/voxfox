@@ -33,6 +33,20 @@ import sys
 # directory holding voxfox_ui/ and voxfox_core/ is importable.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# GTK4 defaults to an OpenGL renderer that draws via GLX and the X Present
+# extension. On NVIDIA's proprietary driver that combination has a known bug:
+# a BadDrawable X error partway through startup that GDK treats as fatal and
+# exits on, even with a custom X error handler installed (something in the
+# GL/GLX context setup appears to save and later restore the handler that was
+# active before ours, undoing it). Confirmed on an RTX 3090.
+#
+# VoxFox's own UI is a plain toolbar of buttons and text -- nothing that
+# benefits from GPU-accelerated drawing -- so there is no downside to using
+# GTK4's software (cairo) renderer everywhere. setdefault, not direct
+# assignment: a user or packager who has their own GSK_RENDERER preference
+# keeps it. Must happen before GTK is imported.
+os.environ.setdefault("GSK_RENDERER", "cairo")
+
 
 def _stay_on_top_wanted():
     """Read the always_on_top setting straight from the state file.
