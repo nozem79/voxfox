@@ -546,13 +546,29 @@ parts of hover depend on the compositor and may be limited.
 ## For developers
 
 The code is split into a UI-agnostic backend (the `voxfox_core/` package —
-`tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) and
+`tts.py`, `stt.py`, `ocr.py`, `docreader.py`, `documents.py`, `ipc.py`,
+`state.py`, `a11y.py`, `common.py`) and
 a GTK4 front-end (the `voxfox_ui/` package — since 4.0 split into
 `common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
 `history.py`, `preferences.py`, `live.py`, `main_window.py` and `app.py`,
 with `voxfox_gtk.py` as a thin launcher). Translations are
 plain JSON files under `locales/`, key-aligned across all languages. See
 `CHANGELOG.md` for the version history.
+
+### Tests
+
+`voxfox_core` has no GTK/AT-SPI/network dependency at import time, so its
+pure functions (text chunking, document reading, pronunciation replacement,
+settings migration...) have a real pytest suite under `tests/`:
+
+    pip install pytest ruff
+    ruff check src/ tests/
+    python3 -m pytest tests/ -v
+
+Both run in a `.github/workflows/ci.yml` GitHub Action on every push and
+pull request. `voxfox_ui` (the GTK layer) isn't covered here — it needs a
+live display for anything beyond a bare import, which is better exercised
+by hand against a real desktop than faked in CI.
 
 Packaging and release helpers live in `packaging/`:
 

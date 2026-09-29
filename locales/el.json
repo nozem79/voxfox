@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Δεν ήταν δυνατός ο προσδιορισμός της κωδικοποίησης κειμένου αυτού του αρχείου.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Η παλιά μορφή .doc (Word 97-2003) δεν υποστηρίζεται. Ανοίξτε το στο Word ή στο LibreOffice και αποθηκεύστε το ως .docx ή .odt, ή εξαγάγετέ το ως απλό κείμενο.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Τα αρχεία WordPerfect δεν υποστηρίζονται. Ανοίξτε το στον επεξεργαστή κειμένου σας και αποθηκεύστε το ως .docx, .odt ή απλό κείμενο.",
-  "Unsupported file type: {ext}": "Μη υποστηριζόμενος τύπος αρχείου: {ext}"
+  "Unsupported file type: {ext}": "Μη υποστηριζόμενος τύπος αρχείου: {ext}",
+  "Unsupported file type": "Μη υποστηριζόμενος τύπος αρχείου",
+  "Supported": "Υποστηρίζεται",
+  "OCR": "OCR",
+  "language": "γλώσσα",
+  "{n} words found": "Βρέθηκαν {n} λέξεις",
+  "Read aloud via the running VoxFox instance.": "Διαβάστηκε δυνατά μέσω της εκτελούμενης παρουσίας VoxFox."
 }

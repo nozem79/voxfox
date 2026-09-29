@@ -27,6 +27,7 @@ Plain urllib — no extra dependencies. Long selections go chunk by chunk.
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 
 from .common import _, log, app
 from .webread import _split_paragraph_chunks
@@ -43,11 +44,11 @@ DEFAULT_TRANSLATE = {
 # an exhaustive ranking, just a reasonable "try one of these" default.
 SUGGESTED_MODELS = [
     {"name": "zongwei/gemma3-translator:1b", "size": "~815 MB",
-     "note": _("Purpose-built for translation, based on Gemma 3")},
+     "note": lambda: _("Purpose-built for translation, based on Gemma 3")},
     {"name": "gemma2:2b", "size": "~1.7 GB",
-     "note": _("Fast, general-purpose, solid multilingual support")},
+     "note": lambda: _("Fast, general-purpose, solid multilingual support")},
     {"name": "qwen2.5:1.5b", "size": "~1 GB",
-     "note": _("Strong multilingual, especially Asian languages")},
+     "note": lambda: _("Strong multilingual, especially Asian languages")},
 ]
 
 # English names for the UI language codes, so small local models get an
@@ -92,6 +93,19 @@ def _base_url(url):
     if "/v1" not in u:
         u += "/v1"
     return u
+
+
+def _bad_url_scheme(url):
+    """None when the effective URL (after _base_url's default/normalising)
+    is http(s), otherwise an error message. urllib.request accepts other
+    schemes too -- file://, ftp:// -- which a stray character while typing
+    a server address could turn into by accident; this is the user's own
+    configuration, so the risk is a misconfiguration, not an attack, but a
+    clear error beats a confusing one from deep inside urlopen."""
+    scheme = urllib.parse.urlparse(_base_url(url)).scheme
+    if scheme not in ("http", "https"):
+        return f"Unsupported URL scheme {scheme!r}: only http:// and https:// are supported"
+    return None
 
 
 def _headers(api_key=""):
@@ -145,6 +159,9 @@ def translate_text(text, cfg=None, target_code=None, progress=None):
     text = (text or "").strip()
     if not text:
         return None, "no text"
+    bad = _bad_url_scheme(c.get("url"))
+    if bad:
+        return None, bad
     chunks = _split_paragraph_chunks(text, _CHUNK_CHARS) or [text]
     out = []
     try:
@@ -176,6 +193,9 @@ def list_models(cfg=None):
     on failure, so callers can always iterate without a None check."""
     c = _cfg(cfg)
     try:
+        bad = _bad_url_scheme(c.get("url"))
+        if bad:
+            return [], bad
         req = urllib.request.Request(
             _base_url(c.get("url")) + "/models",
             headers=_headers((c.get("api_key") or "").strip()))
@@ -241,6 +261,9 @@ def pull_model(model, cfg=None, progress=None, frac=None):
     c = _cfg(cfg)
     progress = progress or (lambda *_a: None)
     frac = frac or (lambda *_a: None)
+    bad = _bad_url_scheme(c.get("url"))
+    if bad:
+        return False, bad
     body = json.dumps({"model": model, "stream": True}).encode("utf-8")
     req = urllib.request.Request(
         _ollama_native_base(c.get("url")) + "/api/pull", data=body,

@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Kon de tekstcodering van dit bestand niet bepalen.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Het oude .doc-formaat (Word 97-2003) wordt niet ondersteund. Open het in Word of LibreOffice en sla het op als .docx of .odt, of exporteer het als platte tekst.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-bestanden worden niet ondersteund. Open het bestand in uw tekstverwerker en sla het op als .docx, .odt of platte tekst.",
-  "Unsupported file type: {ext}": "Niet-ondersteund bestandstype: {ext}"
+  "Unsupported file type: {ext}": "Niet-ondersteund bestandstype: {ext}",
+  "Unsupported file type": "Niet-ondersteund bestandstype",
+  "Supported": "Ondersteund",
+  "OCR": "OCR",
+  "language": "taal",
+  "{n} words found": "{n} woorden gevonden",
+  "Read aloud via the running VoxFox instance.": "Voorgelezen via de draaiende VoxFox-instantie."
 }

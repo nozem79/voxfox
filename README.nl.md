@@ -564,13 +564,30 @@ kunnen beperkt zijn.
 ## Voor ontwikkelaars
 
 De code is gesplitst in een UI-onafhankelijke backend (het `voxfox_core/`-pakket
-— `tts.py`, `stt.py`, `ocr.py`, `ipc.py`, `state.py`, `a11y.py`, `common.py`) en
+— `tts.py`, `stt.py`, `ocr.py`, `docreader.py`, `documents.py`, `ipc.py`,
+`state.py`, `a11y.py`, `common.py`) en
 een GTK4-frontend (het pakket `voxfox_ui/` — sinds 4.0 opgesplitst in
 `common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
 `history.py`, `preferences.py`, `live.py`, `main_window.py` en `app.py`,
 met `voxfox_gtk.py` als dunne launcher). Vertalingen zijn
 gewone JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen.
 Zie `CHANGELOG.md` voor de versiegeschiedenis.
+
+### Tests
+
+`voxfox_core` heeft geen GTK-, AT-SPI- of netwerkafhankelijkheid bij het
+importeren, dus de pure functies (tekst opdelen, documenten lezen,
+uitspraakvervanging, migratie van instellingen...) hebben een echte
+pytest-suite onder `tests/`:
+
+    pip install pytest ruff
+    ruff check src/ tests/
+    python3 -m pytest tests/ -v
+
+Beide draaien ook via `.github/workflows/ci.yml` bij elke push en pull
+request. `voxfox_ui` (de GTK-laag) wordt hier bewust niet getest — die heeft
+een echt beeldscherm nodig voor meer dan een kale import, en dat test je
+beter met de hand tegen een echt bureaublad dan nagebootst in CI.
 
 Scripts voor verpakken en uitbrengen staan in `packaging/`:
 

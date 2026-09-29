@@ -17,7 +17,7 @@
 
 """voxfox_core.stt — Speech-to-text: Whisper model loading, recording, transcription."""
 
-import json, os, subprocess, threading, time, urllib.error, urllib.request
+import json, os, subprocess, threading, time, urllib.error, urllib.parse, urllib.request
 from .common import _, log, _have
 
 
@@ -736,6 +736,9 @@ def transcribe_remote(wav_path, url, api_key, model_name, language_hint=None):
     """
     if not url:
         return "", "Remote URL not set"
+    scheme = urllib.parse.urlparse(url).scheme
+    if scheme not in ("http", "https"):
+        return "", f"Unsupported URL scheme {scheme!r}: only http:// and https:// are supported"
 
     # Normalise: accept "http://host:8000", "http://host:8000/", or
     # "http://host:8000/v1" — all of those should resolve to the

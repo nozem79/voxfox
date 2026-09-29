@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "无法确定此文件的文本编码。",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "不支持旧版 .doc 格式（Word 97-2003）。请在 Word 或 LibreOffice 中打开并另存为 .docx 或 .odt，或导出为纯文本。",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "不支持 WordPerfect 文件。请在文字处理软件中打开，并另存为 .docx、.odt 或纯文本。",
-  "Unsupported file type: {ext}": "不支持的文件类型：{ext}"
+  "Unsupported file type: {ext}": "不支持的文件类型：{ext}",
+  "Unsupported file type": "不支持的文件类型",
+  "Supported": "支持",
+  "OCR": "OCR",
+  "language": "语言",
+  "{n} words found": "找到 {n} 个词",
+  "Read aloud via the running VoxFox instance.": "已通过正在运行的 VoxFox 实例朗读。"
 }

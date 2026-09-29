@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Det gick inte att fastställa filens teckenkodning.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Det gamla .doc-formatet (Word 97-2003) stöds inte. Öppna filen i Word eller LibreOffice och spara den som .docx eller .odt, eller exportera den som vanlig text.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-filer stöds inte. Öppna filen i ditt ordbehandlingsprogram och spara den som .docx, .odt eller vanlig text.",
-  "Unsupported file type: {ext}": "Filtypen stöds inte: {ext}"
+  "Unsupported file type: {ext}": "Filtypen stöds inte: {ext}",
+  "Unsupported file type": "Filtypen stöds inte",
+  "Supported": "Stöds",
+  "OCR": "OCR",
+  "language": "språk",
+  "{n} words found": "{n} ord hittades",
+  "Read aloud via the running VoxFox instance.": "Uppläst via den körande VoxFox-instansen."
 }

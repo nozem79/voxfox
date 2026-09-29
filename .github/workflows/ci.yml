@@ -2,25 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: ["main"]
   pull_request:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - name: Install pyflakes
-        run: pip install pyflakes
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Compile check
-        run: python3 -m py_compile src/voxfox_core/*.py src/voxfox_gtk.py
+      - name: Install test tooling
+        run: pip install pytest ruff
 
-      - name: Pyflakes
-        run: |
-          python3 -m pyflakes src/voxfox_core/*.py src/voxfox_gtk.py 2>&1 \
-            | grep "undefined name '" && exit 1 || exit 0
+      # F = pyflakes-equivalent checks (undefined names, unused imports,
+      # duplicate dict keys...); E9 = syntax errors. This is the same
+      # command a contributor runs locally before pushing.
+      - name: Lint (ruff)
+        run: ruff check src/ tests/
+
+      - name: Compile the whole tree
+        run: python3 -m compileall -q src/
+
+      # voxfox_core has no GTK/AT-SPI/network dependency, so the test suite
+      # runs on a bare runner with no display and no extra system packages.
+      # voxfox_ui (the GTK layer) is intentionally not covered here -- it
+      # needs a live display to do anything beyond import, which is better
+      # exercised by hand against a real desktop than faked in CI.
+      - name: Run the test suite
+        run: python3 -m pytest tests/ -v

@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Nem sikerült megállapítani a fájl szövegkódolását.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "A régi .doc formátum (Word 97-2003) nem támogatott. Nyissa meg Wordben vagy LibreOffice-ban, és mentse .docx vagy .odt formátumban, vagy exportálja egyszerű szövegként.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "A WordPerfect fájlok nem támogatottak. Nyissa meg szövegszerkesztőjében, és mentse .docx, .odt vagy egyszerű szöveg formátumban.",
-  "Unsupported file type: {ext}": "Nem támogatott fájltípus: {ext}"
+  "Unsupported file type: {ext}": "Nem támogatott fájltípus: {ext}",
+  "Unsupported file type": "Nem támogatott fájltípus",
+  "Supported": "Támogatott",
+  "OCR": "OCR",
+  "language": "nyelv",
+  "{n} words found": "{n} szó található",
+  "Read aloud via the running VoxFox instance.": "Felolvasva a futó VoxFox-példányon keresztül."
 }

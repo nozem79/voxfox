@@ -28,16 +28,23 @@ from .state import load_state
 
 # ── IPC ────────────────────────────────────────────────────────────────────────
 def _ensure_runtime_dir():
+    """Prepare RUNTIME_DIR for the socket/lock/pid files. Returns True when
+    it is safe to use, False when it should not be touched at all -- the
+    caller must not go on to bind a socket or take a lock there."""
     try:
         os.makedirs(RUNTIME_DIR, mode=0o700, exist_ok=True)
         # The /tmp fallback path is predictable; make sure nobody planted a
         # symlink or foreign directory there before we put our socket in it.
         st_ = os.lstat(RUNTIME_DIR)
         if stat.S_ISLNK(st_.st_mode) or st_.st_uid != os.getuid():
-            raise RuntimeError("runtime dir is a symlink or not ours")
+            log.error(f"Refusing to use {RUNTIME_DIR}: it is a symlink or "
+                     f"not owned by this user.")
+            return False
         os.chmod(RUNTIME_DIR, 0o700)
+        return True
     except Exception as e:
         log.warning(f"Could not create runtime dir {RUNTIME_DIR}: {e}")
+        return False
 
 
 def send_command(cmd, timeout=2.0):
@@ -70,7 +77,8 @@ def acquire_singleton_lock():
     """Try to acquire the singleton lock. Returns True on success.
     The lock is released automatically when the process exits."""
     global _singleton_lock_fd
-    _ensure_runtime_dir()
+    if not _ensure_runtime_dir():
+        return False
     try:
         fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR, 0o600)
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -90,7 +98,8 @@ class IPCServer:
         self.running = False
 
     def start(self):
-        _ensure_runtime_dir()
+        if not _ensure_runtime_dir():
+            return False
         if os.path.exists(SOCKET_PATH):
             try:
                 if not is_instance_running():
@@ -109,7 +118,7 @@ class IPCServer:
             log.error(f"Could not bind IPC socket: {e}")
             return False
         try:
-            with open(PID_FILE, "w") as f:
+            with open(PID_FILE, "w", encoding="utf-8") as f:
                 f.write(str(os.getpid()))
         except Exception:
             pass
@@ -136,7 +145,7 @@ class IPCServer:
     def _serve(self):
         while self.running:
             try:
-                conn, _ = self.sock.accept()
+                conn, _addr = self.sock.accept()
             except OSError:
                 break
             try:
@@ -206,26 +215,26 @@ def run_cli(args):
         file_path = args.ocr
         ext = os.path.splitext(file_path)[1].lower()
         if ext not in OCR_SUPPORTED_EXTS:
-            print(f"Niet-ondersteund bestandstype: {ext}. "
-                  f"Gebruik: {', '.join(sorted(OCR_SUPPORTED_EXTS))}",
+            print(f"{_('Unsupported file type')}: {ext}. "
+                  f"{_('Supported')}: {', '.join(sorted(OCR_SUPPORTED_EXTS))}",
                   file=sys.stderr)
             sys.exit(1)
         # Laad actieve taalinstellingen voor de Tesseract-taalcode
         state = load_state()
         active_cfg = state[state.get("active_slot", "slot1")]
         tess_lang  = _tess_lang(active_cfg.get("lang", "English"))
-        print(f"OCR: {file_path} (taal: {tess_lang})")
+        print(f"{_('OCR')}: {file_path} ({_('language')}: {tess_lang})")
         text, err = ocr_file(
             file_path,
             tess_lang=tess_lang,
             progress_cb=lambda m: print(m))
         if err:
-            print(f"Fout: {err}", file=sys.stderr)
+            print(f"{_('Error')}: {err}", file=sys.stderr)
             sys.exit(1)
         if not text:
             print(_("No text found."), file=sys.stderr)
             sys.exit(0)
-        print(f"--- {len(text.split())} woorden gevonden ---")
+        print(f"--- {_('{n} words found').format(n=len(text.split()))} ---")
         # Stuur de tekst naar de draaiende VoxFox-instantie als die er is,
         # anders gewoon printen naar stdout (bruikbaar in scripts).
         if is_instance_running():
@@ -233,7 +242,7 @@ def run_cli(args):
             if _clipboard_set(text):
                 reply = send_command("read")
                 if reply == "ok":
-                    print("Voorgelezen via draaiende VoxFox.")
+                    print(_("Read aloud via the running VoxFox instance."))
                     sys.exit(0)
         # Geen draaiende instantie: print de tekst zodat scripts hem kunnen gebruiken
         print(text)

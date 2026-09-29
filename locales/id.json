@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Tidak dapat menentukan enkode teks berkas ini.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Format .doc lama (Word 97-2003) tidak didukung. Buka di Word atau LibreOffice dan simpan sebagai .docx atau .odt, atau ekspor sebagai teks biasa.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Berkas WordPerfect tidak didukung. Buka di pengolah kata Anda dan simpan sebagai .docx, .odt, atau teks biasa.",
-  "Unsupported file type: {ext}": "Jenis berkas tidak didukung: {ext}"
+  "Unsupported file type: {ext}": "Jenis berkas tidak didukung: {ext}",
+  "Unsupported file type": "Jenis berkas tidak didukung",
+  "Supported": "Didukung",
+  "OCR": "OCR",
+  "language": "bahasa",
+  "{n} words found": "{n} kata ditemukan",
+  "Read aloud via the running VoxFox instance.": "Dibacakan melalui instans VoxFox yang berjalan."
 }

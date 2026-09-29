@@ -352,5 +352,11 @@
   "Could not determine this file's text encoding.": "Could not determine this file's text encoding.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.",
-  "Unsupported file type: {ext}": "Unsupported file type: {ext}"
+  "Unsupported file type: {ext}": "Unsupported file type: {ext}",
+  "Unsupported file type": "Unsupported file type",
+  "Supported": "Supported",
+  "OCR": "OCR",
+  "language": "language",
+  "{n} words found": "{n} words found",
+  "Read aloud via the running VoxFox instance.": "Read aloud via the running VoxFox instance."
 }

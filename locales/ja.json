@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "このファイルの文字エンコーディングを特定できませんでした。",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "古い .doc 形式（Word 97-2003）はサポートされていません。Word または LibreOffice で開き、.docx または .odt として保存するか、プレーンテキストとしてエクスポートしてください。",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect ファイルはサポートされていません。ワープロソフトで開き、.docx、.odt、またはプレーンテキストとして保存してください。",
-  "Unsupported file type: {ext}": "サポートされていないファイル形式です: {ext}"
+  "Unsupported file type: {ext}": "サポートされていないファイル形式です: {ext}",
+  "Unsupported file type": "サポートされていないファイル形式",
+  "Supported": "対応形式",
+  "OCR": "OCR",
+  "language": "言語",
+  "{n} words found": "{n} 語が見つかりました",
+  "Read aloud via the running VoxFox instance.": "実行中の VoxFox インスタンス経由で読み上げました。"
 }

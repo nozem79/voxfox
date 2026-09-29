@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "تعذّر تحديد ترميز نص هذا الملف.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "التنسيق القديم .doc (Word 97-2003) غير مدعوم. افتحه في Word أو LibreOffice واحفظه بصيغة .docx أو .odt، أو صدّره كنص عادي.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "ملفات WordPerfect غير مدعومة. افتحه في معالج النصوص لديك واحفظه بصيغة ‎.docx أو ‎.odt أو نص عادي.",
-  "Unsupported file type: {ext}": "نوع الملف غير مدعوم: {ext}"
+  "Unsupported file type: {ext}": "نوع الملف غير مدعوم: {ext}",
+  "Unsupported file type": "نوع الملف غير مدعوم",
+  "Supported": "مدعوم",
+  "OCR": "OCR",
+  "language": "اللغة",
+  "{n} words found": "تم العثور على {n} كلمة",
+  "Read aloud via the running VoxFox instance.": "تمت القراءة بصوت عالٍ عبر نسخة VoxFox قيد التشغيل."
 }

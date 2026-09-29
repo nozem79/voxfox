@@ -1,3 +1,136 @@
+## 5.0.6
+
+A Nix/NixOS package: `flake.nix`, `default.nix`, and `packaging/nix/`.
+Untested against a real Nix installation (none was available while
+writing it) -- see `packaging/nix/NIXOS.md` for a build checklist and
+the couple of package-name details worth confirming on a real machine
+before relying on it.
+
+A second, independent review of the 5.0.6 changes above found five more
+issues (all confirmed by reproducing them before fixing, the same standard
+as the first pass; one of its own claims -- that the checksum-mismatch fix
+had no test -- turned out to be already covered and is noted as such
+rather than acted on).
+
+- Fixed: downloading a Piper voice failed on RHEL/Fedora systems running
+  in FIPS mode. hashlib.md5(), used here purely as a checksum and not for
+  anything security-sensitive, raises under FIPS unless told so
+  explicitly.
+- Fixed: quitting VoxFox within half a second of the last keystroke into
+  a debounced settings field (an API key, a server address) could discard
+  that edit. Closing the Settings window now flushes any pending save
+  immediately.
+- Fixed: a symlinked or wrong-owner runtime directory now gets its own
+  clear message at startup, instead of being reported as "VoxFox is
+  already running" with the real reason visible only in the log --
+  a dead end for a screen reader user with no other feedback channel.
+- Fixed: on a pure Wayland session with no XWayland, hover mode's
+  pointer-position check tried a fresh Xlib connection on every single
+  poll (about 6-7 times a second) before falling back to xdotool. A
+  missing $DISPLAY is now recognised as permanent and remembered, while a
+  connection that merely breaks is still retried, since the server could
+  come back.
+- Fixed: a genuine pointer position of exactly (0, 0) read via Xlib was
+  treated the same as a failure and triggered a needless xdotool fallback
+  call -- a leftover of xdotool's own design, where (0, 0) doubles as
+  both a real reading and "it didn't work".
+- Three more reads of a JSON/text file without an explicit encoding=,
+  beyond the ones already fixed above, found by scanning every open()
+  call in voxfox_core rather than trusting either review's list as
+  complete.
+- Added `--strict-markers` to the pytest configuration and 4 more tests
+  covering the Xlib fixes above (103 tests total). A suggestion to also
+  enforce `ruff format` in CI was not taken: the existing ~14,000 lines
+  were never written against ruff's formatter, so turning that on now
+  would fail immediately on pre-existing style rather than catching a
+  real regression, and reformatting the whole codebase in one pass is a
+  separate, much larger piece of work than this review round.
+
+An external code review of the whole codebase, and everything it found
+that held up under verification (each claim was checked against the real
+code and reproduced before being fixed; two review claims turned out to be
+imprecise -- a wrong file citation and an inexact comparison -- corrected
+during verification rather than taken at face value).
+
+Crashes and data exposure
+
+- Fixed a crash: a pronunciation entry could silently stop VoxFox mid-read
+  when the recognised text contained certain non-ASCII capital letters
+  (confirmed with Turkish dotted İ) that don't case-fold symmetrically.
+  The failure happened inside the speech worker thread, so reading just
+  stopped with no error shown.
+- Exporting settings no longer leaves the translation service's API key in
+  the file. The export already scrubbed the Whisper and web-reading keys;
+  the translation one was added later and had been missed.
+- The suggested local-translation-model descriptions now update when you
+  change the interface language, instead of staying in English forever
+  (they were translated once at import time, before the language was
+  known).
+
+Security hardening
+
+- Downloaded Piper voices are now verified against the checksum Piper
+  publishes for each file, the same way the Piper engine binary itself
+  already was.
+- A symlink or wrong-owner runtime directory now stops VoxFox from
+  starting its IPC socket or its instance lock there, instead of only
+  logging a warning and proceeding anyway.
+- Every user-configurable server address (remote Whisper, translation,
+  and web-page-reading endpoints) now rejects non-http(s) URLs before
+  making a request, closing off file:// and similar schemes a stray
+  character could turn a typo into.
+
+Performance
+
+- Checking whether a command-line tool is installed no longer spawns a
+  "which" subprocess on every call; the small, stable result is cached.
+  This alone touches roughly three dozen call sites, several in paths
+  used every time text is read aloud.
+- Reading the current text selection could block the interface for
+  several seconds (several clipboard tools tried in turn, each with its
+  own timeout); it now happens off the main thread in all three places
+  that read a selection.
+- Hover mode's mouse-position check, which runs about six times a second
+  while hovering is on, no longer has to start a new xdotool process each
+  time on systems with python3-xlib installed; it falls back to the
+  previous behaviour automatically when that isn't available.
+- Removed three redundant module imports from a function that walks the
+  accessibility tree recursively.
+
+Smaller fixes
+
+- A corrupted or unreadable settings file is now preserved (renamed with
+  a .bad suffix) and the failure logged, instead of being silently
+  replaced with defaults on the next save.
+- Typing into an API-key or server-address field in Settings no longer
+  writes the whole settings file to disk on every keystroke; saving is
+  now debounced.
+- Image file handles opened for OCR are now closed explicitly rather than
+  left for garbage collection.
+- Moving the document library to a new folder now uses the standard
+  library's own cross-filesystem move instead of a hand-rolled,
+  text-mode-only fallback.
+- A few Dutch strings printed by the command-line OCR mode, mixed in with
+  otherwise-English output, are now translated like everything else.
+- Fixed a variable name in the IPC server that shadowed the translation
+  function.
+- Removed a duplicate dictionary key (harmless -- both entries had the
+  same value) in the OCR language table, found by adding a linter.
+- Removed ten internal names from voxfox_core's public export lists that
+  were never meant to be used from outside their own module (two more
+  such names stay, since dozens of call sites across the UI layer
+  genuinely depend on them).
+
+Testing
+
+- Added a pytest suite (99 tests) covering voxfox_core's pure,
+  GTK-free functions: text chunking and reading positions, document
+  reading (.docx/.odt/.rtf/.txt), the document library, pronunciation
+  replacement, settings migration, and every fix above that could be
+  meaningfully tested without a live desktop.
+- Added a GitHub Actions workflow that runs the linter and the full test
+  suite on every push and pull request.
+
 ## 5.0.5
 
 Fedora installation conflict

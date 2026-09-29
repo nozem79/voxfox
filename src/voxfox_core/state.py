@@ -156,7 +156,7 @@ def load_state():
         set_language(ui_code_for_piper_lang(s["slot1"].get("lang", "")))
         return s
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             s = json.load(f)
             if not isinstance(s, dict):
                 raise ValueError("state root is not an object")
@@ -210,7 +210,16 @@ def load_state():
             ui_code = ui_code_for_piper_lang(s["slot1"].get("lang", ""))
             set_language(ui_code)
             return s
-    except Exception:
+    except Exception as e:
+        log.error(f"Could not load settings from {path}: {e}")
+        try:
+            bad = path + ".bad"
+            os.replace(path, bad)
+            log.error(f"Saved the unreadable file as {bad} for inspection; "
+                     f"starting with default settings instead.")
+        except OSError as rename_err:
+            log.warning(f"Could not preserve the broken settings file: "
+                       f"{rename_err}")
         s = _fresh_state()
         ui_code = ui_code_for_piper_lang(s["slot1"].get("lang", ""))
         set_language(ui_code)
@@ -263,7 +272,7 @@ def load_history():
     """Return list of {kind, text, ts} dicts, newest first."""
     path = HISTORY_FILE if os.path.isfile(HISTORY_FILE) else LEGACY_HISTORY_FILE
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return []

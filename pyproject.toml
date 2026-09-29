@@ -1,0 +1,16 @@
+[tool.pytest.ini_options]
+# voxfox_core lives under src/, and this project isn't pip-installed (it's
+# shipped as a .deb/.rpm that drops the source tree into /usr/lib/voxfox),
+# so tests need src/ on the path rather than a normal package install.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+# A conservative starting set: real correctness issues (undefined names,
+# unused imports) without repainting the whole codebase's style in one pass.
+select = ["F", "E9"]

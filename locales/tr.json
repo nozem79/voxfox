@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Bu dosyanın metin kodlaması belirlenemedi.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Eski .doc biçimi (Word 97-2003) desteklenmiyor. Word veya LibreOffice'te açıp .docx ya da .odt olarak kaydedin, veya düz metin olarak dışa aktarın.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect dosyaları desteklenmiyor. Kelime işlemcinizde açıp .docx, .odt veya düz metin olarak kaydedin.",
-  "Unsupported file type: {ext}": "Desteklenmeyen dosya türü: {ext}"
+  "Unsupported file type: {ext}": "Desteklenmeyen dosya türü: {ext}",
+  "Unsupported file type": "Desteklenmeyen dosya türü",
+  "Supported": "Destekleniyor",
+  "OCR": "OCR",
+  "language": "dil",
+  "{n} words found": "{n} kelime bulundu",
+  "Read aloud via the running VoxFox instance.": "Çalışan VoxFox örneği üzerinden sesli okundu."
 }

@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "No se pudo determinar la codificación de texto de este archivo.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "El formato antiguo .doc (Word 97-2003) no es compatible. Ábralo en Word o LibreOffice y guárdelo como .docx o .odt, o expórtelo como texto sin formato.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Los archivos de WordPerfect no son compatibles. Ábralo en su procesador de textos y guárdelo como .docx, .odt o texto sin formato.",
-  "Unsupported file type: {ext}": "Tipo de archivo no compatible: {ext}"
+  "Unsupported file type: {ext}": "Tipo de archivo no compatible: {ext}",
+  "Unsupported file type": "Tipo de archivo no compatible",
+  "Supported": "Compatible",
+  "OCR": "OCR",
+  "language": "idioma",
+  "{n} words found": "{n} palabras encontradas",
+  "Read aloud via the running VoxFox instance.": "Leído en voz alta mediante la instancia de VoxFox en ejecución."
 }

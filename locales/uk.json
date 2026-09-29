@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Не вдалося визначити кодування тексту цього файлу.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Старий формат .doc (Word 97-2003) не підтримується. Відкрийте його у Word або LibreOffice і збережіть як .docx або .odt, або експортуйте як звичайний текст.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Файли WordPerfect не підтримуються. Відкрийте файл у текстовому редакторі та збережіть як .docx, .odt або звичайний текст.",
-  "Unsupported file type: {ext}": "Непідтримуваний тип файлу: {ext}"
+  "Unsupported file type: {ext}": "Непідтримуваний тип файлу: {ext}",
+  "Unsupported file type": "Непідтримуваний тип файлу",
+  "Supported": "Підтримується",
+  "OCR": "OCR",
+  "language": "мова",
+  "{n} words found": "Знайдено слів: {n}",
+  "Read aloud via the running VoxFox instance.": "Прочитано вголос через запущений екземпляр VoxFox."
 }

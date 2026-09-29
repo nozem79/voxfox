@@ -17,7 +17,7 @@
 
 """voxfox_core.common — Shared base: logging, paths, AppState/i18n, Piper-language tables."""
 
-import json, logging, os, shutil, subprocess
+import functools, json, logging, os, shutil
 
 
 logging.basicConfig(level=logging.INFO,
@@ -581,13 +581,16 @@ def gui_child_env():
     return env
 
 
+@functools.lru_cache(maxsize=None)
 def _have(cmd):
-    """Return True if `cmd` is on PATH."""
-    try:
-        subprocess.run(["which", cmd], capture_output=True, timeout=1.0, check=True)
-        return True
-    except Exception:
-        return False
+    """Return True if `cmd` is on PATH.
+
+    Cached: this is checked from several hot paths (get_selection() alone
+    calls it twice before doing anything else), and PATH availability of a
+    command essentially never changes for the life of a running VoxFox --
+    installing a new package mid-session is already an "restart the app"
+    situation for other reasons."""
+    return shutil.which(cmd) is not None
 
 
 __all__ = [

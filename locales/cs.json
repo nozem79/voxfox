@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Nepodařilo se určit kódování textu tohoto souboru.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Starý formát .doc (Word 97-2003) není podporován. Otevřete jej ve Wordu nebo LibreOffice a uložte jako .docx nebo .odt, případně exportujte jako čistý text.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "Soubory WordPerfect nejsou podporovány. Otevřete jej v textovém editoru a uložte jako .docx, .odt nebo čistý text.",
-  "Unsupported file type: {ext}": "Nepodporovaný typ souboru: {ext}"
+  "Unsupported file type: {ext}": "Nepodporovaný typ souboru: {ext}",
+  "Unsupported file type": "Nepodporovaný typ souboru",
+  "Supported": "Podporováno",
+  "OCR": "OCR",
+  "language": "jazyk",
+  "{n} words found": "Nalezeno slov: {n}",
+  "Read aloud via the running VoxFox instance.": "Přečteno nahlas přes běžící instanci VoxFox."
 }

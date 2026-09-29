@@ -149,6 +149,7 @@ Requires:       (ffmpeg-free or ffmpeg)
 Requires:       portaudio
 Requires:       libsndfile
 Recommends:     python3-pyatspi
+Recommends:     python3-xlib
 Recommends:     tesseract-langpack-nld
 Recommends:     python3-numpy
 Recommends:     gnome-screenshot

@@ -186,9 +186,81 @@ def get_selection():
     return ""
 
 
-# ── Mouse + window helpers ────────────────────────────────────────────────────
-def get_mouse_pos():
-    # xdotool works on X11 and on XWayland; on pure Wayland it returns 0,0.
+# Optional: python-xlib avoids spawning a subprocess for the pointer-position
+# query that hover mode makes every HOVER_POLL seconds -- by far the hottest
+# of the xdotool calls in this file. Recommended, not required: everything
+# here falls back to the xdotool subprocess this always used, so a system
+# without python3-xlib installed behaves exactly as before.
+try:
+    from Xlib import display as _xlib_display
+    from Xlib.error import DisplayConnectionError as _XlibDisplayError
+    _HAVE_XLIB = True
+except Exception:
+    _HAVE_XLIB = False
+
+_xlib_conn = None  # lazily connected; a plain X11 socket, reused across calls
+_xlib_unavailable = False  # set once there is definitively no X server to
+                           # try (DISPLAY unset) -- distinct from a
+                           # connection that merely broke, which is worth
+                           # retrying since the server could come back.
+
+# _xlib_conn/_xlib_unavailable are plain module globals with no lock, and a
+# python-xlib connection is not safe to share across threads. Only
+# hover_loop's single background thread calls get_mouse_pos() today; if a
+# second caller is ever added, it needs its own connection, not this one.
+
+
+def _get_xlib_display():
+    """The cached Xlib connection, (re)connecting if it isn't open yet.
+    None when python-xlib isn't installed, or there's definitively no X
+    server to reach (DISPLAY unset -- a pure Wayland session with no
+    XWayland), or the connection attempt itself failed for some other,
+    possibly transient reason. Callers fall back to xdotool in every case."""
+    global _xlib_conn
+    if not _HAVE_XLIB or _xlib_unavailable:
+        return None
+    if _xlib_conn is None:
+        try:
+            _xlib_conn = _xlib_display.Display()
+        except Exception:
+            return None
+    return _xlib_conn
+
+
+def _get_mouse_pos_xlib():
+    """Pointer position via a live Xlib connection: one small round-trip
+    over an already-open socket, versus xdotool's fork+exec+argv-parse for
+    the same QueryPointer request. Raises on any failure so the caller can
+    fall back; also drops the cached connection on a connection-level
+    error, so a later call reconnects instead of repeating a dead one --
+    unless there is clearly no X server at all to reconnect to, which is
+    remembered so we stop trying for the rest of this process."""
+    global _xlib_conn, _xlib_unavailable
+    if not os.environ.get("DISPLAY"):
+        # Xlib.display.Display() with no argument reads $DISPLAY once, at
+        # connect time; with it unset there is nothing to retry, ever, for
+        # the life of this process. This is what actually happens on a
+        # pure Wayland session with no XWayland.
+        _xlib_unavailable = True
+        raise RuntimeError("no DISPLAY set")
+    d = _get_xlib_display()
+    if d is None:
+        raise RuntimeError("no Xlib connection available")
+    try:
+        p = d.screen().root.query_pointer()
+        return p.root_x, p.root_y
+    except _XlibDisplayError:
+        _xlib_conn = None
+        raise
+    except Exception:
+        # Anything else (a stale connection after the X server restarted,
+        # for instance) -- drop it too, so the next call tries fresh.
+        _xlib_conn = None
+        raise
+
+
+def _get_mouse_pos_xdotool():
+    """The original implementation, kept as-is as the fallback path."""
     try:
         r = subprocess.run(["xdotool", "getmouselocation", "--shell"],
                            capture_output=True, text=True, timeout=1.0)
@@ -206,6 +278,17 @@ def get_mouse_pos():
     # event controller, but there's no portable subprocess for it. Returning
     # (0,0) means hover-mode is effectively disabled, which the GUI surfaces.
     return (0, 0)
+
+
+# ── Mouse + window helpers ────────────────────────────────────────────────────
+def get_mouse_pos():
+    # xdotool (or, when available, the faster Xlib path below) works on X11
+    # and on XWayland; on pure Wayland it returns 0,0.
+    try:
+        return _get_mouse_pos_xlib()
+    except Exception:
+        pass
+    return _get_mouse_pos_xdotool()
 
 
 def get_active_pid():
@@ -380,9 +463,9 @@ def _find_at_pos(node, x, y, depth=0) -> str:
 
     # Menu containers with 0x0 bounds: their popup children may have real bounds
     menu_roles = (
-        getattr(__import__("pyatspi"), "ROLE_MENU_BAR", None),
-        getattr(__import__("pyatspi"), "ROLE_MENU", None),
-        getattr(__import__("pyatspi"), "ROLE_POPUP_MENU", None),
+        getattr(pyatspi, "ROLE_MENU_BAR", None),
+        getattr(pyatspi, "ROLE_MENU", None),
+        getattr(pyatspi, "ROLE_POPUP_MENU", None),
     )
     is_menu = role in menu_roles
     is_zero_menu_passthrough = is_zero_size and is_menu

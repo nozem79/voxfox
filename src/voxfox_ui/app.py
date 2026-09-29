@@ -387,6 +387,11 @@ def main():
         vf.run_cli(args)
         return 0
 
+    if not vf._ensure_runtime_dir():
+        print(f"VoxFox could not safely use its runtime directory "
+              f"({vf.RUNTIME_DIR}). See the log for details -- this is not "
+              f"the \"already running\" case.")
+        return 1
     if vf.is_instance_running():
         vf.send_command("ping")
         print("VoxFox is already running.")

@@ -33,6 +33,7 @@ text is split for speech will not send anyone back to the wrong paragraph.
 import json
 import os
 import re
+import shutil
 import time
 
 from .common import log
@@ -249,21 +250,12 @@ def move_library(old_folder, new_folder):
             name = _unique_name(new_folder, os.path.splitext(name)[0])
             target = os.path.join(new_folder, name)
         try:
-            os.replace(os.path.join(old_folder, entry["file"]), target)
-        except OSError:
-            try:
-                # os.replace fails across filesystems; copy and remove instead.
-                with open(os.path.join(old_folder, entry["file"]),
-                          encoding="utf-8") as src:
-                    data = src.read()
-                with open(target, "w", encoding="utf-8") as dst:
-                    dst.write(data)
-                os.chmod(target, 0o600)
-                os.unlink(os.path.join(old_folder, entry["file"]))
-            except OSError as e:
-                log.warning(f"documents: could not move {entry['file']}: {e}")
-                failed += 1
-                continue
+            shutil.move(os.path.join(old_folder, entry["file"]), target)
+            os.chmod(target, 0o600)
+        except OSError as e:
+            log.warning(f"documents: could not move {entry['file']}: {e}")
+            failed += 1
+            continue
         entry["file"] = name
         kept.append(entry)
         moved += 1

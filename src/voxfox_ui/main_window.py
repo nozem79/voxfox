@@ -685,9 +685,18 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     # ── actions (also the IPCServer entry points) ─────────────────────────────
     def do_read(self):
-        text = vf.get_selection()
-        if vf.merge_enabled():
-            text = vf.merge_wrapped_lines(text)
+        """get_selection() can block the main loop for up to a few seconds
+        (several clipboard tools tried in turn, each with its own timeout),
+        so the read and the merge run off the main thread; everything that
+        touches a widget runs afterwards via GLib.idle_add."""
+        def worker():
+            text = vf.get_selection()
+            if vf.merge_enabled():
+                text = vf.merge_wrapped_lines(text)
+            GLib.idle_add(self._after_read_selection, text)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _after_read_selection(self, text):
         if len(text) >= 2:
             cfg = self._active_cfg()
             vf.add_history("read", text)
@@ -697,20 +706,25 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             self.set_status(f"{_('Reading...')} [{cfg.get('voice', '')}]", 1500)
         else:
             self.set_status(_("Nothing selected"))
+        return False
 
     def do_translate(self):
         """Translate the selection into the UI language and speak it with
         the Slot 1 voice (the UI language follows Slot 1, so that voice
-        matches the translated text)."""
-        text = vf.get_selection()
-        if vf.merge_enabled():
-            text = vf.merge_wrapped_lines(text)
-        if len(text) < 2:
-            self.set_status(_("Nothing selected"))
-            return
-        self.set_status(_("Translating..."), duration=0)
+        matches the translated text).
 
+        get_selection() can block the main loop for a few seconds, so it
+        now runs inside the same background thread as the translation
+        call, rather than synchronously before that thread is started."""
         def worker():
+            text = vf.get_selection()
+            if vf.merge_enabled():
+                text = vf.merge_wrapped_lines(text)
+            if len(text) < 2:
+                GLib.idle_add(self.set_status, _("Nothing selected"))
+                return
+            GLib.idle_add(self.set_status, _("Translating..."), 0)
+
             def prog(i, n):
                 if n > 1:
                     GLib.idle_add(lambda: (self.set_status(
@@ -998,9 +1012,24 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         selects the page's URL (Ctrl+L in the address bar) and VoxFox fetches
         it — bus-independent and always explicit about which page is read
         (the title lands in the status line). Fallback: AT-SPI extraction of
-        the focused browser tab. Stage 2 (Ollama) per Settings → Web page."""
+        the focused browser tab. Stage 2 (Ollama) per Settings → Web page.
+
+        get_selection() itself can block the main loop for up to a few
+        seconds (it may try several clipboard tools in turn, each with its
+        own timeout), so it runs in its own short-lived thread; everything
+        after it was already thread-based to begin with."""
         wr = self.state.get("webread", {})
-        sel_url = vf.url_from_text(vf.get_selection())
+
+        def get_url_then_continue():
+            sel_url = vf.url_from_text(vf.get_selection())
+            GLib.idle_add(self._continue_read_page, wr, sel_url)
+        threading.Thread(target=get_url_then_continue, daemon=True).start()
+
+    def _continue_read_page(self, wr, sel_url):
+        """The rest of do_read_page(), once the selection has been read.
+        Runs on the main thread (via GLib.idle_add); unchanged from before
+        except for taking wr/sel_url as arguments instead of closing over
+        them directly."""
 
         def refine_and_speak(text, title=""):
             if wr.get("use_ollama"):
@@ -1050,14 +1079,14 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                     return
                 refine_and_speak(text, title)
             threading.Thread(target=worker_url, daemon=True).start()
-            return
+            return False
 
         # No URL selected → AT-SPI fallback (needs a working bus).
         if not vf.a11y_bus_reachable():
             self.set_status(
                 _("Select the page's address first (Ctrl+L in the browser), "
                   "then press the shortcut again"), duration=6000)
-            return
+            return False
         self.set_status(_("Extracting page text..."), duration=0)
 
         def worker_atspi():
@@ -1071,6 +1100,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 return
             refine_and_speak(text)
         threading.Thread(target=worker_atspi, daemon=True).start()
+        return False
 
     def _after_page_text(self, text, title=""):
         if vf.merge_enabled():

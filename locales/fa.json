@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "کدگذاری متن این فایل مشخص نشد.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "فرمت قدیمی .doc (Word 97-2003) پشتیبانی نمی‌شود. آن را در Word یا LibreOffice باز کنید و به‌صورت .docx یا .odt ذخیره کنید، یا آن را به‌صورت متن ساده خروجی بگیرید.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "فایل‌های WordPerfect پشتیبانی نمی‌شوند. آن را در واژه‌پرداز خود باز کنید و به‌صورت .docx، .odt یا متن ساده ذخیره کنید.",
-  "Unsupported file type: {ext}": "نوع فایل پشتیبانی نمی‌شود: {ext}"
+  "Unsupported file type: {ext}": "نوع فایل پشتیبانی نمی‌شود: {ext}",
+  "Unsupported file type": "نوع فایل پشتیبانی نمی‌شود",
+  "Supported": "پشتیبانی‌شده",
+  "OCR": "OCR",
+  "language": "زبان",
+  "{n} words found": "{n} کلمه یافت شد",
+  "Read aloud via the running VoxFox instance.": "از طریق نمونهٔ در حال اجرای VoxFox خوانده شد."
 }

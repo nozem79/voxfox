@@ -59,7 +59,6 @@ _TESS_LANG_MAP = {
     "Finnish":    "fin",
     "Romanian":   "ron",
     "Czech":      "ces",
-    "Polish":     "pol",
     "Portuguese (Portugal)": "por",
     "Danish":     "dan",
     "Hungarian":  "hun",
@@ -224,7 +223,8 @@ def ocr_pdf(pdf_path, tess_lang="eng", progress_cb=None):
             page_path = os.path.join(tmpdir, fname)
             try:
                 if _use_pil:
-                    texts.append(_tess_text_pil(Image.open(page_path), tess_lang))
+                    with Image.open(page_path) as img:
+                        texts.append(_tess_text_pil(img, tess_lang))
                 else:
                     text = _tesseract_cli(page_path, tess_lang) or ""
                     texts.append(_post_ocr(text))
@@ -453,8 +453,8 @@ def ocr_image(image_path, tess_lang="eng", progress_cb=None):
         progress_cb(_("Running OCR on image..."))
     try:
         from PIL import Image
-        img = Image.open(image_path)
-        return _tess_text_pil(img, tess_lang), None
+        with Image.open(image_path) as img:
+            return _tess_text_pil(img, tess_lang), None
     except ImportError:
         # No pytesseract/Pillow: drive the tesseract CLI directly.
         text = _tesseract_cli(image_path, tess_lang)
@@ -477,8 +477,8 @@ def ocr_file(file_path, tess_lang="eng", progress_cb=None):
     elif ext in OCR_SUPPORTED_IMAGES:
         return ocr_image(file_path, tess_lang=tess_lang, progress_cb=progress_cb)
     else:
-        return "", (f"Niet-ondersteund bestandstype: {ext}. "
-                    f"Ondersteund: {', '.join(sorted(OCR_SUPPORTED_EXTS))}")
+        return "", (f"{_('Unsupported file type')}: {ext}. "
+                    f"{_('Supported')}: {', '.join(sorted(OCR_SUPPORTED_EXTS))}")
 
 
 __all__ = [

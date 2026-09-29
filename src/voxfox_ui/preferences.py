@@ -90,6 +90,7 @@ class PreferencesWindow(Gtk.Window):
     def _on_close(self, *_a):
         if getattr(self, "_shortcuts_inhibited", False):
             self._stop_capture()
+        self._flush_pending_state_save()
         self._save_pron()
         self.win.reload_active_controls()
         return False
@@ -798,7 +799,37 @@ class PreferencesWindow(Gtk.Window):
 
     def _save_w(self, key, value):
         self.state["whisper"][key] = value
-        vf.save_state(self.state)
+        self._save_state_debounced()
+
+    def _save_state_debounced(self):
+        """Write self.state to disk after a short pause in editing rather
+        than on every single change. Typing into an API-key field fires a
+        "changed" signal per keystroke; without this, that meant one full
+        state-file write (with fsync) per character."""
+        pending = getattr(self, "_save_state_timeout_id", None)
+        if pending:
+            GLib.source_remove(pending)
+
+        def flush():
+            self._save_state_timeout_id = None
+            vf.save_state(self.state)
+            return False
+        self._save_state_timeout_id = GLib.timeout_add(500, flush)
+
+    def _flush_pending_state_save(self):
+        """Write immediately if a debounced save is still waiting.
+
+        The pending GLib timeout itself would still fire even after this
+        window closes (it lives on the main context, not on the window),
+        so simply closing Settings never loses an edit. The gap this
+        closes is narrower: quitting VoxFox entirely within that same
+        500ms window ends the main loop before the timeout gets its turn,
+        which would otherwise discard whatever was typed last."""
+        pending = getattr(self, "_save_state_timeout_id", None)
+        if pending:
+            GLib.source_remove(pending)
+            self._save_state_timeout_id = None
+            vf.save_state(self.state)
 
     def _on_max_record_changed(self, spin):
         self._save_w("max_record_seconds", int(spin.get_value()))
@@ -1228,7 +1259,7 @@ class PreferencesWindow(Gtk.Window):
             info.set_markup(
                 f"<b>{GLib.markup_escape_text(m['name'])}</b>  "
                 f"<span alpha='70%'>{GLib.markup_escape_text(m['size'])} "
-                f"\u2014 {GLib.markup_escape_text(m['note'])}</span>")
+                f"\u2014 {GLib.markup_escape_text(m['note']())}</span>")
             srow.append(info)
             pull_btn = Gtk.Button(label=_("Pull"))
             pull_btn.connect("clicked", self._on_translate_pull, m["name"])
@@ -1256,7 +1287,7 @@ class PreferencesWindow(Gtk.Window):
         tr["model"] = (self.trans_model.get_text().strip()
                        or vf.DEFAULT_TRANSLATE["model"])
         tr["api_key"] = self.trans_key.get_text().strip()
-        vf.save_state(self.state)
+        self._save_state_debounced()
 
     def _on_translate_test(self, *_a):
         self._on_translate_changed()
@@ -1368,7 +1399,7 @@ class PreferencesWindow(Gtk.Window):
         wr["model"] = (self.webread_model.get_text().strip()
                        or vf.DEFAULT_OLLAMA_MODEL)
         wr["api_key"] = self.webread_key.get_text().strip()
-        vf.save_state(self.state)
+        self._save_state_debounced()
 
     def _on_webread_test(self, *_a):
         url = self.webread_url.get_text().strip() or vf.DEFAULT_OLLAMA_URL
@@ -1420,12 +1451,15 @@ class PreferencesWindow(Gtk.Window):
                 import copy as _copy
                 import json
                 # Never write secrets into an export: exports get shared and
-                # end up on other machines and in support mails.
+                # end up on other machines and in support mails. A list, not
+                # three separate lines, so a future secret field can't be
+                # added to state.py without also landing here.
                 clean = _copy.deepcopy(self.state)
-                if isinstance(clean.get("whisper"), dict):
-                    clean["whisper"]["remote_api_key"] = ""
-                if isinstance(clean.get("webread"), dict):
-                    clean["webread"]["api_key"] = ""
+                for section, key in (("whisper", "remote_api_key"),
+                                     ("webread", "api_key"),
+                                     ("translate", "api_key")):
+                    if isinstance(clean.get(section), dict):
+                        clean[section][key] = ""
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(clean, f, ensure_ascii=False, indent=2)
                 self.win.set_status(_("Settings exported"))

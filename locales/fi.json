@@ -351,5 +351,11 @@
   "Could not determine this file's text encoding.": "Tämän tiedoston merkistökoodausta ei voitu määrittää.",
   "The old .doc format (Word 97-2003) is not supported. Open it in Word or LibreOffice and save as .docx or .odt, or export it as plain text.": "Vanhaa .doc-muotoa (Word 97-2003) ei tueta. Avaa se Wordissa tai LibreOfficessa ja tallenna muodossa .docx tai .odt, tai vie se pelkkänä tekstinä.",
   "WordPerfect files are not supported. Open it in your word processor and save as .docx, .odt or plain text.": "WordPerfect-tiedostoja ei tueta. Avaa tiedosto tekstinkäsittelyohjelmassasi ja tallenna se muodossa .docx, .odt tai pelkkä teksti.",
-  "Unsupported file type: {ext}": "Tiedostotyyppiä ei tueta: {ext}"
+  "Unsupported file type: {ext}": "Tiedostotyyppiä ei tueta: {ext}",
+  "Unsupported file type": "Tiedostotyyppiä ei tueta",
+  "Supported": "Tuettu",
+  "OCR": "OCR",
+  "language": "kieli",
+  "{n} words found": "{n} sanaa löytyi",
+  "Read aloud via the running VoxFox instance.": "Luettu ääneen käynnissä olevan VoxFox-instanssin kautta."
 }

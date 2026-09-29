@@ -50,6 +50,7 @@ import shutil
 import subprocess
 import urllib.request
 import urllib.error
+import urllib.parse
 
 from .common import log
 
@@ -636,7 +637,21 @@ def _ollama_headers(api_key=None):
     return h
 
 
+def _check_ollama_url(url):
+    """Raise if `url` isn't http(s). This is the user's own Ollama server
+    address, so the risk is a typo turning into file:// or ftp://, not an
+    attack -- but urlopen would otherwise accept those schemes too, and the
+    resulting error from deep inside urlopen is a confusing way to find out.
+    Callers already wrap their urlopen calls in try/except Exception, so
+    raising here reaches the caller as the same kind of failure."""
+    scheme = urllib.parse.urlparse(url).scheme
+    if scheme not in ("http", "https"):
+        raise ValueError(f"Unsupported URL scheme {scheme!r}: only "
+                         f"http:// and https:// are supported")
+
+
 def _ollama_generate(url, model, prompt, timeout=300, api_key=None):
+    _check_ollama_url(url)
     body = json.dumps({
         "model": model,
         "prompt": prompt,
@@ -654,6 +669,7 @@ def _ollama_generate(url, model, prompt, timeout=300, api_key=None):
 def ollama_list_models(url=DEFAULT_OLLAMA_URL, timeout=5, api_key=None):
     """Names of locally available Ollama models, or None if unreachable."""
     try:
+        _check_ollama_url(url)
         req = urllib.request.Request(url.rstrip("/") + "/api/tags",
                                      headers=_ollama_headers(api_key))
         with urllib.request.urlopen(req, timeout=timeout) as resp:

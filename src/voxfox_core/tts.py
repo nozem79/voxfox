@@ -17,7 +17,7 @@
 
 """voxfox_core.tts — Text-to-speech: Piper voices, chunking, the speaking worker."""
 
-import functools, json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
+import functools, hashlib, json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
 from .common import BASE_URL, CHUNK_SIZE, CONFIG_DIR, DATA_DIR, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
 
 
@@ -216,6 +216,7 @@ def download_voice(voice_key, progress_cb=None, cancel_evt=None, frac_cb=None):
             with urllib.request.urlopen(url, timeout=30) as r, open(tmp, "wb") as f:
                 total = int(r.headers.get("Content-Length") or 0)
                 done = 0
+                hasher = hashlib.md5(usedforsecurity=False)
                 while True:
                     if cancel_evt is not None and cancel_evt.is_set():
                         try:
@@ -227,10 +228,21 @@ def download_voice(voice_key, progress_cb=None, cancel_evt=None, frac_cb=None):
                     if not chunk:
                         break
                     f.write(chunk)
+                    hasher.update(chunk)
                     done += len(chunk)
                     if frac_cb and total:
                         frac_cb(done / total, os.path.basename(filename))
-            os.rename(tmp, dest)
+            # Verify against Piper's published digest when the voices.json
+            # entry for this file has one. Best-effort, like install_piper's
+            # own SHA-256 check: an entry without a digest is accepted as
+            # before rather than treated as a failure.
+            expected = voices[voice_key]["files"][filename].get("md5_digest")
+            if expected and hasher.hexdigest() != expected:
+                os.unlink(tmp)
+                return False, (f"checksum mismatch for {filename}: "
+                               f"expected {expected[:12]}\u2026, "
+                               f"got {hasher.hexdigest()[:12]}\u2026")
+            os.replace(tmp, dest)
         except Exception as e:
             try:
                 if os.path.isfile(tmp):
@@ -284,7 +296,7 @@ def _voice_sample_rate(voice_key):
     cfg_path = os.path.join(
         find_voice_dir(voice_key) or PIPER_DIR, f"{voice_key}.onnx.json")
     try:
-        with open(cfg_path) as f:
+        with open(cfg_path, encoding="utf-8") as f:
             return int(json.load(f).get("audio", {}).get("sample_rate", 22050))
     except Exception:
         return 22050
@@ -350,7 +362,7 @@ def apply_pronunciations(text, mapping):
     pattern, lower = _compiled_pronunciation_pattern(tuple(sorted(mapping.items())))
     if pattern is None:
         return text
-    return pattern.sub(lambda m: lower[m.group(0).lower()], text)
+    return pattern.sub(lambda m: lower.get(m.group(0).lower(), m.group(0)), text)
 
 
 def chunk_text(text, max_chars=CHUNK_SIZE):
@@ -1008,16 +1020,9 @@ __all__ = [
     "find_voice_dir",
     "migrate_legacy_voices",
     "download_voice",
-    "_speak_thread",
-    "_stop_event",
-    "_pause_event",
-    "_speak_lock",
-    "_progress",
     "is_speaking",
     "is_paused",
     "toggle_pause",
-    "_voice_sample_rate",
-    "_retune_wav",
     "set_pronunciations",
     "apply_pronunciations",
     "chunk_text",
@@ -1028,10 +1033,7 @@ __all__ = [
     "speak",
     "get_progress",
     "get_position",
-    "_position",
-    "_speak_worker",
     "stop_speaking",
-    "_PiperServer",
     "_piper_server",
     "shutdown_piper",
 ]
