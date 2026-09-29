@@ -27,6 +27,15 @@ sudo apt install ./voxfox_*_all.deb
 sudo dnf install ./voxfox-*.noarch.rpm
 ```
 
+**Nix / NixOS:**
+
+```bash
+nix run github:nozem79/voxfox
+```
+
+Zie `packaging/nix/NIXOS.md` voor systeembrede installatie en een paar
+dingen die de moeite waard zijn om bij eerste gebruik te controleren.
+
 `apt` haalt de runtime-afhankelijkheden binnen (`python3-gi`,
 `gir1.2-gtk-4.0`, `python3-pyatspi`, `at-spi2-core`) en beveelt de optionele
 hulpmiddelen aan die sommige functies gebruiken (`tesseract-ocr`,

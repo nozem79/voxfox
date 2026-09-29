@@ -44,7 +44,7 @@
             pkgs.xdotool
             pkgs.maim
             pkgs.tesseract
-            pkgs.poppler_utils
+            pkgs.poppler-utils
           ];
         };
       });
