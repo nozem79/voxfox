@@ -32,6 +32,8 @@
 , at-spi2-core
 , gobject-introspection
 , hicolor-icon-theme
+, glib                     # provides the gsettings binary; see runtimeTools
+, gsettings-desktop-schemas # org.gnome.desktop.interface -- see buildInputs
 
 # Runtime CLI tools. The X11 ones are always on PATH (see the
 # no-withX11 note below); the Wayland-only ones are added when
@@ -93,7 +95,7 @@ let
   );
 
   runtimeTools =
-    [ wmctrl xdotool maim xclip tesseract poppler-utils pulseaudio ffmpeg ]
+    [ wmctrl xdotool maim xclip tesseract poppler-utils pulseaudio ffmpeg glib ]
     ++ lib.optionals withWayland
       (lib.filter (p: p != null) [ wl-clipboard wtype grim slurp ]);
 
@@ -110,7 +112,7 @@ stdenvNoCC.mkDerivation {
     imagemagick # icon resizing at build time, see installPhase
   ];
 
-  buildInputs = [ gtk4 at-spi2-core hicolor-icon-theme ];
+  buildInputs = [ gtk4 at-spi2-core hicolor-icon-theme gsettings-desktop-schemas ];
 
   # GTK4 apps normally get their PATH/typelib/schema wrapping for free
   # from wrapGAppsHook4 acting on $out/bin/*. We want to ALSO inject our
