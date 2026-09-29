@@ -43,7 +43,7 @@
 , maim
 , xclip
 , tesseract
-, poppler_utils
+, poppler-utils
 , pulseaudio
 , ffmpeg
 , wl-clipboard ? null
@@ -93,7 +93,7 @@ let
   );
 
   runtimeTools =
-    [ wmctrl xdotool maim xclip tesseract poppler_utils pulseaudio ffmpeg ]
+    [ wmctrl xdotool maim xclip tesseract poppler-utils pulseaudio ffmpeg ]
     ++ lib.optionals withWayland
       (lib.filter (p: p != null) [ wl-clipboard wtype grim slurp ]);
 
