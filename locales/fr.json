@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "langue",
   "{n} words found": "{n} mots trouvés",
-  "Read aloud via the running VoxFox instance.": "Lu à voix haute via l'instance VoxFox en cours d'exécution."
+  "Read aloud via the running VoxFox instance.": "Lu à voix haute via l'instance VoxFox en cours d'exécution.",
+  "Install Ollama": "Installer Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama n'est pas installé sur cet ordinateur. La traduction en a besoin, ou d'un serveur Ollama distant.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama est installé mais ne fonctionne pas. Démarrez-le avec : systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Sous NixOS, activez plutôt Ollama dans la configuration du système : services.ollama.enable = true;",
+  "Install Ollama?": "Installer Ollama ?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox va télécharger Ollama, un gros fichier, et l'installer avec les droits d'administrateur, avec un service en arrière-plan. Vos pilotes graphiques ne sont pas modifiés.",
+  "Installing Ollama...": "Installation d'Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama est installé. Choisissez un modèle ci-dessous et appuyez sur Récupérer.",
+  "Installation cancelled": "Installation annulée",
+  "Ollama installation failed": "Échec de l'installation d'Ollama",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox ne peut pas lancer l'installateur automatiquement. Exécutez plutôt ceci dans un terminal :",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Outils manquants : {tools}. Installez-les avec votre gestionnaire de paquets et réessayez.",
+  "Install": "Installer",
+  "Downloading Ollama...": "Téléchargement d'Ollama...",
+  "Starting Ollama...": "Démarrage d'Ollama...",
+  "Waiting for Ollama to start...": "Attente du démarrage d'Ollama..."
 }

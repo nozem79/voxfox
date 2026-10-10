@@ -358,5 +358,21 @@
   "OCR": "OCR",
   "language": "language",
   "{n} words found": "{n} words found",
-  "Read aloud via the running VoxFox instance.": "Read aloud via the running VoxFox instance."
+  "Read aloud via the running VoxFox instance.": "Read aloud via the running VoxFox instance.",
+  "Install Ollama": "Install Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama is installed but not running. Start it with: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;",
+  "Install Ollama?": "Install Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.",
+  "Installing Ollama...": "Installing Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama installed. Pick a model below and press Pull.",
+  "Installation cancelled": "Installation cancelled",
+  "Ollama installation failed": "Ollama installation failed",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox cannot start the installer automatically. Run this in a terminal instead:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Missing tools: {tools}. Install them with your package manager and try again.",
+  "Install": "Install",
+  "Downloading Ollama...": "Downloading Ollama...",
+  "Starting Ollama...": "Starting Ollama...",
+  "Waiting for Ollama to start...": "Waiting for Ollama to start..."
 }

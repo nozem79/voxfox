@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "мова",
   "{n} words found": "Знайдено слів: {n}",
-  "Read aloud via the running VoxFox instance.": "Прочитано вголос через запущений екземпляр VoxFox."
+  "Read aloud via the running VoxFox instance.": "Прочитано вголос через запущений екземпляр VoxFox.",
+  "Install Ollama": "Установити Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama не встановлено на цьому комп'ютері. Переклад потребує його або віддаленого сервера Ollama.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama встановлено, але він не запущений. Запустіть його командою: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "У NixOS натомість увімкніть Ollama в конфігурації системи: services.ollama.enable = true;",
+  "Install Ollama?": "Установити Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox завантажить Ollama, великий файл, і встановить його з правами адміністратора разом зі службою у фоновому режимі. Графічні драйвери не змінюватимуться.",
+  "Installing Ollama...": "Встановлення Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama встановлено. Виберіть нижче модель і натисніть «Завантажити».",
+  "Installation cancelled": "Встановлення скасовано",
+  "Ollama installation failed": "Не вдалося встановити Ollama",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox не може автоматично запустити програму встановлення. Виконайте натомість у терміналі:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Бракує інструментів: {tools}. Установіть їх менеджером пакетів і спробуйте ще раз.",
+  "Install": "Установити",
+  "Downloading Ollama...": "Завантаження Ollama...",
+  "Starting Ollama...": "Запуск Ollama...",
+  "Waiting for Ollama to start...": "Очікування запуску Ollama..."
 }

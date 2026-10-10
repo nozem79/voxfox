@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "språk",
   "{n} words found": "{n} ord funnet",
-  "Read aloud via the running VoxFox instance.": "Lest høyt via den kjørende VoxFox-forekomsten."
+  "Read aloud via the running VoxFox instance.": "Lest høyt via den kjørende VoxFox-forekomsten.",
+  "Install Ollama": "Installer Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama er ikke installert på denne datamaskinen. Oversettelse trenger den, eller en ekstern Ollama-server.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama er installert, men kjører ikke. Start den med: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "På NixOS aktiverer du i stedet Ollama i systemkonfigurasjonen: services.ollama.enable = true;",
+  "Install Ollama?": "Installere Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox laster ned Ollama, en stor fil, og installerer den med administratorrettigheter, sammen med en bakgrunnstjeneste. Grafikkdriverne dine endres ikke.",
+  "Installing Ollama...": "Installerer Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama er installert. Velg en modell nedenfor og trykk på Hent.",
+  "Installation cancelled": "Installasjonen ble avbrutt",
+  "Ollama installation failed": "Installasjonen av Ollama mislyktes",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox kan ikke starte installasjonsprogrammet automatisk. Kjør dette i en terminal i stedet:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Manglende verktøy: {tools}. Installer dem med pakkebehandleren din, og prøv igjen.",
+  "Install": "Installer",
+  "Downloading Ollama...": "Laster ned Ollama...",
+  "Starting Ollama...": "Starter Ollama...",
+  "Waiting for Ollama to start...": "Venter på at Ollama starter..."
 }

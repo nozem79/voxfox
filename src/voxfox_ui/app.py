@@ -36,7 +36,7 @@ from voxfox_ui.common import ACCENT_CSS, APP_VERSION, MANUAL_URL, SYSTEM_ICON, S
 from voxfox_ui.history import HistoryWindow  # noqa: E402
 from voxfox_ui.main_window import VoxFoxWindow  # noqa: E402
 from voxfox_ui.setup import SetupDialog, apply_ui_language, run_setup  # noqa: E402
-from voxfox_ui.shortcuts import _cinnamon_reload, _install_shortcuts  # noqa: E402
+from voxfox_ui.shortcuts import _cinnamon_reload, _install_shortcuts, reconcile_cinnamon_shortcuts, reconcile_gnome_shortcuts  # noqa: E402
 
 
 class VoxFoxApplication(Gtk.Application):
@@ -81,6 +81,15 @@ class VoxFoxApplication(Gtk.Application):
             self.win = VoxFoxWindow(self)
             self.ipc_server = vf.IPCServer(self.win)
             self.ipc_server.start()
+            # Cinnamon has been seen to silently revert a VoxFox shortcut
+            # to its own default (Super+C back to Calendar) after a
+            # restart or resuming from standby, without VoxFox being
+            # restarted itself in the standby case -- so this runs
+            # periodically for as long as VoxFox keeps running, not just
+            # once at startup. A no-op whenever nothing needs fixing, see
+            # reconcile_cinnamon_shortcuts()'s own docstring for exactly
+            # what it does and doesn't touch.
+            GLib.timeout_add_seconds(60, self._reconcile_shortcuts)
         self.win.present()
         # Restore the last on-screen position (X11), then re-assert always-on-top
         # after the window is mapped. Both are retried a few times because the
@@ -105,6 +114,27 @@ class VoxFoxApplication(Gtk.Application):
         # setup once instead of leaving them to find the menu.
         if not os.path.exists(vf.PIPER_BIN):
             GLib.timeout_add(700, self._maybe_first_run)
+
+    def _reconcile_shortcuts(self):
+        """Called every 60s for as long as VoxFox keeps running (see
+        do_activate). Returning True is what makes GLib repeat it --
+        returning False here, the way the other one-shot timeouts in
+        do_activate do, would stop it after the first run."""
+        try:
+            state = self.win.state if self.win else None
+            if not state:
+                return True
+            changed = False
+            if reconcile_cinnamon_shortcuts(state):
+                changed = True
+                _cinnamon_reload()
+            if reconcile_gnome_shortcuts(state):
+                changed = True
+            if changed:
+                vf.save_state(state)
+        except Exception as e:
+            log.debug(f"shortcut reconcile failed: {e}")
+        return True
 
     def _maybe_first_run(self):
         if not getattr(self, "_first_run_shown", False) and self.win:

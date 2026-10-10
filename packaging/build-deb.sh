@@ -22,6 +22,15 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 # App code
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
 cp "$SRC/quickshot.py"         "$INST/usr/lib/voxfox/"
+
+# Root-side installer behind Settings' "Install Ollama" button, plus the
+# polkit policy that names its authentication prompt and ties it to exactly
+# this file (see src/install-ollama.sh for why it is not Ollama's own script).
+cp "$SRC/install-ollama.sh" "$INST/usr/lib/voxfox/"
+chmod 755 "$INST/usr/lib/voxfox/install-ollama.sh"
+mkdir -p "$INST/usr/share/polkit-1/actions"
+cp "$SRC/nl.voxfox.install-ollama.policy" "$INST/usr/share/polkit-1/actions/"
+chmod 644 "$INST/usr/share/polkit-1/actions/nl.voxfox.install-ollama.policy"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
@@ -129,7 +138,7 @@ Depends: python3 (>= 3.9),
  ffmpeg,
  libportaudio2,
  libsndfile1
-Recommends: python3-pyatspi, python3-xlib, tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot, spectacle, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, python3-gi-cairo, grim
+Recommends: python3-pyatspi, python3-xlib, tesseract-ocr-eng, tesseract-ocr-nld, python3-numpy, wl-clipboard, wtype, gnome-screenshot, spectacle, gir1.2-gtk-3.0, gir1.2-gdkpixbuf-2.0, python3-gi-cairo, grim, curl, zstd, pkexec | policykit-1
 Description: VoxFox — screen reader and dictation tool
  VoxFox reads text aloud from any application on your screen, lets you
  dictate by voice instead of typing, and can read text out of PDFs,
@@ -148,6 +157,9 @@ cat > "$INST/DEBIAN/postinst" <<'POSTINST'
 #!/bin/sh
 set -e
 
+# "av<19" is added separately, quoted at each call: a bare `<` would be read
+# as a redirection by the shell su -c starts. faster-whisper only asks for
+# av>=11, and PyAV 19 removed an argument it still passes.
 PKGS="faster-whisper sounddevice soundfile"
 
 # Find the real user (not root) to install pip packages for
@@ -173,16 +185,16 @@ pip_install() {
     # to be importable, not a `pip`-named executable on PATH.
     if [ -n "$REAL_USER" ] && [ "$REAL_USER" != "root" ]; then
         # Interactive install: into that user's own site-packages.
-        as_user "python3 -m pip install --user --break-system-packages $PKGS" 2>&1 || \
-        as_user "python3 -m pip install --user $PKGS" 2>&1
+        as_user "python3 -m pip install --user --break-system-packages $PKGS 'av<19'" 2>&1 || \
+        as_user "python3 -m pip install --user $PKGS 'av<19'" 2>&1
     else
         # No real user: we are inside an image build (a live CD, FoxOS) or a
         # root shell. A --user install here would land in /root, where the
         # person who later logs in never sees it. Install system-wide so
         # every account on the finished image gets dictation.
         echo "VoxFox: no interactive user found; installing system-wide."
-        python3 -m pip install --break-system-packages $PKGS 2>&1 || \
-        python3 -m pip install $PKGS 2>&1
+        python3 -m pip install --break-system-packages $PKGS "av<19" 2>&1 || \
+        python3 -m pip install $PKGS "av<19" 2>&1
     fi
 }
 

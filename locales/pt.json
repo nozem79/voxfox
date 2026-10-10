@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "idioma",
   "{n} words found": "{n} palavras encontradas",
-  "Read aloud via the running VoxFox instance.": "Lido em voz alta através da instância do VoxFox em execução."
+  "Read aloud via the running VoxFox instance.": "Lido em voz alta através da instância do VoxFox em execução.",
+  "Install Ollama": "Instalar o Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "O Ollama não está instalado neste computador. A tradução precisa dele, ou de um servidor Ollama remoto.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "O Ollama está instalado mas não está a ser executado. Inicie-o com: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "No NixOS, ative antes o Ollama na configuração do sistema: services.ollama.enable = true;",
+  "Install Ollama?": "Instalar o Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "O VoxFox vai transferir o Ollama, um ficheiro grande, e instalá-lo com direitos de administrador, juntamente com um serviço em segundo plano. Os seus controladores gráficos não são alterados.",
+  "Installing Ollama...": "A instalar o Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama instalado. Escolha um modelo abaixo e prima Obter.",
+  "Installation cancelled": "Instalação cancelada",
+  "Ollama installation failed": "Falha na instalação do Ollama",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "O VoxFox não consegue iniciar o instalador automaticamente. Execute isto num terminal:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Ferramentas em falta: {tools}. Instale-as com o seu gestor de pacotes e tente novamente.",
+  "Install": "Instalar",
+  "Downloading Ollama...": "A transferir o Ollama...",
+  "Starting Ollama...": "A iniciar o Ollama...",
+  "Waiting for Ollama to start...": "A aguardar que o Ollama inicie..."
 }

@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "زبان",
   "{n} words found": "{n} کلمه یافت شد",
-  "Read aloud via the running VoxFox instance.": "از طریق نمونهٔ در حال اجرای VoxFox خوانده شد."
+  "Read aloud via the running VoxFox instance.": "از طریق نمونهٔ در حال اجرای VoxFox خوانده شد.",
+  "Install Ollama": "نصب Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama روی این رایانه نصب نیست. ترجمه به آن یا به یک کارساز Ollama راه‌دور نیاز دارد.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama نصب شده اما اجرا نمی‌شود. آن را با این دستور اجرا کنید: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "در NixOS، به‌جای این، Ollama را در پیکربندی سامانه فعال کنید: services.ollama.enable = true;",
+  "Install Ollama?": "Ollama نصب شود؟",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox فایل بزرگ Ollama را دانلود می‌کند و آن را با دسترسی مدیر همراه با یک سرویس پس‌زمینه نصب می‌کند. درایورهای گرافیک شما تغییر نمی‌کنند.",
+  "Installing Ollama...": "در حال نصب Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama نصب شد. در پایین یک مدل انتخاب کنید و «دریافت» را بزنید.",
+  "Installation cancelled": "نصب لغو شد",
+  "Ollama installation failed": "نصب Ollama ناموفق بود",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox نمی‌تواند نصب‌کننده را خودکار اجرا کند. به‌جای آن این را در یک ترمینال اجرا کنید:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "ابزارهای لازم نصب نیستند: {tools}. آن‌ها را با مدیر بسته‌ها نصب کنید و دوباره تلاش کنید.",
+  "Install": "نصب",
+  "Downloading Ollama...": "در حال دانلود Ollama...",
+  "Starting Ollama...": "در حال راه‌اندازی Ollama...",
+  "Waiting for Ollama to start...": "در انتظار راه‌اندازی Ollama..."
 }

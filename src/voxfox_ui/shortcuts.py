@@ -211,6 +211,81 @@ def _install_cinnamon_shortcuts(src, state):
     return True
 
 
+def _cinnamon_shortcuts_intact(state):
+    """True if every slot _install_cinnamon_shortcuts last recorded in
+    `state` is still listed and still points at a voxfox command. False
+    for anything else, including "nothing was ever installed" -- that
+    case is for the caller to decide what to do with, not this check.
+
+    Deliberately does not compare the actual key combination: a user who
+    opens Cinnamon's own keyboard settings and rebinds the *key* for an
+    existing VoxFox shortcut leaves the slot's name/command alone and
+    only changes its binding, so that case reads as "intact" here and is
+    left alone, matching the reasoning in _install_shortcuts' docstring
+    for not auto-installing in the first place. What this does catch is
+    the slot itself disappearing from custom-list, or its command being
+    cleared/reset -- Cinnamon reverting a shortcut to its own built-in
+    default (as opposed to the user deliberately choosing a different
+    one) looks like the latter, not like an ordinary rebind.
+    """
+    slots = state.get("cinnamon_shortcut_slots")
+    if not slots:
+        return False
+    src = Gio.SettingsSchemaSource.get_default()
+    if src is None or src.lookup("org.cinnamon.desktop.keybindings", True) is None:
+        # Not just "schema missing" -- Gio.Settings.new() on a schema
+        # that truly isn't installed raises a fatal GLib error, not a
+        # catchable Python exception, so this check has to happen before
+        # ever calling it, not in a try/except around it.
+        return False
+    try:
+        base = Gio.Settings.new("org.cinnamon.desktop.keybindings")
+    except Exception:
+        return False
+    names = set(base.get_strv("custom-list"))
+    SCHEMA = "org.cinnamon.desktop.keybindings.custom-keybinding"
+    for slot in slots.values():
+        if slot not in names:
+            return False
+        try:
+            path = f"/org/cinnamon/desktop/keybindings/custom-keybindings/{slot}/"
+            cmd = Gio.Settings.new_with_path(SCHEMA, path).get_string("command")
+        except Exception:
+            return False
+        if not cmd.startswith("voxfox"):
+            return False
+    return True
+
+
+def reconcile_cinnamon_shortcuts(state):
+    """Put VoxFox's Cinnamon shortcuts back if something outside VoxFox
+    reset them -- seen in the wild after a restart or resuming from
+    standby, where Cinnamon can re-grab a key (Super+C has reverted to
+    its own Calendar binding) without VoxFox ever being told.
+
+    A no-op whenever there is nothing to reconcile: shortcuts were never
+    installed on this machine, Cinnamon isn't the desktop in use, or
+    everything is already as VoxFox left it. Returns True only when it
+    actually had to reinstall something, so the caller knows whether a
+    _cinnamon_reload() is worth doing.
+    """
+    if not state.get("shortcuts_installed") or not state.get("cinnamon_shortcut_slots"):
+        return False
+    if _cinnamon_shortcuts_intact(state):
+        return False
+    try:
+        src = Gio.SettingsSchemaSource.get_default()
+        if src is None or src.lookup("org.cinnamon.desktop.keybindings", True) is None:
+            return False
+        reinstalled = _install_cinnamon_shortcuts(src, state)
+    except Exception as e:
+        log.debug(f"reconcile_cinnamon_shortcuts: reinstall failed: {e}")
+        return False
+    if reinstalled:
+        log.info("Cinnamon had reset a VoxFox shortcut; reinstalled.")
+    return reinstalled
+
+
 def _install_gnome_shortcuts(src, state):
     """GNOME: custom-keybindings holds entry PATHS; binding is a STRING. Same
     numeric-slot approach as Cinnamon so gnome-control-center's add button
@@ -277,6 +352,60 @@ def _install_gnome_shortcuts(src, state):
     state["gnome_shortcut_slots"] = assigned
     log.info("Installed GNOME keyboard shortcuts")
     return True
+
+
+def _gnome_shortcuts_intact(state):
+    """GNOME equivalent of _cinnamon_shortcuts_intact -- same reasoning
+    throughout, adapted for GNOME's custom-keybindings list holding full
+    paths (not bare slot names) and a string (not list) binding."""
+    slots = state.get("gnome_shortcut_slots")
+    if not slots:
+        return False
+    src = Gio.SettingsSchemaSource.get_default()
+    if src is None or src.lookup(
+            "org.gnome.settings-daemon.plugins.media-keys", True) is None:
+        return False
+    try:
+        base = Gio.Settings.new("org.gnome.settings-daemon.plugins.media-keys")
+    except Exception:
+        return False
+    PREFIX = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
+    paths = set(base.get_strv("custom-keybindings"))
+    SCHEMA = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
+    for slot in slots.values():
+        p = f"{PREFIX}{slot}/"
+        if p not in paths:
+            return False
+        try:
+            cmd = Gio.Settings.new_with_path(SCHEMA, p).get_string("command")
+        except Exception:
+            return False
+        if not cmd.startswith("voxfox"):
+            return False
+    return True
+
+
+def reconcile_gnome_shortcuts(state):
+    """GNOME equivalent of reconcile_cinnamon_shortcuts. See that
+    function's docstring -- same mechanism, same reasoning, same
+    guarantees about leaving a deliberate rebind (via GNOME's own
+    Settings app) alone."""
+    if not state.get("shortcuts_installed") or not state.get("gnome_shortcut_slots"):
+        return False
+    if _gnome_shortcuts_intact(state):
+        return False
+    try:
+        src = Gio.SettingsSchemaSource.get_default()
+        if src is None or src.lookup(
+                "org.gnome.settings-daemon.plugins.media-keys", True) is None:
+            return False
+        reinstalled = _install_gnome_shortcuts(src, state)
+    except Exception as e:
+        log.debug(f"reconcile_gnome_shortcuts: reinstall failed: {e}")
+        return False
+    if reinstalled:
+        log.info("GNOME had reset a VoxFox shortcut; reinstalled.")
+    return reinstalled
 
 
 def _install_lxqt_shortcuts(src, state):

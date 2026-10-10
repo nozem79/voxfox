@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "bahasa",
   "{n} words found": "{n} kata ditemukan",
-  "Read aloud via the running VoxFox instance.": "Dibacakan melalui instans VoxFox yang berjalan."
+  "Read aloud via the running VoxFox instance.": "Dibacakan melalui instans VoxFox yang berjalan.",
+  "Install Ollama": "Pasang Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama belum terpasang di komputer ini. Terjemahan membutuhkannya, atau server Ollama jarak jauh.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama terpasang tetapi tidak berjalan. Jalankan dengan: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Di NixOS, aktifkan Ollama di konfigurasi sistem: services.ollama.enable = true;",
+  "Install Ollama?": "Pasang Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox akan mengunduh Ollama, berkas besar, dan memasangnya dengan hak administrator, bersama layanan latar belakang. Driver grafis Anda tidak diubah.",
+  "Installing Ollama...": "Memasang Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama terpasang. Pilih model di bawah dan tekan Tarik.",
+  "Installation cancelled": "Pemasangan dibatalkan",
+  "Ollama installation failed": "Pemasangan Ollama gagal",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox tidak dapat memulai pemasang secara otomatis. Jalankan ini di terminal:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Alat tidak ditemukan: {tools}. Pasang dengan pengelola paket Anda lalu coba lagi.",
+  "Install": "Pasang",
+  "Downloading Ollama...": "Mengunduh Ollama...",
+  "Starting Ollama...": "Memulai Ollama...",
+  "Waiting for Ollama to start...": "Menunggu Ollama mulai..."
 }

@@ -245,7 +245,9 @@ def install_python_extras(progress=lambda m: None, pulse=lambda: None):
 
     problems = []
     if need_whisper:
-        if not _pip_install(["faster-whisper"], progress, pulse):
+        # "av<19": faster-whisper only asks for av>=11, and PyAV 19 removed an
+        # argument it still passes (see stt._wav_as_float32).
+        if not _pip_install(["faster-whisper", "av<19"], progress, pulse):
             progress(_("faster-whisper install failed (dictation disabled)"))
             problems.append("faster-whisper")
     # Pillow usually comes from apt (python3-pil); pip-install only if missing.

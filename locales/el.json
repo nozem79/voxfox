@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "γλώσσα",
   "{n} words found": "Βρέθηκαν {n} λέξεις",
-  "Read aloud via the running VoxFox instance.": "Διαβάστηκε δυνατά μέσω της εκτελούμενης παρουσίας VoxFox."
+  "Read aloud via the running VoxFox instance.": "Διαβάστηκε δυνατά μέσω της εκτελούμενης παρουσίας VoxFox.",
+  "Install Ollama": "Εγκατάσταση του Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Το Ollama δεν είναι εγκατεστημένο σε αυτόν τον υπολογιστή. Η μετάφραση το χρειάζεται, ή έναν απομακρυσμένο διακομιστή Ollama.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Το Ollama είναι εγκατεστημένο αλλά δεν εκτελείται. Ξεκινήστε το με: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Στο NixOS, ενεργοποιήστε αντί γι' αυτό το Ollama στη ρύθμιση του συστήματος: services.ollama.enable = true;",
+  "Install Ollama?": "Εγκατάσταση του Ollama;",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "Το VoxFox θα κατεβάσει το Ollama, ένα μεγάλο αρχείο, και θα το εγκαταστήσει με δικαιώματα διαχειριστή, μαζί με μια υπηρεσία παρασκηνίου. Οι οδηγοί γραφικών δεν αλλάζουν.",
+  "Installing Ollama...": "Εγκατάσταση του Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Το Ollama εγκαταστάθηκε. Επιλέξτε ένα μοντέλο παρακάτω και πατήστε Λήψη.",
+  "Installation cancelled": "Η εγκατάσταση ακυρώθηκε",
+  "Ollama installation failed": "Η εγκατάσταση του Ollama απέτυχε",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "Το VoxFox δεν μπορεί να ξεκινήσει αυτόματα το πρόγραμμα εγκατάστασης. Εκτελέστε αντί γι' αυτό σε ένα τερματικό:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Λείπουν εργαλεία: {tools}. Εγκαταστήστε τα με τον διαχειριστή πακέτων σας και δοκιμάστε ξανά.",
+  "Install": "Εγκατάσταση",
+  "Downloading Ollama...": "Λήψη του Ollama...",
+  "Starting Ollama...": "Εκκίνηση του Ollama...",
+  "Waiting for Ollama to start...": "Αναμονή για την εκκίνηση του Ollama..."
 }

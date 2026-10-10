@@ -860,6 +860,35 @@ def transcribe(wav_path, model_name, language_hint=None, progress_cb=None,
                              frac_cb=frac_cb)
 
 
+def _wav_as_float32(wav_path):
+    """The samples of a 16 kHz mono 16-bit WAV as the float32 array Whisper
+    wants, or None when the file is anything else (or numpy is missing).
+
+    Why not simply hand faster-whisper the path: for a path it decodes with
+    PyAV, calling `av.open(..., metadata_errors="ignore")`. PyAV 19 removed
+    that argument, while faster-whisper 1.2.1 still asks only for `av>=11`,
+    so every fresh `pip install faster-whisper` pulled in a PyAV it could
+    not use and dictation failed with "open() got an unexpected keyword
+    argument 'metadata_errors'". Given an array, faster-whisper never
+    touches PyAV at all. Everything VoxFox records is already exactly this
+    format, so this is the normal path; the file path stays as the fallback
+    for any other WAV."""
+    try:
+        import numpy as np
+        import wave
+    except ImportError:
+        return None
+    try:
+        with wave.open(wav_path, "rb") as w:
+            if (w.getnchannels(), w.getsampwidth(), w.getframerate()) != (
+                    1, 2, WHISPER_SAMPLE_RATE):
+                return None
+            frames = w.readframes(w.getnframes())
+    except (OSError, EOFError, wave.Error):
+        return None
+    return np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
+
+
 def _transcribe_local(wav_path, model_name, language_hint=None,
                       progress_cb=None, device="auto", frac_cb=None):
     """Local Whisper transcription. Extracted from the old transcribe()
@@ -868,9 +897,10 @@ def _transcribe_local(wav_path, model_name, language_hint=None,
                                     frac_cb=frac_cb)
     if model is None:
         return "", err
+    audio = _wav_as_float32(wav_path)
     try:
         segments, _info = model.transcribe(
-            wav_path,
+            audio if audio is not None else wav_path,
             language=language_hint,         # None -> auto-detect
             beam_size=1,                    # speed over accuracy
             vad_filter=True,                # drop leading/trailing silence
@@ -879,7 +909,12 @@ def _transcribe_local(wav_path, model_name, language_hint=None,
         text = " ".join(seg.text.strip() for seg in segments).strip()
         return text, None
     except Exception as e:
-        return "", f"Transcribe error: {e}"
+        msg = f"Transcribe error: {e}"
+        if "metadata_errors" in str(e):
+            # Only reachable for a WAV that is not 16 kHz mono 16-bit.
+            msg += (' (the installed "av" package is too new for '
+                    'faster-whisper; fix with: pip install "av<19")')
+        return "", msg
 
 
 __all__ = [

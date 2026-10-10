@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "nyelv",
   "{n} words found": "{n} szó található",
-  "Read aloud via the running VoxFox instance.": "Felolvasva a futó VoxFox-példányon keresztül."
+  "Read aloud via the running VoxFox instance.": "Felolvasva a futó VoxFox-példányon keresztül.",
+  "Install Ollama": "Ollama telepítése",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Az Ollama nincs telepítve ezen a számítógépen. A fordításhoz szükség van rá, vagy egy távoli Ollama-kiszolgálóra.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Az Ollama telepítve van, de nem fut. Indítsa el így: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "NixOS-en inkább a rendszerkonfigurációban engedélyezze az Ollamát: services.ollama.enable = true;",
+  "Install Ollama?": "Telepíti az Ollamát?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "A VoxFox letölti az Ollamát, egy nagy fájlt, és rendszergazdai jogokkal telepíti egy háttérszolgáltatással együtt. A grafikus illesztőprogramok nem változnak.",
+  "Installing Ollama...": "Az Ollama telepítése...",
+  "Ollama installed. Pick a model below and press Pull.": "Az Ollama telepítve. Válasszon lent egy modellt, és nyomja meg a(z) Letöltés gombot.",
+  "Installation cancelled": "A telepítés megszakítva",
+  "Ollama installation failed": "Az Ollama telepítése sikertelen",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "A VoxFox nem tudja automatikusan elindítani a telepítőt. Futtassa helyette ezt egy terminálban:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Hiányzó eszközök: {tools}. Telepítse őket a csomagkezelővel, és próbálja újra.",
+  "Install": "Telepítés",
+  "Downloading Ollama...": "Az Ollama letöltése...",
+  "Starting Ollama...": "Az Ollama indítása...",
+  "Waiting for Ollama to start...": "Várakozás az Ollama elindulására..."
 }

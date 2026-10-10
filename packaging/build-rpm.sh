@@ -40,6 +40,15 @@ mkdir -p "$INST/usr/lib/voxfox/voxfox_core" \
 # App code — identical layout to the deb.
 cp "$SRC/voxfox_gtk.py"        "$INST/usr/lib/voxfox/"
 cp "$SRC/quickshot.py"         "$INST/usr/lib/voxfox/"
+
+# Root-side installer behind Settings' "Install Ollama" button, plus the
+# polkit policy that names its authentication prompt and ties it to exactly
+# this file (see src/install-ollama.sh for why it is not Ollama's own script).
+cp "$SRC/install-ollama.sh" "$INST/usr/lib/voxfox/"
+chmod 755 "$INST/usr/lib/voxfox/install-ollama.sh"
+mkdir -p "$INST/usr/share/polkit-1/actions"
+cp "$SRC/nl.voxfox.install-ollama.policy" "$INST/usr/share/polkit-1/actions/"
+chmod 644 "$INST/usr/share/polkit-1/actions/nl.voxfox.install-ollama.policy"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
@@ -160,6 +169,9 @@ Recommends:     gtk3
 Recommends:     gdk-pixbuf2
 Recommends:     python3-cairo
 Recommends:     grim
+Recommends:     polkit
+Recommends:     curl
+Recommends:     zstd
 
 %description
 VoxFox reads text aloud from any application on your screen, lets you
@@ -177,6 +189,8 @@ The .deb for Debian/Ubuntu/Mint remains the primary package.
 cp -a $INST/. %{buildroot}/
 
 %post
+# av<19 is added separately and quoted (a bare < is a redirection); see the
+# note in build-deb.sh.
 PKGS="faster-whisper sounddevice soundfile"
 REAL_USER="\${SUDO_USER:-\$USER}"
 if [ "\$REAL_USER" = "root" ] || [ -z "\$REAL_USER" ]; then
@@ -185,11 +199,11 @@ fi
 if ! python3 -c "import faster_whisper, sounddevice, soundfile" 2>/dev/null; then
     echo "VoxFox: installing Python dictation dependencies (faster-whisper, sounddevice, soundfile)..."
     if [ -n "\$REAL_USER" ] && [ "\$REAL_USER" != "root" ]; then
-        su -c "pip install --user --break-system-packages \$PKGS 2>/dev/null || \\
-               pip install --user \$PKGS 2>/dev/null || true" "\$REAL_USER" || true
+        su -c "pip install --user --break-system-packages \$PKGS 'av<19' 2>/dev/null || \\
+               pip install --user \$PKGS 'av<19' 2>/dev/null || true" "\$REAL_USER" || true
     else
-        pip install --break-system-packages \$PKGS 2>/dev/null || \\
-        pip install \$PKGS 2>/dev/null || true
+        pip install --break-system-packages \$PKGS "av<19" 2>/dev/null || \\
+        pip install \$PKGS "av<19" 2>/dev/null || true
     fi
     echo "VoxFox: done. Run 'voxfox --setup' to download voices."
 fi
@@ -218,6 +232,7 @@ exit 0
 /usr/lib/voxfox/
 /usr/share/voxfox/
 /usr/share/applications/voxfox.desktop
+/usr/share/polkit-1/actions/nl.voxfox.install-ollama.policy
 /usr/share/icons/hicolor/*/apps/voxfox.png
 /usr/share/pixmaps/voxfox.png
 SPEC

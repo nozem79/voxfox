@@ -318,6 +318,17 @@ The **Test connection** button checks the endpoint and whether the chosen
 model is available. Long selections are translated paragraph by paragraph
 with progress shown in the status bar; translations are saved to History.
 
+If no Ollama is installed yet, an **Install Ollama** button appears under the
+connection test (only when the URL points at this computer). It asks for your
+administrator password, downloads Ollama and registers it as a background
+service; afterwards pick a model under *Suggested lightweight translation
+models* and press **Pull**. It deliberately does the base install only and
+never touches graphics drivers: Ollama's own `install.sh` can add NVIDIA's
+repository and install its driver stack when it finds an NVIDIA card, so
+VoxFox does not run it (for GPU acceleration, run that script yourself
+afterwards). It needs `curl`, `zstd` and `pkexec` (PolicyKit). On NixOS the
+button is replaced by a pointer to `services.ollama.enable = true;`.
+
 ## OCR — read PDFs, images, and screen regions
 
 VoxFox can extract text from documents and images and read it aloud:

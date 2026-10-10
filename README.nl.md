@@ -327,6 +327,18 @@ De knop **Test verbinding** controleert de endpoint en of het gekozen model
 beschikbaar is. Lange selecties worden alinea voor alinea vertaald met
 voortgang in de statusbalk; vertalingen komen in de Geschiedenis.
 
+Is Ollama nog niet geïnstalleerd, dan verschijnt onder de verbindingstest een
+knop **Ollama installeren** (alleen als de URL naar deze computer wijst). Die
+vraagt om je beheerderswachtwoord, downloadt Ollama en zet het als
+achtergronddienst klaar; kies daarna onder *Voorgestelde lichte
+vertaalmodellen* een model en druk op **Ophalen**. Dit doet bewust alleen de
+basisinstallatie en blijft van grafische stuurprogramma's af: Ollama's eigen
+`install.sh` kan NVIDIA's softwarebron toevoegen en de stuurprogramma's van
+NVIDIA installeren zodra het een NVIDIA-kaart ziet, dus VoxFox draait dat
+script niet (wil je GPU-versnelling, voer dat script dan zelf uit). Nodig zijn
+`curl`, `zstd` en `pkexec` (PolicyKit). Op NixOS verschijnt in plaats van de
+knop een verwijzing naar `services.ollama.enable = true;`.
+
 ## OCR — pdf's, afbeeldingen en schermgebieden voorlezen
 
 VoxFox kan tekst uit documenten en afbeeldingen halen en voorlezen:

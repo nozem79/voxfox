@@ -1,3 +1,108 @@
+## 5.0.7
+
+Dictation broke on fresh installs
+
+- Dictation failed with "Transcribe error: open() got an unexpected keyword
+  argument 'metadata_errors'" on any machine where faster-whisper had been
+  installed recently, FoxOS included. Cause: faster-whisper decodes audio
+  files with PyAV and calls `av.open(..., metadata_errors="ignore")`; PyAV 19
+  removed that argument, while faster-whisper 1.2.1 (the newest release) still
+  only requires `av>=11`, so a plain `pip install faster-whisper` pulls in a
+  PyAV it cannot use.
+- VoxFox now hands Whisper the recording as an array of samples instead of a
+  file path (it records 16 kHz mono 16-bit, which is exactly what Whisper
+  wants), and faster-whisper never calls PyAV for an array. Dictation and
+  live transcription therefore work whichever PyAV is installed, including
+  on machines that already have the broken combination: updating VoxFox is
+  enough. A WAV in any other format still goes by path, and its error now
+  names the fix.
+- Every install path (first-run setup, the Install speech recognition
+  button, the .deb and .rpm scripts) now also installs `av<19`.
+  If you set up dictation by hand: `pip install "av<19"`.
+
+Ollama install button
+
+- Settings -> Translate & read now has an **Install Ollama** button for
+  people who want local translation but have no Ollama yet. It appears only
+  when the URL points at this computer and nothing answers there; it asks
+  for confirmation, then for your administrator password (through pkexec,
+  with a named prompt rather than a generic "run a program as root" one),
+  and shows download progress. Afterwards the existing "Pull" buttons
+  fetch a model. Until now VoxFox never installed Ollama and could only
+  talk to one you had set up yourself.
+- It deliberately does NOT run Ollama's own install.sh. Reading that
+  script: when it finds an NVIDIA card without the proprietary driver it
+  adds NVIDIA's package repository and installs the cuda-drivers stack
+  (DKMS, kernel headers, sometimes a reboot), and for an AMD card it
+  downloads a separate ROCm bundle. Changing someone's graphics drivers
+  because they pressed a translation button is not what the button
+  promises. VoxFox's helper (/usr/lib/voxfox/install-ollama.sh) does only
+  what Ollama documents as its manual install: unpack the release into
+  /usr, create the ollama user and a systemd service. Translation models
+  run fine on the CPU; anyone who wants GPU acceleration can run Ollama's
+  own script afterwards, knowing what it does.
+- Missing curl, zstd or pkexec is reported before anyone is asked for a
+  password. Where there is no automatic route (no pkexec, no packaged
+  helper) the dialog shows the terminal command instead. On NixOS the
+  button is replaced by a pointer to `services.ollama.enable = true;`.
+- Packaging: the .deb and .rpm ship the helper and its polkit policy;
+  curl, zstd and polkit are now recommended dependencies.
+- Run for real on one machine: the install went through ollama.com,
+  PolicyKit and systemd and Ollama was installed afterwards. The rest was
+  tested against stand-ins: the helper's download, unpack, user and
+  service steps ran against a stand-in release with the system-changing
+  commands stubbed, the failure paths (bad download, corrupt archive,
+  missing binary, missing tools) were exercised, and the settings page was
+  run under a virtual display.
+
+The Ollama install seemed to hang
+
+- On that first real run the progress bar kept saying "Installing Ollama..."
+  although the installation had finished. Four problems that produce exactly
+  that were found by reproducing them against stand-ins, and all four are
+  fixed:
+  - The text was set once and never changed, and the bar stopped moving as
+    soon as a download percentage had been seen. The bar now follows what
+    the installer is doing: Downloading (with a percentage), Installing,
+    Starting, Waiting for Ollama to start, and keeps moving during every
+    phase except the download.
+  - After the installer finished, VoxFox waited for the Ollama server to
+    answer for up to 12 tries of 10 seconds each, still showing "Installing".
+    A server that accepted the connection but never answered could keep the
+    page busy for two and a half minutes. The wait is now capped at 30
+    seconds in total (a single check is at most 2 seconds).
+  - VoxFox read the installer's output until the pipe was closed, not until
+    the installer had exited. A program the installer left running in the
+    background (for example when a service start leaves a process behind)
+    held the pipe open and delayed the end by as long as it lived. VoxFox now stops reading
+    once the installer has exited and nothing more is waiting.
+  - When Ollama was installed but not answering yet, the page re-checked
+    and could hide the install button without saying anything. It now always
+    ends with a clear message: "Ollama installed. Pick a model below and
+    press Pull.", or, if the server is not up within 30 seconds, "Ollama is
+    installed but not running. Start it with: systemctl start ollama".
+- list_models() takes an optional timeout (default 10 seconds, as before).
+
+Keyboard shortcuts that quietly reset
+
+- On Cinnamon (and GNOME), the shortcut for switching voice (Super+C)
+  could silently revert to the desktop's own binding after a restart or
+  resuming from standby, and VoxFox never noticed because it deliberately
+  does not reinstall shortcuts on its own. While running, VoxFox now checks
+  once a minute that the shortcuts it installed still point at VoxFox and
+  puts them back if the desktop reset them. A key you rebound yourself in
+  the desktop's keyboard settings is left alone: only a slot that vanished
+  or lost its command counts as a reset. KDE, XFCE and LXQt are untouched
+  (they read a file once at login instead of keeping a live setting).
+
+Tests
+
+- 151 tests (48 more): the Ollama decisions, the installer's output
+  handling against stub pkexec/helper scripts (including a helper that
+  leaves a child process holding its output, a server that never answers,
+  and a late-starting server, all with a fake clock), and a check that the
+  polkit policy is bound to the exact path the code runs.
+
 ## 5.0.6
 
 A Nix/NixOS package: `flake.nix`, `default.nix`, and `packaging/nix/`.

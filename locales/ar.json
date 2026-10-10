@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "اللغة",
   "{n} words found": "تم العثور على {n} كلمة",
-  "Read aloud via the running VoxFox instance.": "تمت القراءة بصوت عالٍ عبر نسخة VoxFox قيد التشغيل."
+  "Read aloud via the running VoxFox instance.": "تمت القراءة بصوت عالٍ عبر نسخة VoxFox قيد التشغيل.",
+  "Install Ollama": "تثبيت Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama غير مثبّت على هذا الحاسوب. الترجمة تحتاج إليه، أو إلى خادم Ollama بعيد.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama مثبّت لكنه لا يعمل. شغّله بالأمر: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "في NixOS، فعّل Ollama بدلًا من ذلك في إعدادات النظام: services.ollama.enable = true;",
+  "Install Ollama?": "تثبيت Ollama؟",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "سيقوم VoxFox بتنزيل Ollama، وهو ملف كبير، وتثبيته بصلاحيات المسؤول مع خدمة تعمل في الخلفية. لن تتغير تعريفات الرسومات لديك.",
+  "Installing Ollama...": "جارٍ تثبيت Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "تم تثبيت Ollama. اختر نموذجًا أدناه واضغط «تنزيل».",
+  "Installation cancelled": "أُلغي التثبيت",
+  "Ollama installation failed": "فشل تثبيت Ollama",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "لا يستطيع VoxFox تشغيل برنامج التثبيت تلقائيًا. شغّل هذا الأمر في الطرفية بدلًا من ذلك:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "أدوات ناقصة: {tools}. ثبّتها بمدير الحزم لديك ثم أعد المحاولة.",
+  "Install": "تثبيت",
+  "Downloading Ollama...": "جارٍ تنزيل Ollama...",
+  "Starting Ollama...": "جارٍ تشغيل Ollama...",
+  "Waiting for Ollama to start...": "في انتظار بدء تشغيل Ollama..."
 }

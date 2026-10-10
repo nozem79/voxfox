@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "dil",
   "{n} words found": "{n} kelime bulundu",
-  "Read aloud via the running VoxFox instance.": "Çalışan VoxFox örneği üzerinden sesli okundu."
+  "Read aloud via the running VoxFox instance.": "Çalışan VoxFox örneği üzerinden sesli okundu.",
+  "Install Ollama": "Ollama'yı yükle",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama bu bilgisayarda yüklü değil. Çeviri bunu veya uzak bir Ollama sunucusunu gerektirir.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama yüklü ama çalışmıyor. Şununla başlatın: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "NixOS'ta bunun yerine Ollama'yı sistem yapılandırmasında etkinleştirin: services.ollama.enable = true;",
+  "Install Ollama?": "Ollama yüklensin mi?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox, büyük bir dosya olan Ollama'yı indirecek ve yönetici haklarıyla, arka plan hizmetiyle birlikte yükleyecek. Grafik sürücüleriniz değiştirilmez.",
+  "Installing Ollama...": "Ollama yükleniyor...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama yüklendi. Aşağıdan bir model seçin ve İndir düğmesine basın.",
+  "Installation cancelled": "Yükleme iptal edildi",
+  "Ollama installation failed": "Ollama yüklemesi başarısız oldu",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox yükleyiciyi otomatik olarak başlatamıyor. Bunun yerine bir terminalde şunu çalıştırın:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Eksik araçlar: {tools}. Bunları paket yöneticinizle yükleyip yeniden deneyin.",
+  "Install": "Yükle",
+  "Downloading Ollama...": "Ollama indiriliyor...",
+  "Starting Ollama...": "Ollama başlatılıyor...",
+  "Waiting for Ollama to start...": "Ollama'nın başlaması bekleniyor..."
 }

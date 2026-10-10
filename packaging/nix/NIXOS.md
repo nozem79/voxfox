@@ -152,6 +152,11 @@ github:nozem79/voxfox` for a per-user install.
 
 ## What was deliberately left out
 
+- No Ollama installer on NixOS. Settings' "Install Ollama" button writes into
+  /usr and /etc/systemd, which a declarative system doesn't want; VoxFox
+  detects NixOS (/etc/NIXOS) and shows `services.ollama.enable = true;`
+  instead. The root-side helper (`install-ollama.sh`) and its polkit policy
+  are not part of this package either.
 - No NixOS module (a `services.voxfox` or similar for declarative
   configuration). VoxFox is a desktop application someone launches
   themselves, not a service with configuration worth managing through

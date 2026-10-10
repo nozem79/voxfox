@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "språk",
   "{n} words found": "{n} ord hittades",
-  "Read aloud via the running VoxFox instance.": "Uppläst via den körande VoxFox-instansen."
+  "Read aloud via the running VoxFox instance.": "Uppläst via den körande VoxFox-instansen.",
+  "Install Ollama": "Installera Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama är inte installerat på den här datorn. Översättning kräver det, eller en fjärransluten Ollama-server.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama är installerat men körs inte. Starta det med: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "På NixOS aktiverar du i stället Ollama i systemkonfigurationen: services.ollama.enable = true;",
+  "Install Ollama?": "Installera Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox hämtar Ollama, en stor fil, och installerar det med administratörsrättigheter, tillsammans med en bakgrundstjänst. Dina grafikdrivrutiner ändras inte.",
+  "Installing Ollama...": "Installerar Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama är installerat. Välj en modell nedan och tryck på Hämta.",
+  "Installation cancelled": "Installationen avbröts",
+  "Ollama installation failed": "Installationen av Ollama misslyckades",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox kan inte starta installationsprogrammet automatiskt. Kör i stället detta i en terminal:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Verktyg saknas: {tools}. Installera dem med din pakethanterare och försök igen.",
+  "Install": "Installera",
+  "Downloading Ollama...": "Hämtar Ollama...",
+  "Starting Ollama...": "Startar Ollama...",
+  "Waiting for Ollama to start...": "Väntar på att Ollama ska starta..."
 }

@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "limbă",
   "{n} words found": "{n} cuvinte găsite",
-  "Read aloud via the running VoxFox instance.": "Citit cu voce tare prin instanța VoxFox care rulează."
+  "Read aloud via the running VoxFox instance.": "Citit cu voce tare prin instanța VoxFox care rulează.",
+  "Install Ollama": "Instalează Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama nu este instalat pe acest calculator. Traducerea are nevoie de el sau de un server Ollama la distanță.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama este instalat, dar nu rulează. Pornește-l cu: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Pe NixOS, activează în schimb Ollama în configurația sistemului: services.ollama.enable = true;",
+  "Install Ollama?": "Instalezi Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox va descărca Ollama, un fișier mare, și îl va instala cu drepturi de administrator, împreună cu un serviciu în fundal. Driverele grafice nu sunt modificate.",
+  "Installing Ollama...": "Se instalează Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama este instalat. Alege mai jos un model și apasă pe Descarcă.",
+  "Installation cancelled": "Instalare anulată",
+  "Ollama installation failed": "Instalarea Ollama a eșuat",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox nu poate porni automat programul de instalare. Rulează în schimb aceasta într-un terminal:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Instrumente lipsă: {tools}. Instalează-le cu managerul de pachete și încearcă din nou.",
+  "Install": "Instalează",
+  "Downloading Ollama...": "Se descarcă Ollama...",
+  "Starting Ollama...": "Se pornește Ollama...",
+  "Waiting for Ollama to start...": "Se așteaptă pornirea Ollama..."
 }

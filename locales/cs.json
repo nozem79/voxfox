@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "jazyk",
   "{n} words found": "Nalezeno slov: {n}",
-  "Read aloud via the running VoxFox instance.": "Přečteno nahlas přes běžící instanci VoxFox."
+  "Read aloud via the running VoxFox instance.": "Přečteno nahlas přes běžící instanci VoxFox.",
+  "Install Ollama": "Nainstalovat Ollamu",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama není v tomto počítači nainstalována. Překlad ji potřebuje, nebo vzdálený server Ollama.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama je nainstalována, ale neběží. Spusťte ji příkazem: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "V NixOS místo toho povolte Ollamu v konfiguraci systému: services.ollama.enable = true;",
+  "Install Ollama?": "Nainstalovat Ollamu?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox stáhne Ollamu, velký soubor, a nainstaluje ji s právy správce spolu se službou na pozadí. Grafické ovladače se nezmění.",
+  "Installing Ollama...": "Instaluje se Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama je nainstalována. Vyberte níže model a stiskněte Stáhnout.",
+  "Installation cancelled": "Instalace zrušena",
+  "Ollama installation failed": "Instalace Ollamy selhala",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox nemůže instalační program spustit automaticky. Spusťte místo toho v terminálu:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Chybějící nástroje: {tools}. Nainstalujte je správcem balíčků a zkuste to znovu.",
+  "Install": "Nainstalovat",
+  "Downloading Ollama...": "Stahování Ollamy...",
+  "Starting Ollama...": "Spouštění Ollamy...",
+  "Waiting for Ollama to start...": "Čekání na spuštění Ollamy..."
 }

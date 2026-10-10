@@ -73,7 +73,7 @@ let
   # multi-line file needs, and a wrong guess there would fail the whole
   # build rather than just this one string, so a plain hardcoded value
   # is the safer choice until someone can verify that on a real system.)
-  version = "5.0.6";
+  version = "5.0.7";
 
   pythonEnv = python3.withPackages (ps: with ps; [
     pygobject3

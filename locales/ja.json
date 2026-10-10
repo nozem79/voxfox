@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "言語",
   "{n} words found": "{n} 語が見つかりました",
-  "Read aloud via the running VoxFox instance.": "実行中の VoxFox インスタンス経由で読み上げました。"
+  "Read aloud via the running VoxFox instance.": "実行中の VoxFox インスタンス経由で読み上げました。",
+  "Install Ollama": "Ollama をインストール",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "このコンピューターには Ollama がインストールされていません。翻訳には Ollama か、リモートの Ollama サーバーが必要です。",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama はインストール済みですが、実行されていません。次のコマンドで起動してください: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "NixOS では、代わりにシステム設定で Ollama を有効にしてください: services.ollama.enable = true;",
+  "Install Ollama?": "Ollama をインストールしますか?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox は大きなファイルである Ollama をダウンロードし、管理者権限でバックグラウンドサービスと一緒にインストールします。グラフィックドライバーは変更されません。",
+  "Installing Ollama...": "Ollama をインストールしています...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama をインストールしました。下でモデルを選び、「取得」を押してください。",
+  "Installation cancelled": "インストールをキャンセルしました",
+  "Ollama installation failed": "Ollama のインストールに失敗しました",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox はインストーラーを自動的に起動できません。代わりに端末で次を実行してください:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "必要なツールが見つかりません: {tools}。パッケージマネージャーでインストールしてから、もう一度お試しください。",
+  "Install": "インストール",
+  "Downloading Ollama...": "Ollama をダウンロードしています...",
+  "Starting Ollama...": "Ollama を起動しています...",
+  "Waiting for Ollama to start...": "Ollama の起動を待っています..."
 }

@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "język",
   "{n} words found": "Znaleziono słów: {n}",
-  "Read aloud via the running VoxFox instance.": "Odczytano przez działającą instancję VoxFox."
+  "Read aloud via the running VoxFox instance.": "Odczytano przez działającą instancję VoxFox.",
+  "Install Ollama": "Zainstaluj Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Program Ollama nie jest zainstalowany na tym komputerze. Tłumaczenie go wymaga albo zdalnego serwera Ollama.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Program Ollama jest zainstalowany, ale nie działa. Uruchom go poleceniem: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "W NixOS włącz Ollama w konfiguracji systemu: services.ollama.enable = true;",
+  "Install Ollama?": "Zainstalować Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox pobierze Ollama, duży plik, i zainstaluje go z uprawnieniami administratora wraz z usługą działającą w tle. Sterowniki graficzne nie zostaną zmienione.",
+  "Installing Ollama...": "Instalowanie Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama zainstalowana. Wybierz poniżej model i naciśnij Pobierz.",
+  "Installation cancelled": "Instalacja anulowana",
+  "Ollama installation failed": "Instalacja Ollama nie powiodła się",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox nie może automatycznie uruchomić instalatora. Uruchom to zamiast tego w terminalu:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Brakujące narzędzia: {tools}. Zainstaluj je menedżerem pakietów i spróbuj ponownie.",
+  "Install": "Zainstaluj",
+  "Downloading Ollama...": "Pobieranie Ollama...",
+  "Starting Ollama...": "Uruchamianie Ollama...",
+  "Waiting for Ollama to start...": "Oczekiwanie na uruchomienie Ollama..."
 }

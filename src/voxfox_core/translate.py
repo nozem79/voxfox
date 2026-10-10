@@ -24,7 +24,14 @@ API key. The target language is VoxFox's current UI language (follows Slot 1).
 Plain urllib — no extra dependencies. Long selections go chunk by chunk.
 """
 
+import ipaddress
 import json
+import os
+import re
+import select
+import shutil
+import subprocess
+import time
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -186,7 +193,7 @@ def translate_text(text, cfg=None, target_code=None, progress=None):
         return None, msg
 
 
-def list_models(cfg=None):
+def list_models(cfg=None, timeout=10):
     """List model ids already available on the configured endpoint (a
     plain GET /models -- works for Ollama and any other OpenAI-compatible
     server). Returns (model_ids, error); model_ids is [] rather than None
@@ -199,7 +206,7 @@ def list_models(cfg=None):
         req = urllib.request.Request(
             _base_url(c.get("url")) + "/models",
             headers=_headers((c.get("api_key") or "").strip()))
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="replace"))
     except Exception as e:
         return [], _err_str(e)
@@ -254,9 +261,10 @@ def pull_model(model, cfg=None, progress=None, frac=None):
     streaming progress. `progress(text)` and `frac(fraction, label)`
     mirror install_piper()'s callback shape. Returns (ok, message).
 
-    Only meaningful against a real (local or remote) Ollama server that
-    the user already installed and is running themselves -- VoxFox never
-    installs Ollama itself. Against a plain OpenAI-style API this simply
+    Only meaningful against a real (local or remote) Ollama server.
+    VoxFox does not install Ollama as part of its normal setup; Settings
+    offers an explicit "Install Ollama" button for a local one (see
+    install_ollama()). Against a plain OpenAI-style API this simply
     fails with a clear error, the same as any other unsupported call."""
     c = _cfg(cfg)
     progress = progress or (lambda *_a: None)
@@ -294,6 +302,218 @@ def pull_model(model, cfg=None, progress=None, frac=None):
         return False, msg
 
 
+# ── Installing a local Ollama ──────────────────────────────────────────────
+# Settings offers an "Install Ollama" button, but only in the one situation
+# where it makes sense: the configured URL points at this very machine and
+# nothing answers there yet. Everything that decides that is a plain function
+# here (testable without a display); the GTK side only reacts to the result.
+#
+# What the button runs is /usr/lib/voxfox/install-ollama.sh, through pkexec --
+# not Ollama's own install.sh. See the comment at the top of that script for
+# why (short version: Ollama's script can install NVIDIA's driver stack).
+
+# Shown to people who have to do it by hand (no pkexec, no packaged helper).
+OLLAMA_OFFICIAL_INSTALL = "curl -fsSL https://ollama.com/install.sh | sh"
+_OLLAMA_HELPER_PACKAGED = "/usr/lib/voxfox/install-ollama.sh"
+_PERCENT_LINE = re.compile(r"^[#\s\d.%]+$")      # curl's --progress-bar
+_PERCENT = re.compile(r"(\d{1,3}(?:\.\d+)?)\s*%")
+
+
+def ollama_url_is_local(url):
+    """True when `url` (empty means the default) points at this machine."""
+    host = (urllib.parse.urlparse(_base_url(url)).hostname or "").lower()
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def ollama_binary_present():
+    """An ollama program is installed here (running or not). Checks the usual
+    install locations too, since VoxFox may be started with a PATH that
+    lacks /usr/local/bin."""
+    return (shutil.which("ollama") is not None
+            or os.path.isfile("/usr/bin/ollama")
+            or os.path.isfile("/usr/local/bin/ollama"))
+
+
+def is_nixos():
+    """NixOS manages services declaratively; an imperative installer that
+    writes into /usr and /etc/systemd does not belong there."""
+    return os.path.exists("/etc/NIXOS") or os.path.isdir("/run/current-system")
+
+
+def ollama_install_state(url, reachable, binary_present, nixos):
+    """What Settings should offer for a local Ollama. One of:
+      "remote"       the URL is another machine's -- nothing to install here
+      "running"      a server already answers -- nothing to do
+      "not-running"  installed but not answering -- tell them how to start it
+      "nixos"        not installed, on NixOS -- point at services.ollama
+      "missing"      not installed -- offer the Install button
+    `reachable` comes from list_models(); a network probe, so the caller does
+    it (in a thread) and hands the result in."""
+    if not ollama_url_is_local(url):
+        return "remote"
+    if reachable:
+        return "running"
+    if binary_present:
+        return "not-running"
+    if nixos:
+        return "nixos"
+    return "missing"
+
+
+def ollama_helper_path():
+    """The root-side installer: the packaged copy, else the one next to the
+    source tree (a git checkout). None when neither exists."""
+    if os.path.isfile(_OLLAMA_HELPER_PACKAGED):
+        return _OLLAMA_HELPER_PACKAGED
+    here = os.path.dirname(os.path.abspath(__file__))
+    dev = os.path.normpath(os.path.join(here, "..", "install-ollama.sh"))
+    return dev if os.path.isfile(dev) else None
+
+
+def ollama_install_missing_tools():
+    """Tools the installer needs. Checked here, as the user, so a missing one
+    is reported before anybody is asked for an administrator password."""
+    return [t for t in ("curl", "zstd") if shutil.which(t) is None]
+
+
+def ollama_install_blocker():
+    """Why the installer cannot run right now, as a short code, or None when
+    it can: "no-helper", "no-pkexec" or "missing:<tool>,<tool>"."""
+    if not ollama_helper_path():
+        return "no-helper"
+    if shutil.which("pkexec") is None:
+        return "no-pkexec"
+    missing = ollama_install_missing_tools()
+    if missing:
+        return "missing:" + ",".join(missing)
+    return None
+
+
+# What the helper is doing, as short codes for the settings page to put into
+# words. The helper prints English status lines; matching them here keeps
+# that English out of the user interface.
+_HELPER_PHASES = (
+    ("Downloading", "download"),
+    ("Installing", "install"),
+    ("Creating", "install"),
+    ("Enabling", "start"),
+)
+
+
+def install_ollama(progress=lambda _t: None, frac=lambda *_a: None,
+                   wait_ready=True, phase=lambda _c: None,
+                   ready_timeout=30.0):
+    """Install a local Ollama via the packaged helper under pkexec.
+
+    `progress(text)` gets the helper's status lines; `frac(fraction, label)`
+    gets the download percentage parsed from curl's progress bar;
+    `phase(code)` is told what is going on, one of "download", "install",
+    "start" (the helper's own steps) and "wait" (the installation is done,
+    waiting for the server to answer). Returns (ok, detail). detail is
+    "ok" (installed and answering), "not-running" (installed, but nothing
+    answered within `ready_timeout` seconds), a blocker code from
+    ollama_install_blocker(), "cancelled" (the authentication prompt was
+    dismissed or refused), or the reason the helper printed on its last
+    "ERROR:" line.
+
+    pkexec exits 126 when the prompt was dismissed and 127 when authorisation
+    failed; the helper itself only ever exits 0 or 1, so neither can be
+    mistaken for a failure of the installation proper.
+
+    Nothing in here may be able to wait for ever: this runs behind a progress
+    bar, and a bar that stays on "installing" after the installation is
+    finished looks exactly like a hang. So the helper's output is read only
+    until the helper itself has ended (a child it left running with the
+    output open cannot hold us up), and the wait for the server has a
+    deadline and short per-attempt timeouts."""
+    blocker = ollama_install_blocker()
+    if blocker:
+        return False, blocker
+    try:
+        proc = subprocess.Popen(
+            ["pkexec", ollama_helper_path()], stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    except OSError as e:
+        return False, str(e)
+
+    last_error = ""
+
+    def handle(raw):
+        nonlocal last_error
+        text = raw.decode("utf-8", "replace").strip()
+        if not text:
+            return
+        if _PERCENT_LINE.match(text):
+            m = _PERCENT.search(text)
+            if m:
+                frac(min(float(m.group(1)), 100.0) / 100.0, "Ollama")
+            return
+        if text.startswith("ERROR"):
+            last_error = text.split(":", 1)[-1].strip()
+        log.debug(f"ollama installer: {text}")
+        progress(text)
+        body = text.lstrip("> ").strip()
+        for prefix, code in _HELPER_PHASES:
+            if body.startswith(prefix):
+                phase(code)
+                break
+
+    def feed(chunk, pending):
+        pending += chunk
+        # curl redraws its bar with \r, so split on that as well as \n.
+        *lines, pending = re.split(rb"[\r\n]+", pending)
+        for raw in lines:
+            try:
+                handle(raw)
+            except Exception as e:
+                log.debug(f"ollama installer output handler: {e}")
+        return pending
+
+    pending = b""
+    fd = proc.stdout.fileno()
+    while True:
+        ready, _w, _x = select.select([fd], [], [], 0.5)
+        if ready:
+            chunk = os.read(fd, 4096)
+            if not chunk:
+                break                       # every writer has closed
+            pending = feed(chunk, pending)
+        elif proc.poll() is not None:
+            break       # helper has ended and nothing more is buffered
+    try:
+        handle(pending)
+    except Exception as e:
+        log.debug(f"ollama installer output handler: {e}")
+    proc.stdout.close()
+    rc = proc.wait()
+    log.info(f"Ollama installer finished with exit code {rc}")
+
+    if rc in (126, 127):
+        return False, "cancelled"
+    if rc != 0:
+        return False, last_error or f"exit code {rc}"
+    if not wait_ready:
+        return True, "ok"
+    # The service is restarted as the very last step; give it a moment, but
+    # never longer than `ready_timeout`.
+    phase("wait")
+    progress(_("Connecting..."))
+    deadline = time.monotonic() + ready_timeout
+    while True:
+        _ids, err = list_models({"url": DEFAULT_TRANSLATE["url"]}, timeout=2)
+        if err is None:
+            return True, "ok"
+        left = deadline - time.monotonic()
+        if left <= 0:
+            return True, "not-running"
+        time.sleep(min(1.0, left))
+
+
 __all__ = [
     "DEFAULT_TRANSLATE",
     "SUGGESTED_MODELS",
@@ -303,4 +523,13 @@ __all__ = [
     "list_models",
     "pull_model",
     "is_chat_model",
+    "OLLAMA_OFFICIAL_INSTALL",
+    "ollama_url_is_local",
+    "ollama_binary_present",
+    "is_nixos",
+    "ollama_install_state",
+    "ollama_helper_path",
+    "ollama_install_missing_tools",
+    "ollama_install_blocker",
+    "install_ollama",
 ]

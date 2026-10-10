@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "taal",
   "{n} words found": "{n} woorden gevonden",
-  "Read aloud via the running VoxFox instance.": "Voorgelezen via de draaiende VoxFox-instantie."
+  "Read aloud via the running VoxFox instance.": "Voorgelezen via de draaiende VoxFox-instantie.",
+  "Install Ollama": "Ollama installeren",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollama is niet geïnstalleerd op deze computer. Vertalen heeft het nodig, of een externe Ollama-server.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama is geïnstalleerd maar draait niet. Start het met: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Schakel Ollama op NixOS in via je systeemconfiguratie: services.ollama.enable = true;",
+  "Install Ollama?": "Ollama installeren?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox downloadt Ollama, een groot bestand, en installeert het met beheerdersrechten, samen met een achtergronddienst. Je grafische stuurprogramma's worden niet aangepast.",
+  "Installing Ollama...": "Ollama wordt geïnstalleerd...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama is geïnstalleerd. Kies hieronder een model en druk op Ophalen.",
+  "Installation cancelled": "Installatie geannuleerd",
+  "Ollama installation failed": "Installatie van Ollama mislukt",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox kan het installatieprogramma niet automatisch starten. Voer dit in plaats daarvan uit in een terminal:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Ontbrekende hulpprogramma's: {tools}. Installeer ze met je pakketbeheerder en probeer het opnieuw.",
+  "Install": "Installeren",
+  "Downloading Ollama...": "Ollama wordt gedownload...",
+  "Starting Ollama...": "Ollama wordt gestart...",
+  "Waiting for Ollama to start...": "Wachten tot Ollama is gestart..."
 }

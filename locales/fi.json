@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "kieli",
   "{n} words found": "{n} sanaa löytyi",
-  "Read aloud via the running VoxFox instance.": "Luettu ääneen käynnissä olevan VoxFox-instanssin kautta."
+  "Read aloud via the running VoxFox instance.": "Luettu ääneen käynnissä olevan VoxFox-instanssin kautta.",
+  "Install Ollama": "Asenna Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "Ollamaa ei ole asennettu tälle tietokoneelle. Käännös tarvitsee sen tai etäällä olevan Ollama-palvelimen.",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama on asennettu, mutta ei käynnissä. Käynnistä se komennolla: systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "Ota NixOS:ssa Ollama käyttöön järjestelmän asetuksissa: services.ollama.enable = true;",
+  "Install Ollama?": "Asennetaanko Ollama?",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox lataa Ollaman, suuren tiedoston, ja asentaa sen järjestelmänvalvojan oikeuksilla taustapalvelun kanssa. Näytönohjainten ajureita ei muuteta.",
+  "Installing Ollama...": "Asennetaan Ollamaa...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama on asennettu. Valitse alta malli ja paina Nouda.",
+  "Installation cancelled": "Asennus peruttiin",
+  "Ollama installation failed": "Ollaman asennus epäonnistui",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox ei voi käynnistää asennusohjelmaa automaattisesti. Suorita tämä sen sijaan päätteessä:",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "Puuttuvat työkalut: {tools}. Asenna ne paketinhallinnalla ja yritä uudelleen.",
+  "Install": "Asenna",
+  "Downloading Ollama...": "Ladataan Ollamaa...",
+  "Starting Ollama...": "Käynnistetään Ollamaa...",
+  "Waiting for Ollama to start...": "Odotetaan Ollaman käynnistymistä..."
 }

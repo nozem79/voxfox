@@ -357,5 +357,21 @@
   "OCR": "OCR",
   "language": "语言",
   "{n} words found": "找到 {n} 个词",
-  "Read aloud via the running VoxFox instance.": "已通过正在运行的 VoxFox 实例朗读。"
+  "Read aloud via the running VoxFox instance.": "已通过正在运行的 VoxFox 实例朗读。",
+  "Install Ollama": "安装 Ollama",
+  "Ollama is not installed on this computer. Translation needs it, or a remote Ollama server.": "此电脑未安装 Ollama。翻译需要它，或需要远程 Ollama 服务器。",
+  "Ollama is installed but not running. Start it with: systemctl start ollama": "Ollama 已安装但未运行。请用以下命令启动：systemctl start ollama",
+  "On NixOS, enable Ollama in your system configuration instead: services.ollama.enable = true;": "在 NixOS 上，请改为在系统配置中启用 Ollama：services.ollama.enable = true;",
+  "Install Ollama?": "安装 Ollama？",
+  "VoxFox will download Ollama, a large file, and install it with administrator rights, together with a background service. Your graphics drivers are not changed.": "VoxFox 将下载 Ollama（一个较大的文件），并以管理员权限将其与一个后台服务一起安装。不会更改您的显卡驱动。",
+  "Installing Ollama...": "正在安装 Ollama...",
+  "Ollama installed. Pick a model below and press Pull.": "Ollama 已安装。请在下方选择模型并点击“获取”。",
+  "Installation cancelled": "安装已取消",
+  "Ollama installation failed": "Ollama 安装失败",
+  "VoxFox cannot start the installer automatically. Run this in a terminal instead:": "VoxFox 无法自动启动安装程序。请改为在终端中运行：",
+  "Missing tools: {tools}. Install them with your package manager and try again.": "缺少工具：{tools}。请用包管理器安装后重试。",
+  "Install": "安装",
+  "Downloading Ollama...": "正在下载 Ollama...",
+  "Starting Ollama...": "正在启动 Ollama...",
+  "Waiting for Ollama to start...": "正在等待 Ollama 启动..."
 }

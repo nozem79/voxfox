@@ -1248,6 +1248,31 @@ class PreferencesWindow(Gtk.Window):
         self.trans_status.add_css_class("dim-label")
         box.append(self.trans_status)
 
+        # Install helper for a *local* Ollama: only shown when the URL points
+        # at this machine and nothing is there yet (see _refresh_ollama_row).
+        # Hidden until the first probe has finished, so it never flashes up
+        # for someone who already has Ollama running.
+        self.ollama_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                                  spacing=6)
+        # selectable: the terminal command shown when there is no
+        # automatic route has to be copyable.
+        self.ollama_info = Gtk.Label(xalign=0.0, wrap=True, selectable=True)
+        self.ollama_info.add_css_class("dim-label")
+        self.ollama_box.append(self.ollama_info)
+        self.ollama_btn = Gtk.Button(label=_("Install Ollama"))
+        _a11y(self.ollama_btn, _("Install Ollama"))
+        self.ollama_btn.set_halign(Gtk.Align.START)
+        self.ollama_btn.connect("clicked", self._on_install_ollama)
+        self.ollama_box.append(self.ollama_btn)
+        self.ollama_bar = Gtk.ProgressBar(show_text=True)
+        self.ollama_bar.set_visible(False)
+        self.ollama_box.append(self.ollama_bar)
+        self.ollama_box.set_visible(False)
+        box.append(self.ollama_box)
+        self._ollama_gen = 0
+        self._ollama_installing = False
+        self._refresh_ollama_row()
+
         sug_frame = Gtk.Frame(
             label=_("Suggested lightweight translation models"))
         sug_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -1288,6 +1313,153 @@ class PreferencesWindow(Gtk.Window):
                        or vf.DEFAULT_TRANSLATE["model"])
         tr["api_key"] = self.trans_key.get_text().strip()
         self._save_state_debounced()
+        self._refresh_ollama_row()
+
+    # ── Install Ollama ────────────────────────────────────────────────────
+    def _refresh_ollama_row(self):
+        """Decide what to offer for a local Ollama. Whether the URL is local
+        is instant; whether a server answers is a network call, so that part
+        runs in a thread, and a stale answer (the URL changed again while it
+        was running) is dropped via the generation counter."""
+        if not hasattr(self, "ollama_box") or self._ollama_installing:
+            return
+        self._ollama_gen += 1
+        gen = self._ollama_gen
+        cfg = dict(self.state.get("translate", {}))
+        url = cfg.get("url") or ""
+        if not vf.ollama_url_is_local(url):
+            self._apply_ollama_state(gen, "remote")
+            return
+
+        def probe():
+            _ids, err = vf.list_models(cfg)
+            state = vf.ollama_install_state(
+                url, err is None, vf.ollama_binary_present(), vf.is_nixos())
+            GLib.idle_add(self._apply_ollama_state, gen, state)
+        threading.Thread(target=probe, daemon=True).start()
+
+    def _apply_ollama_state(self, gen, state):
+        if gen != self._ollama_gen:
+            return False
+        texts = {
+            "missing": _("Ollama is not installed on this computer. "
+                         "Translation needs it, or a remote Ollama server."),
+            "not-running": _("Ollama is installed but not running. "
+                             "Start it with: systemctl start ollama"),
+            "nixos": _("On NixOS, enable Ollama in your system "
+                       "configuration instead: "
+                       "services.ollama.enable = true;"),
+        }
+        text = texts.get(state)
+        self.ollama_box.set_visible(text is not None)
+        if text is not None:
+            self.ollama_info.set_text(text)
+        self.ollama_btn.set_visible(state == "missing")
+        return False
+
+    def _on_install_ollama(self, _btn):
+        blocker = vf.ollama_install_blocker()
+        if blocker and blocker.startswith("missing:"):
+            self.ollama_info.set_text(
+                _("Missing tools: {tools}. Install them with your package "
+                  "manager and try again.").format(
+                      tools=", ".join(blocker[len("missing:"):].split(","))))
+            return
+        if blocker:   # no packaged helper, or no pkexec: do it by hand
+            self.ollama_info.set_text(
+                _("VoxFox cannot start the installer automatically. Run "
+                  "this in a terminal instead:") + "\n"
+                + vf.OLLAMA_OFFICIAL_INSTALL)
+            return
+        # Administrator rights and a large download: ask first.
+        dlg = Gtk.AlertDialog()
+        dlg.set_message(_("Install Ollama?"))
+        dlg.set_detail(_("VoxFox will download Ollama, a large file, and "
+                         "install it with administrator rights, together "
+                         "with a background service. Your graphics drivers "
+                         "are not changed."))
+        dlg.set_buttons([_("Cancel"), _("Install")])
+        dlg.set_cancel_button(0)
+        dlg.set_default_button(0)
+
+        def done(source, result, *_a):
+            try:
+                choice = source.choose_finish(result)
+            except Exception:
+                return
+            if choice == 1:
+                self._start_ollama_install()
+        dlg.choose(self, None, done)
+
+    def _start_ollama_install(self):
+        self._ollama_installing = True
+        self.ollama_btn.set_sensitive(False)
+        self.ollama_bar.set_fraction(0.0)
+        self.ollama_bar.set_text(_("Installing Ollama..."))
+        self.ollama_bar.set_visible(True)
+        # Whether the bar should show a download percentage (a fraction) or
+        # just keep moving (a pulse). Everything after the download -- unpack,
+        # service, waiting for the server -- has no percentage, and a bar
+        # that stands still there looks like a hang.
+        self._ollama_pulsing = True
+
+        def tick():
+            if not self._ollama_installing:
+                return False
+            if self._ollama_pulsing:
+                self.ollama_bar.pulse()
+            return True
+        GLib.timeout_add(120, tick)
+
+        def set_phase(code):
+            texts = {
+                "download": _("Downloading Ollama..."),
+                "install": _("Installing Ollama..."),
+                "start": _("Starting Ollama..."),
+                "wait": _("Waiting for Ollama to start..."),
+            }
+            text = texts.get(code)
+            if text is None:
+                return False
+            self._ollama_pulsing = code != "download"
+            self.ollama_bar.set_text(text)
+            return False
+
+        def on_frac(fraction, _label=""):
+            def apply():
+                if self._ollama_installing:
+                    self._ollama_pulsing = False
+                    self.ollama_bar.set_fraction(min(max(fraction, 0.0), 1.0))
+                return False
+            GLib.idle_add(apply)
+
+        def worker():
+            ok, detail = vf.install_ollama(
+                frac=on_frac, phase=lambda c: GLib.idle_add(set_phase, c))
+            GLib.idle_add(self._finish_ollama_install, ok, detail)
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _finish_ollama_install(self, ok, detail):
+        self._ollama_installing = False
+        self.ollama_bar.set_visible(False)
+        self.ollama_btn.set_sensitive(True)
+        if ok and detail == "ok":
+            self.ollama_btn.set_visible(False)
+            self.ollama_info.set_text(
+                _("Ollama installed. Pick a model below and press Pull."))
+        elif ok:
+            # Installed, but nothing answered in time. Say so in as many words,
+            # and do not offer to install it again.
+            self.ollama_btn.set_visible(False)
+            self.ollama_info.set_text(
+                _("Ollama is installed but not running. "
+                  "Start it with: systemctl start ollama"))
+        elif detail == "cancelled":
+            self.ollama_info.set_text(_("Installation cancelled"))
+        else:
+            self.ollama_info.set_text(
+                _("Ollama installation failed") + ": " + detail)
+        return False
 
     def _on_translate_test(self, *_a):
         self._on_translate_changed()
@@ -1520,7 +1692,7 @@ class PreferencesWindow(Gtk.Window):
 
         def worker():
             ok = _pip_install(
-                ["faster-whisper", "sounddevice", "soundfile"],
+                ["faster-whisper", "av<19", "sounddevice", "soundfile"],
                 progress=lambda m: GLib.idle_add(self.model_status.set_text, m),
                 pulse=lambda: GLib.idle_add(self.dl_progress.pulse))
 
