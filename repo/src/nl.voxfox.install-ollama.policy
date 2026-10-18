@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
+<policyconfig>
+  <vendor>VoxFox</vendor>
+  <vendor_url>https://voxfox.nl</vendor_url>
+
+  <!-- Binds the authentication prompt to exactly one program: the
+       root-owned installer shipped in the VoxFox package. Without this,
+       pkexec would show a generic "run a program as root" prompt. -->
+  <action id="nl.voxfox.install-ollama">
+    <description>Install Ollama for VoxFox</description>
+    <description xml:lang="nl">Ollama installeren voor VoxFox</description>
+    <message>Authentication is required to install Ollama, the translation engine used by VoxFox</message>
+    <message xml:lang="nl">Authenticatie is vereist om Ollama te installeren, de vertaalmotor die VoxFox gebruikt</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/voxfox/install-ollama.sh</annotate>
+  </action>
+</policyconfig>

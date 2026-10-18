@@ -1,0 +1,13 @@
+# Build artefacten -- lokaal gebouwd via packaging/build-deb.sh /
+# packaging/build-rpm.sh, horen niet in git
+*.deb
+*.rpm
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor/OS
+.DS_Store
+*.swp

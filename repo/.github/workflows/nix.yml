@@ -1,0 +1,68 @@
+name: Nix
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "default.nix"
+      - "packaging/nix/**"
+      - ".github/workflows/nix.yml"
+  pull_request:
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "default.nix"
+      - "packaging/nix/**"
+      - ".github/workflows/nix.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      # Checks every output the flake defines -- packages, apps, devShells
+      # -- which is exactly the kind of thing writing this file by hand
+      # without a real Nix install cannot catch. This is what would have
+      # caught poppler_utils being renamed to poppler-utils before it ever
+      # reached a real machine, in both places it appeared (voxfox.nix AND
+      # flake.nix's devShell, which nix build alone does not touch).
+      - name: nix flake check
+        run: nix flake check --no-write-lock-file
+
+      - name: nix build
+        run: nix build . --no-write-lock-file -L
+
+      # Not actually running these: voxfox has no --version flag at all
+      # (only --read/--stop/etc.), and whether quickshot's GTK3 import
+      # needs a real display when there isn't one to give it is not
+      # something worth guessing at here. This confirms the wrapper
+      # scripts installPhase/preFixup are supposed to produce actually
+      # exist and are executable.
+      - name: Confirm both launchers were built
+        run: |
+          test -x ./result/bin/voxfox
+          test -x ./result/bin/voxfox-quickshot
+
+      # A committed flake.lock is what lets `nix run github:<owner>/voxfox`
+      # work for anyone without needing --no-write-lock-file: without one,
+      # Nix tries to write a fresh lock file back to the fetched flake and
+      # fails, because a flake fetched from GitHub is read-only. This
+      # step only confirms the file exists and is valid, committed JSON --
+      # it does not check whether it is the *newest* possible lock (that
+      # is a judgement call for whoever runs `nix flake lock` to update
+      # it, not something CI should force on every nixpkgs release).
+      - name: Confirm flake.lock is committed
+        run: |
+          if [ ! -f flake.lock ]; then
+            echo "flake.lock is missing from the repository."
+            echo "Run 'nix flake lock' locally and commit the result --"
+            echo "without it, 'nix run github:<owner>/voxfox' fails for"
+            echo "everyone with 'cannot write modified lock file'."
+            exit 1
+          fi
+          python3 -c "import json; json.load(open('flake.lock'))"
