@@ -172,6 +172,7 @@ Recommends:     grim
 Recommends:     polkit
 Recommends:     curl
 Recommends:     zstd
+Recommends:     python3-speechd
 
 %description
 VoxFox reads text aloud from any application on your screen, lets you

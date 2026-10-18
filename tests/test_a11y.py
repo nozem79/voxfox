@@ -84,3 +84,64 @@ def test_get_mouse_pos_falls_back_to_xdotool_on_xlib_failure(monkeypatch):
     monkeypatch.setattr(a11y, "_get_mouse_pos_xdotool", lambda: (5, 6))
 
     assert a11y.get_mouse_pos() == (5, 6)
+
+
+# ── VoxFox's own windows (read without AT-SPI) ────────────────────────────
+
+def test_own_window_text_is_used_and_at_spi_is_not_asked(monkeypatch):
+    import voxfox_core.a11y as a
+    monkeypatch.setattr(a, "_own_window_reader", lambda x, y: "Voorlezen")
+    monkeypatch.setattr(a, "get_window_at", lambda x, y: (_ for _ in ()).throw(
+        AssertionError("AT-SPI path must not run")))
+    assert a.get_text_at(10, 20) == "Voorlezen"
+
+
+def test_nothing_to_say_on_our_window_stays_silent(monkeypatch):
+    import voxfox_core.a11y as a
+    monkeypatch.setattr(a, "_own_window_reader", lambda x, y: "")
+    monkeypatch.setattr(a, "get_window_at", lambda x, y: (_ for _ in ()).throw(
+        AssertionError("AT-SPI path must not run")))
+    assert a.get_text_at(10, 20) == ""
+
+
+def test_other_windows_still_go_through_at_spi(monkeypatch):
+    import voxfox_core.a11y as a
+    import sys
+    import types
+    asked = []
+    fake = types.SimpleNamespace(Registry=types.SimpleNamespace(getDesktop=lambda n: []))
+    monkeypatch.setitem(sys.modules, "pyatspi", fake)
+    monkeypatch.setattr(a, "_own_window_reader", lambda x, y: None)
+    monkeypatch.setattr(a, "get_window_at", lambda x, y: asked.append((x, y)) or None)
+    a.get_text_at(10, 20)
+    assert asked == [(10, 20)]
+
+
+# ── AT-SPI events from VoxFox itself ──────────────────────────────────────
+
+def _event(pid, detail1=1, type_="object:state-changed:focused"):
+    import types
+    app = types.SimpleNamespace(get_process_id=lambda: pid, name="voxfox")
+    return types.SimpleNamespace(host_application=app, detail1=detail1, type=type_,
+                                 source=None)
+
+
+def test_events_from_our_own_windows_are_ignored(monkeypatch):
+    # Answering them meant asking ourselves over AT-SPI from our own main
+    # thread: the window froze and speech lagged a row behind.
+    import os
+    import voxfox_core.a11y as a
+    monkeypatch.setattr(a, "_hover_running", True)
+    touched = []
+    monkeypatch.setattr(a, "_node_text", lambda n: touched.append(n) or "x")
+    assert a._event_from_self(_event(os.getpid()))
+    assert not a._event_from_self(_event(os.getpid() + 1))
+    a._on_focus_event(_event(os.getpid()))
+    a._on_selection_event(_event(os.getpid()))
+    assert touched == []
+
+
+def test_an_event_without_application_is_not_ours():
+    import types
+    import voxfox_core.a11y as a
+    assert not a._event_from_self(types.SimpleNamespace(host_application=None))

@@ -526,8 +526,27 @@ def get_pid_for_window(win_id):
     return None
 
 
+# VoxFox's own windows are read without AT-SPI (see voxfox_ui.selfread):
+# GTK 4 reports positions relative to its windows, so hit-testing VoxFox
+# by screen position through AT-SPI found nothing. The front-end registers
+# a reader that returns None when (x, y) is not on a VoxFox window.
+_own_window_reader = None
+
+
+def set_own_window_reader(fn):
+    global _own_window_reader
+    _own_window_reader = fn
+
+
 def get_text_at(x, y) -> str:
     """Return readable text of the UI element under (x, y) via AT-SPI."""
+    if _own_window_reader is not None:
+        try:
+            own = _own_window_reader(x, y)
+            if own is not None:
+                return own        # on a VoxFox window: never ask AT-SPI
+        except Exception as e:
+            log.debug(f"own window reader failed: {e}")
     try:
         import pyatspi
 
@@ -823,6 +842,12 @@ def _speak_if_new(text):
     speak(text, cfg)
 
 
+def speak_if_new(text):
+    """Public: speak `text` unless it was the last thing said (used for
+    keyboard focus in VoxFox's own windows)."""
+    _speak_if_new(text)
+
+
 def _event_from_daemon(event) -> bool:
     """True if an AT-SPI event originates from the desktop shell or another
     daemon (cinnamon, nemo-desktop, …). Their UI elements fire focus/selection
@@ -839,9 +864,27 @@ def _event_from_daemon(event) -> bool:
         return False
 
 
+def _event_from_self(event) -> bool:
+    """True for AT-SPI events about VoxFox's own windows.
+
+    AT-SPI delivers events on VoxFox's main thread. Answering one from our
+    own window meant asking our own process, over AT-SPI, for the text --
+    a call that waits for the very main thread it is running on. The
+    window froze until the call gave up, and speech lagged behind the
+    pointer: in menus and settings the previous item was read. VoxFox's
+    own windows are read directly instead (voxfox_ui.selfread)."""
+    try:
+        app = getattr(event, "host_application", None)
+        if app is None:
+            return False
+        return app.get_process_id() == os.getpid()
+    except Exception:
+        return False
+
+
 def _on_focus_event(event):
     """Called by AT-SPI when an element gains focus (or its item is selected)."""
-    if not _hover_running or _event_from_daemon(event):
+    if not _hover_running or _event_from_self(event) or _event_from_daemon(event):
         return
     try:
         node = event.source
@@ -876,7 +919,7 @@ def _on_selection_event(event):
     (e.g. select-all), and answering every one with synchronous AT-SPI
     queries stresses the emitting app."""
     global _last_selection_ts
-    if not _hover_running or _event_from_daemon(event):
+    if not _hover_running or _event_from_self(event) or _event_from_daemon(event):
         return
     now = time.monotonic()
     if now - _last_selection_ts < 0.15:
@@ -900,7 +943,7 @@ def _on_caret_event(event):
     """The text caret moved (typing, arrow keys, clicking into text). Read the
     line at the new caret position. Deduplicated, so resting on a line is
     silent; moving to a new line reads it."""
-    if not _hover_running:
+    if not _hover_running or _event_from_self(event):
         return
     try:
         import pyatspi
@@ -929,7 +972,11 @@ def _start_event_listener():
             def onFocus(self, event):
                 _on_focus_event(event)
             def onStateChanged(self, event):
-                if event.type.endswith(("focused", "selected")):
+                # Only an element GAINING focus or selection (detail1 1).
+                # The one that just lost it fires the same event with 0;
+                # reading that one said the item the pointer had left.
+                if event.type.endswith(("focused", "selected")) and \
+                        getattr(event, "detail1", 1):
                     _on_focus_event(event)
             def onSelection(self, event):
                 _on_selection_event(event)
@@ -1030,6 +1077,7 @@ __all__ = [
     "get_window_at",
     "get_pid_for_window",
     "get_text_at",
+    "set_own_window_reader",
     "_query_app",
     "_best_text",
     "_clipboard_get",
@@ -1048,6 +1096,8 @@ __all__ = [
     "_last_event_time",
     "_event_listener",
     "_on_focus_event",
+    "_event_from_self",
+    "speak_if_new",
     "_start_event_listener",
     "_stop_event_listener",
     "_EVENT_SILENCE",

@@ -55,14 +55,23 @@ class VoxFoxApplication(Gtk.Application):
                          ("history", self._on_history),
                          ("library", self._on_library),
                          ("first_run", self._on_first_run),
+                         ("preferences", self._on_preferences),
                          ("quit",  self._on_quit)):
             act = Gio.SimpleAction.new(name, None)
             act.connect("activate", cb)
             self.add_action(act)
+        # Shown next to Quit in the menu. Settings deliberately has none:
+        # its label ("Control+,") was cut off on some desktops and nobody
+        # needs a key to open a settings window.
+        self.set_accels_for_action("app.quit", ["<Control>q"])
         live = Gio.SimpleAction.new_stateful(
             "live_transcribe", None, GLib.Variant.new_boolean(False))
         live.connect("change-state", self._on_live_toggle)
         self.add_action(live)
+
+    def _on_preferences(self, *_a):
+        if self.win:
+            self.win.open_preferences()
 
     def _on_live_toggle(self, action, value):
         log.info(f"_on_live_toggle: new state={value.get_boolean()}, "
@@ -78,6 +87,13 @@ class VoxFoxApplication(Gtk.Application):
     def do_activate(self):
         if not self.win:
             self._apply_css()
+            # Light / dark / follow the desktop, before the window exists so
+            # it opens in the right colours straight away.
+            try:
+                from voxfox_ui import theme
+                theme.apply(vf.load_state().get("color_scheme", "system"))
+            except Exception as e:
+                log.debug(f"colour scheme at start failed: {e}")
             self.win = VoxFoxWindow(self)
             self.ipc_server = vf.IPCServer(self.win)
             self.ipc_server.start()
@@ -146,6 +162,8 @@ class VoxFoxApplication(Gtk.Application):
         """Start the Piper server in the background (fire-and-forget)."""
         try:
             slot = (self.win.state or {}).get("slot1", {})
+            if vf.slot_uses_speechd(slot):
+                return False   # nothing to preload: speech-dispatcher runs on its own
             voice = slot.get("voice", "")
             if not voice:
                 return False

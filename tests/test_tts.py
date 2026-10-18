@@ -211,3 +211,54 @@ def test_download_voice_without_a_digest_field_still_works(tmp_path, monkeypatch
         assert (dest_dir / "voice.onnx").is_file()
     finally:
         srv.shutdown()
+
+
+# ── voice_display_parts ───────────────────────────────────────────────────
+
+def test_voice_keys_become_readable_parts():
+    assert tts.voice_display_parts("nl_NL-alex-medium") == ("Alex", "NL", "medium")
+    assert tts.voice_display_parts("en_US-lessac-high") == ("Lessac", "US", "high")
+    assert tts.voice_display_parts("de_DE-mls_6892-low") == ("Mls 6892", "DE", "low")
+    assert tts.voice_display_parts("en_GB-northern_english_male-medium") == \
+        ("Northern English Male", "GB", "medium")
+    assert tts.voice_display_parts("en_US-amy-x_low") == ("Amy", "US", "x_low")
+
+
+def test_names_that_are_not_piper_keys_are_left_alone():
+    assert tts.voice_display_parts("my-own-voice") == ("my-own-voice", "", "")
+    assert tts.voice_display_parts("") == ("", "", "")
+    assert tts.voice_display_parts(None) == ("", "", "")
+
+
+# ── best_voice_for_lang ───────────────────────────────────────────────────
+
+DUTCH = ["nl_BE-nathalie-x_low", "nl_BE-rdh-medium", "nl_NL-alex-medium",
+         "nl_NL-mls-medium", "nl_NL-pim-high"]
+
+
+def test_the_default_voice_wins_when_it_is_downloaded():
+    assert tts.best_voice_for_lang(DUTCH, set(DUTCH), "Dutch") == "nl_NL-alex-medium"
+
+
+def test_otherwise_home_region_and_quality_decide():
+    # The old rule took the first downloaded one: the very-low-quality
+    # Flemish voice.
+    local = {"nl_BE-nathalie-x_low", "nl_BE-rdh-medium", "nl_NL-pim-high"}
+    assert tts.best_voice_for_lang(DUTCH, local, "Dutch") == "nl_NL-pim-high"
+    local = {"nl_BE-nathalie-x_low", "nl_BE-rdh-medium"}
+    assert tts.best_voice_for_lang(DUTCH, local, "Dutch") == "nl_BE-rdh-medium"
+
+
+def test_nothing_downloaded_prefers_the_default_then_the_best():
+    assert tts.best_voice_for_lang(DUTCH, set(), "Dutch") == "nl_NL-alex-medium"
+    keys = ["nl_BE-nathalie-x_low", "nl_NL-pim-high"]
+    assert tts.best_voice_for_lang(keys, set(), "Dutch") == "nl_NL-pim-high"
+
+
+def test_ties_are_broken_the_same_way_every_time():
+    keys = ["xx_XX-b-medium", "xx_XX-a-medium"]
+    assert tts.best_voice_for_lang(keys, set(keys), "Nonexistent") == "xx_XX-a-medium"
+
+
+def test_no_voices_gives_no_choice():
+    assert tts.best_voice_for_lang([], set(), "Dutch") == ""

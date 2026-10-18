@@ -24,9 +24,12 @@ from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STAT
 
 # ── Default state ─────────────────────────────────────────────────────────────
 DEFAULT_STATE = {
-    "slot1": {"lang": "English", "voice": "en_GB-alba-medium", "speed": 1.0, "pitch": 0.0},
-    "slot2": {"lang": "Dutch",   "voice": "nl_NL-alex-medium", "speed": 1.10, "pitch": -2.0},
+    "slot1": {"lang": "English", "voice": "en_GB-alba-medium", "speed": 1.0, "pitch": 0.0,
+              "engine": "piper", "sd_module": "", "sd_voice": ""},
+    "slot2": {"lang": "Dutch",   "voice": "nl_NL-alex-medium", "speed": 1.10, "pitch": -2.0,
+              "engine": "piper", "sd_module": "", "sd_voice": ""},
     "active_slot": "slot1",
+    "color_scheme": "system",
     "ui_view": "both",         # toolbar buttons: icons / both / text
     "ui_orientation": "horizontal",  # toolbar layout: horizontal / vertical
     "live_font_px": 22,        # live transcription text size
@@ -128,12 +131,14 @@ def _fresh_state():
             s["slot1"] = {"lang": lang,
                           "voice": DEFAULT_VOICE_FOR_LANG.get(lang, ""),
                           "speed": DEFAULT_SPEED_FOR_LANG.get(lang, 1.0),
-                          "pitch": DEFAULT_PITCH_FOR_LANG.get(lang, 0.0)}
+                          "pitch": DEFAULT_PITCH_FOR_LANG.get(lang, 0.0),
+                          "engine": "piper", "sd_module": "", "sd_voice": ""}
             second = "English" if lang != "English" else "Dutch"
             s["slot2"] = {"lang": second,
                           "voice": DEFAULT_VOICE_FOR_LANG.get(second, ""),
                           "speed": DEFAULT_SPEED_FOR_LANG.get(second, 1.0),
-                          "pitch": DEFAULT_PITCH_FOR_LANG.get(second, 0.0)}
+                          "pitch": DEFAULT_PITCH_FOR_LANG.get(second, 0.0),
+                          "engine": "piper", "sd_module": "", "sd_voice": ""}
             log.info(f"Fresh install: seeded Slot 1 from system language ({lang})")
     except Exception as e:
         log.debug(f"system language detection skipped: {e}")
@@ -175,6 +180,12 @@ def load_state():
                 s[slot].setdefault("speed", 1.0)
                 s[slot].setdefault("pitch", 0.0)
                 s[slot].setdefault("lang", "")
+                # 6.0: speech engine per slot. Piper unless the user chose
+                # speech-dispatcher; anything unknown falls back to Piper.
+                if s[slot].get("engine") not in ("piper", "speechd"):
+                    s[slot]["engine"] = "piper"
+                s[slot].setdefault("sd_module", "")
+                s[slot].setdefault("sd_voice", "")
             # Whisper config (added later; fill in for old state files)
             w = s.setdefault("whisper", {})
             w.setdefault("model",   DEFAULT_STATE["whisper"]["model"])
@@ -188,6 +199,9 @@ def load_state():
             s.setdefault("win_pos", None)
             # 5.0: stay-on-top and the document library.
             s.setdefault("always_on_top", DEFAULT_STATE["always_on_top"])
+            # 6.0: light / dark / follow the desktop.
+            if s.get("color_scheme") not in ("system", "light", "dark"):
+                s["color_scheme"] = "system"
             s.setdefault("docs_dir", DEFAULT_STATE["docs_dir"])
             s.setdefault("shortcuts_installed", False)
             s.setdefault("cinnamon_shortcut_slots", {})

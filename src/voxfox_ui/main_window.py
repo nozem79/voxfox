@@ -32,11 +32,12 @@ import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
 
 log = vf.log
-from voxfox_ui.common import TOOLBAR_BUTTONS, TOOLBAR_DEFAULT_HIDDEN, TOOLBAR_IDS, UI_ORIENTS, UI_VIEWS, _RootShim, _register_icon_path  # noqa: E402
+from voxfox_ui.common import TOOLBAR_BUTTONS, TOOLBAR_SHORTCUTS, TOOLBAR_DEFAULT_HIDDEN, TOOLBAR_IDS, UI_ORIENTS, UI_VIEWS, _RootShim, _register_icon_path  # noqa: E402
 from voxfox_ui.live import LiveTranscribeWindow  # noqa: E402
 from voxfox_ui.preferences import PreferencesWindow  # noqa: E402
 from voxfox_ui.screenshot import _grab_region_to_file  # noqa: E402
 from voxfox_ui.setup import SetupDialog, run_setup  # noqa: E402
+from voxfox_ui.shortcuts import _SHORTCUT_ACTIONS, _binding_display, _binding_for  # noqa: E402
 from voxfox_ui.widgets import _a11y, _btn_make_content, _btn_set_text, _hide_progress_bar, _scale_css, _set_progress_bar  # noqa: E402
 
 
@@ -65,6 +66,12 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self._load_scale_css()
         # Hover mode (in voxfox_core) asks this callback which voice to speak with.
         vf.set_slot_config_provider(self._active_cfg)
+        # Hover reading over VoxFox's own windows, menus and settings.
+        try:
+            from voxfox_ui import selfread
+            selfread.install()
+        except Exception as e:
+            log.debug(f"own-window hover reading unavailable: {e}")
         self._build_ui()
         self._sync_pause_btn()
         # Keep the window above others: re-assert "always on top" whenever it
@@ -226,10 +233,8 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # 3. Column gear/menu at the bottom (only in slim mode), stacked
         # vertically so they never force the column wider than one button.
         cont.append(self._col_sep)
-        cont.append(self._col_gear)
         cont.append(self._col_menu)
         self._col_sep.set_visible(slim)
-        self._col_gear.set_visible(slim)
         self._col_menu.set_visible(slim)
 
         # 4. Slim header: only the logo (keeps the drag area), no name; the
@@ -240,7 +245,6 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                 # button remains, so the header adds no width of its own.
                 self._header.set_title_widget(Gtk.Label(label=""))
                 self._header.set_decoration_layout(":close")
-                self._header_gear.set_visible(False)
                 self._header_menu.set_visible(False)
             else:
                 if self._header_title is None:
@@ -248,7 +252,6 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                     self._header_title.add_css_class("title")
                 self._header.set_title_widget(self._header_title)
                 self._header.set_decoration_layout(":minimize,close")
-                self._header_gear.set_visible(True)
                 self._header_menu.set_visible(True)
         except Exception as e:
             log.debug(f"slim header failed: {e}")
@@ -369,26 +372,32 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # the program name.
         self.switch_btn = Gtk.Button()
         _btn_make_content(self.switch_btn, "switch", "")
-        self.switch_btn.set_tooltip_text(_("Switch language slot"))
+        self.switch_btn.set_tooltip_text(_("Switch to the other language"))
         _a11y(self.switch_btn, _("Switch language slot"))
         self.switch_btn.connect("clicked", lambda *_a: self.do_toggle_slot())
 
-        gear = Gtk.Button(icon_name="voxfox-gear-symbolic")
-        gear.set_tooltip_text(_("Settings"))
-        _a11y(gear, _("Settings"))
-        gear.connect("clicked", lambda *_a: self.open_preferences())
-        header.pack_end(gear)
         self._header = header
         self._header_title = None
-        self._header_gear = gear
-
+        # One menu for everything that is not a toolbar button. It used to be
+        # two buttons side by side (a gear for Settings and this menu), which
+        # made people guess where something was; Settings is now the first
+        # item here. Sections are drawn with a line between them.
         menu = Gio.Menu()
-        menu.append(_("Set up VoxFox…"), "app.first_run")
-        menu.append(_("History"), "app.history")
-        menu.append(_("Library"), "app.library")
-        menu.append(_("Live transcription"), "app.live_transcribe")
-        menu.append(_("About"), "app.about")
-        menu.append(_("Quit"),  "app.quit")
+        sec = Gio.Menu()
+        sec.append(_("Settings"), "app.preferences")
+        menu.append_section(None, sec)
+        sec = Gio.Menu()
+        sec.append(_("Library"), "app.library")
+        sec.append(_("History"), "app.history")
+        sec.append(_("Live transcription"), "app.live_transcribe")
+        menu.append_section(None, sec)
+        sec = Gio.Menu()
+        sec.append(_("Setup assistant…"), "app.first_run")
+        sec.append(_("About VoxFox"), "app.about")
+        menu.append_section(None, sec)
+        sec = Gio.Menu()
+        sec.append(_("Quit"), "app.quit")
+        menu.append_section(None, sec)
         menu_btn = Gtk.MenuButton(icon_name="open-menu-symbolic", menu_model=menu)
         menu_btn.set_tooltip_text(_("Menu"))
         _a11y(menu_btn, _("Menu"))
@@ -461,16 +470,20 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         # sidebar the header shows only the logo, so gear + menu move to the
         # bottom of the button column (hidden in every other mode).
         self._col_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
-        self._col_gear = Gtk.Button(icon_name="voxfox-gear-symbolic")
-        self._col_gear.set_tooltip_text(_("Settings"))
-        _a11y(self._col_gear, _("Settings"))
-        self._col_gear.connect("clicked", lambda *_a: self.open_preferences())
         self._col_menu = Gtk.MenuButton(icon_name="open-menu-symbolic",
                                         menu_model=self._menu_model)
         self._col_menu.set_tooltip_text(_("Menu"))
         _a11y(self._col_menu, _("Menu"))
 
         outer.append(toolbar)
+
+        # How far reading has got. Only shown while a longer text is being
+        # read; a sentence or two is over before a bar would mean anything.
+        self.reading_bar = Gtk.ProgressBar()
+        self.reading_bar.add_css_class("voxfox-reading")
+        self.reading_bar.set_visible(False)
+        _a11y(self.reading_bar, _("Reading progress"))
+        outer.append(self.reading_bar)
         self._apply_ui_mode(fit=False)
 
         # STATUS role makes screen readers announce status changes (a live
@@ -490,6 +503,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
         self._sync_switch_btn()
         self.refresh_setup_bar()
+        self._refresh_tooltips()
+        self._read_btn_mode = None   # new buttons: let the tick set them
+        if not getattr(self, "_reading_tick_id", None):
+            self._reading_tick_id = GLib.timeout_add(250, self._tick_reading)
 
     # ── helpers ───────────────────────────────────────────────────────────────
     def _active_slot(self):
@@ -643,6 +660,53 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         (called after the Settings window changes things)."""
         self._sync_switch_btn()
         self.refresh_setup_bar()
+        self._refresh_tooltips()
+
+    def _refresh_tooltips(self):
+        """Plain-language tooltip per button, with its keyboard shortcut
+        when one is set ("Reads the text you selected aloud (Super+Z)")."""
+        defaults = {key: default for key, _n, _c, default in _SHORTCUT_ACTIONS}
+        tips = {bid: tip for bid, _a, _l, tip, *_rest in TOOLBAR_BUTTONS}
+        tips["switch"] = "Switch to the other language"
+        for bid, btn in getattr(self, "_toolbar_btns", {}).items():
+            text = _(tips.get(bid, ""))
+            action = TOOLBAR_SHORTCUTS.get(bid)
+            if action:
+                key = _binding_display(_binding_for(self.state, action,
+                                                    defaults.get(action, "")))
+                if key:
+                    text = f"{text} ({key})"
+            btn.set_tooltip_text(text)
+
+    def _tick_reading(self):
+        """Four times a second: the Read button shows what pressing it
+        would do now (Read / Pause / Resume), and the reading bar shows
+        how far a longer text has got."""
+        try:
+            speaking, paused = vf.is_speaking(), vf.is_paused()
+            want = ("resume" if paused else "pause") if speaking else "read"
+            if want != getattr(self, "_read_btn_mode", None):
+                self._read_btn_mode = want
+                label = {"read": _("Read"), "pause": _("Pause"),
+                         "resume": _("Resume")}[want]
+                icon = {"read": "voxfox-read-symbolic",
+                        "pause": "voxfox-pause-symbolic",
+                        "resume": "voxfox-read-symbolic"}[want]
+                _btn_set_text(self.read_btn, label)
+                if getattr(self.read_btn, "_icon", None) is not None:
+                    self.read_btn._icon.set_from_icon_name(icon)
+                _a11y(self.read_btn, label)
+            pos = vf.get_position()
+            length = pos.get("length") or 0
+            show = speaking and length >= 300
+            if show:
+                self.reading_bar.set_fraction(
+                    max(0.0, min(1.0, (pos.get("offset") or 0) / length)))
+            if self.reading_bar.get_visible() != show:
+                self.reading_bar.set_visible(show)
+        except Exception as e:
+            log.debug(f"reading tick failed: {e}")
+        return True
 
     def _sync_switch_btn(self):
         try:
@@ -684,6 +748,16 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         threading.Thread(target=worker, daemon=True).start()
 
     # ── actions (also the IPCServer entry points) ─────────────────────────────
+    def do_read_button(self):
+        """The Read button: reads the selection, or -- while VoxFox is
+        speaking -- pauses and resumes, so a separate Pause button is not
+        needed. The Read shortcut keeps reading the new selection, which
+        is what someone selecting text and pressing the key expects."""
+        if vf.is_speaking():
+            self.do_pause()
+        else:
+            self.do_read()
+
     def do_read(self):
         """get_selection() can block the main loop for up to a few seconds
         (several clipboard tools tried in turn, each with its own timeout),
@@ -703,7 +777,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             threading.Thread(target=vf.speak, args=(text, cfg),
                              daemon=True).start()
             GLib.timeout_add(50, lambda: (self._sync_pause_btn(), False)[1])
-            self.set_status(f"{_('Reading...')} [{cfg.get('voice', '')}]", 1500)
+            self.set_status(f"{_('Reading...')} [{vf.slot_voice_label(cfg)}]", 1500)
         else:
             self.set_status(_("Nothing selected"))
         return False
@@ -746,7 +820,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
                     50, lambda: (self._sync_pause_btn(), False)[1])
                 self.set_status(
                     f"{_('Reading translation...')} "
-                    f"[{cfg.get('voice', '')}]", 2000)
+                    f"[{vf.slot_voice_label(cfg)}]", 2000)
                 return False
             GLib.idle_add(done)
         threading.Thread(target=worker, daemon=True).start()
@@ -829,7 +903,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         vf.save_state(self.state)
         self.reload_active_controls()
         cfg  = self.state[new]
-        name = cfg.get("voice", new)
+        name = vf.slot_voice_label(cfg) or new
         self.set_status(f"{_('Language')}: {name}")
         threading.Thread(target=vf.speak, args=(f"{_('Language')}: {name}", cfg),
                          daemon=True).start()
@@ -843,6 +917,7 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
         self.whisper_on = True
         _btn_set_text(self.whisper_btn, _("Stop"))
         self.whisper_btn.add_css_class("destructive-action")
+        self.whisper_btn.add_css_class("voxfox-recording")
         self.set_status(_("Recording..."), duration=0)
         self._record_stop_event = threading.Event()
         threading.Thread(target=self._whisper_worker, daemon=True).start()
@@ -981,8 +1056,9 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
 
     def _whisper_reset_btn(self):
         self.whisper_on = False
-        _btn_set_text(self.whisper_btn, _("Speak"))
+        _btn_set_text(self.whisper_btn, _("Dictate"))
         self.whisper_btn.remove_css_class("destructive-action")
+        self.whisper_btn.remove_css_class("voxfox-recording")
 
     def do_ocr_file(self):
         dialog = Gtk.FileChooserNative(
@@ -1337,6 +1413,10 @@ class VoxFoxWindow(Gtk.ApplicationWindow):
             pass
         try:
             vf.shutdown_piper()
+        except Exception:
+            pass
+        try:
+            vf.shutdown_speechd()
         except Exception:
             pass
         srv = getattr(self.get_application(), "ipc_server", None)

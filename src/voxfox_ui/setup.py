@@ -161,6 +161,8 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
     try:
         st = vf.load_state()
         for slot in ("slot1", "slot2"):
+            if vf.slot_uses_speechd(st.get(slot, {})):
+                continue   # that slot does not speak with Piper
             v = st.get(slot, {}).get("voice", "")
             if v and v not in keys:
                 keys.append(v)
@@ -412,7 +414,22 @@ class SetupDialog(Gtk.Window):
               "keys first under Settings → Shortcuts if you like."),
             self._sc_btn))
 
-        # 4) OCR language packs — informational (installed via apt).
+        # 4) Bigger buttons: easier to see and to hit. Settings has the
+        # same choice (Appearance -> Interface size), but people who would
+        # benefit most are the least likely to go looking for it there.
+        self._size_switch = Gtk.Switch()
+        scale = (parent.state.get("ui_layout") or {}).get("scale", vf.DEFAULT_UI_SCALE)
+        self._size_switch.set_active(scale >= 125)
+        _a11y_name = _("Bigger buttons and text")
+        self._size_switch.update_property([Gtk.AccessibleProperty.LABEL], [_a11y_name])
+        self._size_switch.connect("notify::active", self._on_size_switch)
+        outer.append(self._make_step(
+            "size", _a11y_name,
+            _("Makes the VoxFox window bigger (125%), so the buttons are "
+              "easier to read and to click."),
+            self._size_switch))
+
+        # 5) OCR language packs — informational (installed via apt).
         info = Gtk.Label(
             label=_("For OCR in other languages, install the matching Tesseract "
                     "pack, e.g. sudo apt install tesseract-ocr-nld"),
@@ -457,8 +474,16 @@ class SetupDialog(Gtk.Window):
         self._rows.append((key, status))
         return frame
 
+    def _on_size_switch(self, sw, _p):
+        try:
+            self.parent.apply_ui_scale(125 if sw.get_active() else 100)
+        except Exception as e:
+            log.debug(f"size switch failed: {e}")
+        self._refresh_states()
+
     def _refresh_states(self):
         done = {
+            "size": (self.parent.state.get("ui_layout") or {}).get("scale", 100) >= 125,
             "components": os.path.exists(vf.PIPER_BIN),
             "a11y": accessibility_enabled(),
             "shortcuts": bool(self.parent.state.get("shortcuts_installed")),

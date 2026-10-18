@@ -24,6 +24,7 @@ re-exported here so ``import voxfox_core as vf`` keeps working.
 from .common import *  # noqa: F401,F403
 from .state import *  # noqa: F401,F403
 from .tts import *  # noqa: F401,F403
+from .sdengine import *  # noqa: F401,F403
 from .stt import *  # noqa: F401,F403
 from .ocr import *  # noqa: F401,F403
 from .a11y import *  # noqa: F401,F403

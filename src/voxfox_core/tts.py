@@ -19,6 +19,7 @@
 
 import functools, hashlib, json, os, re, shutil, subprocess, tempfile, threading, time, urllib.request
 from .common import BASE_URL, CHUNK_SIZE, CONFIG_DIR, DATA_DIR, MAX_TEXT_LEN, PIPER_BIN, PIPER_DIR, VOICES_URL, app, log, ram_tmpdir
+from . import sdengine
 
 
 
@@ -165,6 +166,67 @@ def find_voice_dir(voice_key):
         if d and os.path.isfile(os.path.join(d, f"{voice_key}.onnx")):
             return d
     return None
+
+
+_QUALITIES = ("x_low", "low", "medium", "high")
+
+
+def voice_display_parts(voice_key):
+    """Split a Piper voice key into the parts people care about.
+
+    "nl_NL-alex-medium" -> ("Alex", "NL", "medium"), "en_US-lessac-high"
+    -> ("Lessac", "US", "high"), "de_DE-mls_6892-low" -> ("Mls 6892", "DE",
+    "low"). Anything that does not look like a Piper key comes back as
+    (key, "", "") so it is still shown as it is."""
+    parts = (voice_key or "").split("-")
+    if len(parts) < 3 or parts[-1] not in _QUALITIES or "_" not in parts[0]:
+        return (voice_key or "", "", "")
+    region = parts[0].split("_", 1)[1].upper()
+    name = " ".join(w.capitalize() for w in "-".join(parts[1:-1]).replace("_", " ").split())
+    return (name or voice_key, region, parts[-1])
+
+
+_QUALITY_RANK = {"x_low": 0, "low": 1, "medium": 2, "high": 3}
+
+
+def best_voice_for_lang(keys, local, lang):
+    """The voice to pick when a slot switches to `lang`.
+
+    `keys` are the catalogue's voices for that language, `local` the voices
+    already downloaded. Before, the first downloaded voice in alphabetical
+    order won, which for Dutch could be a very-low-quality Flemish voice.
+
+    Order of preference:
+    1. VoxFox's own default voice for the language, if it is downloaded.
+    2. The best downloaded voice: the language's home region first ("NL"
+       for Dutch, "DE" for German), then the highest quality.
+    3. Nothing downloaded: the default voice if the catalogue has it,
+       otherwise the best voice of the catalogue (it will be downloaded).
+    """
+    from .common import DEFAULT_VOICE_FOR_LANG, PIPER_LANG_TO_CODE
+    keys = list(keys or [])
+    if not keys:
+        return ""
+    default = DEFAULT_VOICE_FOR_LANG.get(lang or "")
+    home = (PIPER_LANG_TO_CODE.get(lang or "", "") or "").upper()
+
+    def score(k):
+        _name, region, quality = voice_display_parts(k)
+        return (region == home and bool(home), _QUALITY_RANK.get(quality, -1))
+
+    def best(pool):
+        # max() keeps the first of equal scores; sorting first makes that
+        # the alphabetically first, so the choice is always the same.
+        return max(sorted(pool), key=score)
+
+    downloaded = [k for k in keys if k in (local or ())]
+    if default in downloaded:
+        return default
+    if downloaded:
+        return best(downloaded)
+    if default in keys:
+        return default
+    return best(keys)
 
 
 def get_local_voices():
@@ -839,6 +901,15 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt,
     global _progress, _position
     if offsets is None:
         offsets = []
+    if sdengine.slot_uses_speechd(slot_config):
+        if sdengine.available():
+            return _speak_worker_speechd(chunks, slot_config, stop_evt,
+                                         pause_evt, offsets, total_chars,
+                                         token)
+        # Better the slot's Piper voice than silence: the bindings were
+        # removed after the slot was set up, for example.
+        log.warning("Slot is set to speech-dispatcher, but its Python "
+                    "bindings (python3-speechd) are missing; using Piper")
     voice = slot_config.get("voice", "")
     speed = slot_config.get("speed", 1.0)
     # Pitch in semitones (0 = the voice's natural pitch). Shifting the playback
@@ -1003,6 +1074,56 @@ def _speak_worker(chunks, slot_config, stop_evt, pause_evt,
         _progress = {"chunk": 0, "total": 0, "text": "", "offset": 0}
 
 
+def _speak_worker_speechd(chunks, slot_config, stop_evt, pause_evt,
+                          offsets, total_chars, token):
+    """The speech-dispatcher counterpart of the Piper loop above.
+
+    Same chunks, same position bookkeeping, same pause behaviour (a paused
+    chunk is said again from its start), so documents, bookmarks and the
+    skip buttons work identically. speech-dispatcher plays the audio
+    itself, so there is no WAV, no prefetch and no pitch trick here: speed
+    and pitch go to the synthesizer as rate and pitch settings."""
+    global _progress, _position
+    pron = app.pron_for((slot_config or {}).get("lang", ""))
+
+    def _wait_while_paused():
+        while pause_evt.is_set():
+            if stop_evt.is_set():
+                return True
+            time.sleep(0.1)
+        return False
+
+    try:
+        for idx, (chunk, _ends_paragraph) in enumerate(chunks):
+            if stop_evt.is_set() or _wait_while_paused():
+                break
+            here = offsets[idx] if idx < len(offsets) else 0
+            _progress = {"chunk": idx + 1, "total": len(chunks),
+                         "text": chunk[:80], "offset": here}
+            _position = {"offset": here, "length": total_chars,
+                         "token": token}
+            spoken = apply_pronunciations(chunk, pron)
+            while True:
+                result = sdengine.speak_chunk(spoken, slot_config,
+                                              stop_evt, pause_evt)
+                if result == "paused":
+                    if _wait_while_paused():
+                        result = "stop"
+                        break
+                    continue          # say this chunk again from its start
+                break
+            if result == "stop" or stop_evt.is_set():
+                break
+            if result == "failed":
+                log.error("speech-dispatcher could not speak; stopping")
+                break
+        else:
+            _position = {"offset": total_chars, "length": total_chars,
+                         "token": token}
+    finally:
+        _progress = {"chunk": 0, "total": 0, "text": "", "offset": 0}
+
+
 def stop_speaking():
     _stop_event.set()
     _pause_event.clear()
@@ -1016,6 +1137,8 @@ __all__ = [
     "get_languages",
     "get_voices_for_lang",
     "get_local_voices",
+    "voice_display_parts",
+    "best_voice_for_lang",
     "voices_user_dir",
     "find_voice_dir",
     "migrate_legacy_voices",

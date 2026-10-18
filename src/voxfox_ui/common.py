@@ -51,7 +51,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "5.0.7"
+APP_VERSION = "6.0.1"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -64,6 +64,14 @@ ACCENT_CSS = b"""
 }
 .voxfox-accent:hover  { background-color: #F47E3A; }
 .voxfox-accent:active { background-color: #D9590F; }
+/* Dictation is recording: the button's icon blinks so a running
+   microphone is hard to miss. */
+@keyframes voxfox-blink { 0% { opacity: 1; } 50% { opacity: 0.15; } 100% { opacity: 1; } }
+.voxfox-recording image { animation: voxfox-blink 1s ease-in-out infinite; }
+/* How far reading has got: a thin bar under the buttons. */
+progressbar.voxfox-reading trough, progressbar.voxfox-reading progress {
+  min-height: 4px;
+}
 """
 
 
@@ -80,30 +88,37 @@ ACCENT_CSS = b"""
 #   handler  name of the VoxFoxWindow method invoked on click
 #   css      optional extra CSS class (e.g. the orange accent on Read)
 TOOLBAR_BUTTONS = [
-    ("read",    "read_btn",    "Read",   "Read selected text aloud",
-     "Read selected text aloud", "do_read", "voxfox-accent"),
-    ("stop",    "stop_btn",    "Stop",   "Stop speaking",
+    # Labels are one short word; the tooltip says in a plain sentence what
+    # the button does (and the shortcut is added to it at build time).
+    # Read doubles as Pause/Resume while speaking (do_read_button), which is
+    # why the separate Pause button now starts hidden.
+    ("read",    "read_btn",    "Read",   "Reads the text you selected aloud",
+     "Read selected text aloud", "do_read_button", "voxfox-accent"),
+    ("stop",    "stop_btn",    "Stop",   "Stops reading aloud",
      "Stop", "do_stop", None),
-    ("pause",   "pause_btn",   "Pause",  "Pause or resume speech",
+    ("pause",   "pause_btn",   "Pause",  "Pauses reading, or carries on",
      "Pause or resume", "do_pause", None),
-    ("dictate", "whisper_btn", "Speak",  "Dictate: record speech and type it",
+    ("dictate", "whisper_btn", "Dictate", "Speak, and VoxFox types what you say",
      "Dictate (speech to text)", "do_whisper", None),
-    ("hover",   "hover_btn",   "Hover",
-     "Read UI text under the mouse pointer aloud (AT-SPI)",
+    ("hover",   "hover_btn",   "Mouse",
+     "Reads aloud whatever is under the mouse pointer",
      "Toggle hover reading", "do_hover", None),
-    ("select",  "select_btn",  "Select",
-     "Select a screen region and read its text aloud via OCR",
+    ("select",  "select_btn",  "Screen",
+     "Draw a box around part of the screen to have it read aloud",
      "Select a screen region to read via OCR", "do_ocr_select", None),
-    ("ocr",     "ocr_btn",     "OCR",
-     "Open a document, PDF, or image and read the text aloud",
+    ("ocr",     "ocr_btn",     "File",
+     "Open a document, PDF or picture and have it read aloud",
      "Open a document, PDF, or image to read aloud", "do_ocr_file", None),
     ("translate", "translate_btn", "Translate",
-     "Translate selected text into your language and read it aloud",
+     "Translates the selected text and reads it aloud",
      "Translate selection and read aloud", "do_translate", None),
 ]
+# Toolbar button -> keyboard shortcut action, for the tooltips.
+TOOLBAR_SHORTCUTS = {"read": "read", "stop": "stop", "dictate": "whisper",
+                     "select": "ocr", "translate": "translate", "switch": "voice"}
 TOOLBAR_IDS = [b[0] for b in TOOLBAR_BUTTONS] + ["switch"]
 # Buttons that ship hidden; the user enables them under Settings -> Interface.
-TOOLBAR_DEFAULT_HIDDEN = {"translate"}
+TOOLBAR_DEFAULT_HIDDEN = {"translate", "pause"}
 
 # Button view modes (Settings -> Interface -> Button display).
 UI_VIEWS = ["icons", "both", "text"]
@@ -120,8 +135,11 @@ def _register_icon_path():
         log.debug(f"icon theme unavailable: {e}")
         return
     here = os.path.dirname(os.path.abspath(__file__))
+    # A git checkout keeps icons/ two levels up from src/voxfox_ui; the Nix
+    # package puts it right next to voxfox_ui/ (one level up). Both looked.
     for base in ("/usr/share/voxfox/icons",
-                 os.path.join(here, "..", "icons")):
+                 os.path.join(here, "..", "icons"),
+                 os.path.join(here, "..", "..", "icons")):
         if os.path.isdir(base):
             try:
                 theme.add_search_path(os.path.abspath(base))

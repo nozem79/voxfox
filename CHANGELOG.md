@@ -1,3 +1,281 @@
+## 6.0.1
+
+First release of the 6.0 series; it contains everything from 6.0.0~dev1
+to 6.0.0~dev8 below (6.0.0 itself was never released), plus:
+
+- New Dictate icon: a microphone next to lines of text. The old one (a pair
+  of lips) looked like a plain oval at button size.
+- Nix: speech-dispatcher can be used on NixOS too (`withSpeechd`, on by
+  default). nixpkgs has no python3Packages.speechd; the Python client
+  that ships inside the speechd package is put on PYTHONPATH. VoxFox
+  also looks for speech-dispatcher modules next to the speech-dispatcher
+  program, not only in /usr, so the Pied check works outside /usr.
+- Nix: the VoxFox icons were no longer found in the Nix package. The
+  6.0.0~dev3 fix for running from a source checkout looked for icons/ two
+  levels up; the Nix package puts it one level up. Both are searched now.
+- 207 tests (1 more).
+
+In short, since 5.0.7:
+
+- Speech-dispatcher as a second speech engine per language slot, next to
+  the built-in Piper (Voxin, espeak-ng, RHVoice...), including a fix for
+  modules hidden by Pied's speech-dispatcher config.
+- A voice preview in the settings, in the slot's own language.
+- One menu instead of a menu plus a gear; Settings reorganised as a list
+  of sections with technical options under "Advanced"; languages shown in
+  their own language; readable voice names; plain explanations of the
+  dictation models; light / dark / follow the system.
+- Main window: short button names, plain tooltips with their shortcut,
+  Read that turns into Pause / Resume, a reading progress bar, a blinking
+  button while dictating, and a "bigger buttons" step in the setup
+  assistant.
+- Hover reading now works on VoxFox's own windows, menu and settings, and
+  reads the item that is actually under the pointer.
+- 206 tests.
+
+## 6.0.0~dev8
+
+Hover reading in VoxFox's menu and settings: the right item, on time
+
+- In the settings, hovering read the section ABOVE the one under the
+  pointer. The Settings window gets its title bar from the window manager
+  (the main window draws its own), and xdotool's getwindowgeometry counts
+  that title bar into the window's position, so every position was one
+  title bar too high. Window positions now come from the X server directly
+  (python-xlib); xdotool remains only as a fallback.
+- With hover on, AT-SPI focus and selection events from VoxFox's own
+  windows were answered by asking VoxFox itself over AT-SPI -- from its
+  own main thread, which then had to wait for itself. The window stalled
+  and speech lagged behind the pointer. Those events are now ignored;
+  keyboard focus inside VoxFox (Tab, arrow keys, menu items under the
+  pointer) is read directly with GTK instead, so menu items are spoken the
+  moment the pointer reaches them.
+- An element that LOSES focus or selection also sends a focus/selection
+  event (with detail 0); that one was read too, which could announce the
+  item just left. Only gaining focus is read now. This applies to every
+  program, not only VoxFox.
+- 206 tests (2 more). Also run in the real program with a real AT-SPI bus
+  and hover switched on normally, with and without a window manager,
+  several times: every menu item and every settings section read
+  correctly, nothing read from the item next to it.
+
+## 6.0.0~dev7
+
+Hover reading over VoxFox itself
+
+- Hovering over VoxFox's own buttons, menu and settings said nothing. Hover
+  reading asks AT-SPI which element is at a screen position, and GTK 4
+  (which VoxFox uses) cannot answer that: it reports positions relative to
+  its own window. Reproduced with a plain GTK 4 window: only the top
+  button at the very top-left of the screen was found, and nothing at all
+  once the window was moved. Worse, the search could then fall through to
+  a window lying behind VoxFox and read that instead.
+- VoxFox now reads its own windows directly with GTK: buttons and menu
+  items by their text, icon-only buttons by their description (the menu
+  button says "Menu"), dropdowns by their current choice, the list of
+  settings sections, fields and sliders.
+- It reads only the VoxFox window that is actually on top under the
+  pointer: a window of another program covering VoxFox, or the settings
+  window over the main window, is never read through. Under a window
+  manager this uses python-xlib (already a recommended package) to
+  recognise the frame around a window.
+- Other programs are read exactly as before. Other GTK 4 programs have the
+  same AT-SPI limitation; that is not changed here.
+- 204 tests (3 more). Also run in the real program with a real AT-SPI bus,
+  with and without a window manager: main window buttons, the menu button
+  and menu items, the settings sidebar, a dropdown, a button, the settings
+  window over the main window, a foreign window over VoxFox, and the hover
+  loop itself speaking "Stop".
+
+## 6.0.0~dev6
+
+Main window
+
+- Short, plain button names: Dictate (was Speak), Mouse (was Hover),
+  Screen (was Select), File (was OCR). In Dutch: Dicteren, Muis, Scherm,
+  Bestand.
+- Tooltips say in an ordinary sentence what a button does, followed by
+  its keyboard shortcut when it has one: "Reads the text you selected
+  aloud (Super+Z)". No more "AT-SPI" or "OCR" in them.
+- The Read button becomes Pause while VoxFox is reading and Resume while
+  paused, so the separate Pause button is hidden by default on new
+  installs (it can still be switched on under Settings -> Appearance; an
+  existing setup keeps its buttons as they were). The Read shortcut is
+  unchanged: it always reads the current selection.
+- A thin bar under the buttons shows how far VoxFox has got in a longer
+  text (from about 300 characters).
+- While dictating, the red Stop button's icon blinks, so a microphone that
+  is still on is hard to miss.
+- The status line names the voice by its short name ("Alex") instead of
+  the file name.
+
+Setup assistant
+
+- New step "Bigger buttons and text": a switch that sets the window to
+  125%. The same choice remains under Settings -> Appearance.
+
+- 201 tests. Also run in the real program on a virtual display: the
+  labels, the tooltips with their shortcuts, Read -> Pause -> Resume ->
+  Read, the reading bar, the dictation button and the setup switch.
+
+## 6.0.0~dev5
+
+- Settings -> Appearance has a new choice "Light or dark": Same as the
+  system (the default), Light or Dark. It changes only VoxFox, and applies
+  straight away and at every start. Linux Mint, Yaru and similar themes
+  come as a light and a dark theme side by side ("Mint-Y-Aqua" and
+  "Mint-Y-Dark-Aqua"); VoxFox switches to the matching sibling when it is
+  installed, and otherwise asks GTK for the theme's dark variant. A dark
+  theme without a light sibling falls back to GTK's own light theme.
+- The Settings menu item no longer has a keyboard shortcut. Its label
+  ("Control+,") did not fit and made the item hard to read. Quit keeps
+  Ctrl+Q.
+- 201 tests (8 more, for picking the light or dark theme).
+
+## 6.0.0~dev4
+
+- Switching a slot to another language now picks the best voice for it:
+  VoxFox's own default voice for that language when it is downloaded,
+  otherwise the best downloaded voice (the language's home region first,
+  then the highest quality), otherwise the default voice to download.
+  Before, the first downloaded voice in alphabetical order won, which for
+  Dutch could be a very-low-quality Flemish voice.
+- The documents folder moved from Appearance to General.
+- 193 tests (5 more, for the voice choice).
+
+## 6.0.0~dev3
+
+One menu
+
+- The title bar has a single menu button instead of two (a gear for
+  Settings next to the menu). Settings is the first item; then Library,
+  History and Live transcription; then Setup assistant and About VoxFox;
+  Quit on its own at the bottom. The narrow button column also has just
+  the one menu button now.
+- "Set up VoxFox…" is now called "Setup assistant…", so it is no longer
+  confused with Settings.
+- Shortcut, shown in the menu: Ctrl+Q quits. (6.0.0~dev3 also had Ctrl+,
+  for Settings; removed in dev5.)
+
+Settings, reorganised
+
+- A list of sections on the left replaces the nine tabs along the top,
+  three of which only appeared after clicking an arrow: Language 1,
+  Language 2, Pronunciation, Dictation, Translation and AI, Shortcuts,
+  Appearance, General. A language section shows its language in the list
+  ("Language 1: Nederlands") and follows a change straight away.
+- Languages are shown in their own language ("Nederlands", "Deutsch")
+  instead of in English. Saved settings are unchanged.
+- Piper voices have readable names: "Alex (NL, medium quality)" instead of
+  "nl_NL-alex-medium". The announcement when switching language uses the
+  short name too.
+- Dictation: each model has one plain sentence saying what it is good for
+  and how big it is. Compute device, maximum recording length and backend
+  are under "Advanced", closed by default.
+- Translation and Web page are one section, since both use Ollama.
+  The model, installing Ollama and the model suggestions come first; the
+  server address, API key and connection test are under "Advanced: server
+  and API key".
+- Interface is now called Appearance, Misc is now General.
+
+Fixes
+
+- The "Install speech recognition" button covered the status text next to
+  it; it has its own row now.
+- Some settings groups had no inner margin, so their text touched the
+  frame; every group now has the same margin.
+- Started straight from a source checkout, VoxFox looked for its icons in
+  src/icons instead of icons/ and showed broken-image icons. The installed
+  packages were not affected.
+
+Tests
+
+- 188 tests. Also run in the real program on a virtual display: the menu
+  items and their shortcuts, every settings section, choosing a language
+  and a voice by their new names (the right Piper key is stored), the model
+  explanation, the Advanced sections, and the speech-dispatcher section
+  with a Pied configuration and a spoken preview.
+
+## 6.0.0~dev2
+
+Voice preview
+
+- Settings -> Language 1/2 has a Preview row: a text field and a Play
+  button that speak with the slot's current engine, voice, speed and
+  pitch. The text starts as "This is a sample voice. Does this sound
+  good?" in the slot's language (all 23 languages), can be changed, and
+  follows the language until you type your own. Enter in the field plays
+  too; Play becomes Stop while speaking.
+
+Speech modules hidden by Pied
+
+- Pied (the Piper voice manager) replaces ~/.config/speech-dispatcher/
+  speechd.conf with a file that names only its own "piper" module. When a
+  speechd.conf names modules, speech-dispatcher loads only those, so
+  espeak-ng, Voxin and every other installed module disappear -- for every
+  program, Orca included. Pied's module also offers a single voice
+  ("Piper"); Pied switches voices by rewriting its config.
+- VoxFox now notices this and names the installed modules that are hidden.
+  "Make them available" adds AddModule lines for them to the end of that
+  file, saves a copy of the original next to it first, keeps Pied's lines
+  and marker (so Pied leaves the file alone), and restarts
+  speech-dispatcher so the modules appear.
+- For Piper voices, VoxFox's own Piper engine remains the better choice:
+  every installed Piper voice is selectable there.
+
+Fixes
+
+- Connecting to a speech-dispatcher that accepts the connection but never
+  answers no longer blocks forever; VoxFox gives up after 5 seconds. Before,
+  this could stop all speech until VoxFox was restarted.
+- A long status message in the language settings no longer makes the
+  settings window wider than the screen.
+
+Tests
+
+- 186 tests (10 more): the hung-server case, finding installed modules,
+  detecting Pied's config and adding the hidden modules. Also run against a
+  real speech-dispatcher with Pied's generated config: only "piper" was
+  listed before, espeak-ng and openjtalk appeared after the button, and the
+  preview spoke through espeak-ng.
+
+## 6.0.0~dev1
+
+Speech-dispatcher as a second speech engine
+
+- Each language slot can now speak through speech-dispatcher instead of
+  Piper. Settings -> Language 1/2 has a new "Speech engine" choice: Piper
+  (built-in, the default) or Speech-dispatcher, followed by the module
+  (voxin, espeak-ng, rhvoice...) and its voices for the slot's language.
+  This makes every synthesizer with a speech-dispatcher module usable from
+  VoxFox, including commercial voices such as Voxin that VoxFox cannot
+  ship itself.
+- The slot's language still drives dictation, OCR and the interface
+  language; only the voice changes. Speed, pitch and the pronunciation
+  dictionary apply to both engines.
+- Reading works the same as with Piper: documents remember their place,
+  reading can start halfway, the skip buttons work, and pause stops the
+  current piece of text and says it again from its start on resume.
+- Only VoxFox's own speech is cancelled when you stop; other programs
+  using speech-dispatcher (Orca) are left alone. A piece of text that
+  another program interrupts is said again, at most three times.
+- If speech-dispatcher restarts or crashes while reading, VoxFox
+  reconnects once and continues; if it stops answering altogether,
+  reading stops instead of waiting forever.
+- The choice only appears when python3-speechd is installed. A slot set to
+  speech-dispatcher on a machine without it speaks with its Piper voice.
+- Packaging: python3-speechd is a recommended dependency of the .deb and
+  .rpm. The Nix package does not include it yet, so the choice does not
+  appear there.
+
+Tests
+
+- 176 tests (25 more): the speech-dispatcher engine and its worker against
+  a stand-in for the python3-speechd client.
+- Also run against a real speech-dispatcher 0.12 with espeak-ng: reading a
+  document to the end, pause and resume, stop, starting halfway, and
+  killing speech-dispatcher mid-sentence. Not tested with Voxin itself.
+
 ## 5.0.7
 
 Dictation broke on fresh installs

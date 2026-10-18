@@ -379,6 +379,27 @@ def _(text):
     return app.tr(text)
 
 
+# The sentence the voice preview in Settings starts with. Translated like
+# any other string, but looked up in the slot's language rather than the
+# interface language: a Dutch voice should try out a Dutch sentence even
+# when the interface is in English.
+SAMPLE_TEXT = "This is a sample voice. Does this sound good?"
+
+
+def tr_for(text, code):
+    """Translate `text` into the locale `code`, independent of the UI
+    language. Falls back to the English source."""
+    if not code or code == "en":
+        return text
+    return app.translations.get(code, {}).get(text, text)
+
+
+def sample_text_for_lang(piper_lang_name):
+    """SAMPLE_TEXT in the slot's language (English if there is no locale
+    for that language)."""
+    return tr_for(SAMPLE_TEXT, PIPER_LANG_TO_CODE.get(piper_lang_name or "", "en"))
+
+
 def available_ui_languages():
     """List of (code, native_name) for UI languages we have translations for;
     English is always included."""
@@ -594,6 +615,9 @@ def _have(cmd):
 
 
 __all__ = [
+    "SAMPLE_TEXT",
+    "tr_for",
+    "sample_text_for_lang",
     "ram_tmpdir",
     "log",
     "APP_NAME",

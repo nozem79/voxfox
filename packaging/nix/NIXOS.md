@@ -172,3 +172,10 @@ github:nozem79/voxfox` for a per-user install.
   `withDictation = false` skips `faster-whisper` + `sounddevice` +
   `soundfile` entirely, `withWayland = false` skips `wl-clipboard` /
   `wtype` / `grim` / `slurp`.
+- `withSpeechd` (default on) adds speech-dispatcher as a second speech
+  engine (Settings -> Language 1/2 -> Speech engine). nixpkgs has no
+  `python3Packages.speechd`; the Python client lives inside the `speechd`
+  package, so the wrapper adds `${speechd}/${python3.sitePackages}` to
+  PYTHONPATH. That path is an assumption not yet checked on a real Nix
+  build: if `import speechd` fails, VoxFox simply does not offer the
+  choice. `withSpeechd = false` leaves it out.

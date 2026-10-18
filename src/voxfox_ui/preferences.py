@@ -21,6 +21,7 @@ Split out of voxfox_gtk.py in VoxFox 4.0.
 
 import os
 import threading
+import time
 
 import gi
 gi.require_version("Gtk", "4.0")
@@ -34,6 +35,32 @@ from voxfox_ui.common import TOOLBAR_BUTTONS, TOOLBAR_DEFAULT_HIDDEN, TOOLBAR_ID
 from voxfox_ui.setup import apply_ui_language, _pip_install, _have_pip  # noqa: E402
 from voxfox_ui.shortcuts import _SHORTCUT_ACTIONS, _SHORTCUT_LABELS, _binding_display, _binding_for, _cinnamon_reload, _install_shortcuts  # noqa: E402
 from voxfox_ui.widgets import _a11y, _dropdown, _dropdown_value, _hide_progress_bar, _set_dropdown_items, _set_progress_bar  # noqa: E402
+
+
+def _voice_label(key):
+    """How a Piper voice is shown: "Alex (NL, medium quality)" instead of
+    the file name "nl_NL-alex-medium"."""
+    name, region, quality = vf.voice_display_parts(key)
+    if not quality:
+        return name
+    q = {"x_low": _("very low quality"), "low": _("low quality"),
+         "medium": _("medium quality"), "high": _("high quality")}[quality]
+    return f"{name} ({region}, {q})"
+
+
+def _whisper_model_hint(name):
+    """One plain sentence per dictation model: what it is good for."""
+    hints = {
+        "tiny": _("Smallest and fastest, but makes the most mistakes. About 75 MB."),
+        "base": _("Fast, good enough for short sentences. About 145 MB."),
+        "small": _("Good balance of speed and accuracy; the best choice for "
+                   "most people. About 480 MB."),
+        "medium": _("More accurate, but slower; needs a fast computer. "
+                    "About 1.5 GB."),
+        "large-v3": _("Most accurate, but slow without a graphics card (GPU). "
+                      "About 3 GB."),
+    }
+    return hints.get(name, "")
 
 
 class PreferencesWindow(Gtk.Window):
@@ -51,39 +78,74 @@ class PreferencesWindow(Gtk.Window):
         except Exception as e:
             log.debug(f"fetch_voices failed: {e}")
 
-        # Tabbed layout: each page is short and scrolls, so the window stays
-        # usable on small screens.
-        notebook = Gtk.Notebook()
-        notebook.set_scrollable(True)
+        # A list of sections on the left instead of tabs along the top. Nine
+        # tabs did not fit in the window, so the last ones (Web page,
+        # Interface, Misc) hid behind a scroll arrow; a list always shows
+        # every section, and reads naturally with a screen reader.
+        self.set_default_size(820, 600)
+        stack = Gtk.Stack()
+        stack.set_transition_type(Gtk.StackTransitionType.NONE)
+        stack.set_hexpand(True)
 
-        def _page(child):
+        def _pad_frames(widget):
+            """Give every frame the same inner margin. Some groups had
+            none, so their text touched the frame's edge."""
+            child = widget.get_first_child()
+            while child is not None:
+                if isinstance(child, Gtk.Frame):
+                    inner = child.get_child()
+                    if inner is not None and inner.get_margin_start() == 0:
+                        for m in ("top", "bottom", "start", "end"):
+                            getattr(inner, f"set_margin_{m}")(10)
+                _pad_frames(child)
+                child = child.get_next_sibling()
+
+        def _page(*children):
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
             for m in ("top", "bottom", "start", "end"):
-                getattr(child, f"set_margin_{m}")(14)
+                getattr(box, f"set_margin_{m}")(14)
+            for c in children:
+                box.append(c)
+            _pad_frames(box)
             sw = Gtk.ScrolledWindow()
             sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
             sw.set_vexpand(True)
-            sw.set_child(child)
+            sw.set_child(box)
             return sw
 
-        notebook.append_page(_page(self._slot_group("slot1", _("Language 1"))),
-                             Gtk.Label(label=_("Language 1")))
-        notebook.append_page(_page(self._slot_group("slot2", _("Language 2"))),
-                             Gtk.Label(label=_("Language 2")))
-        notebook.append_page(_page(self._whisper_group()),
-                             Gtk.Label(label=_("Dictation")))
-        notebook.append_page(_page(self._pronunciation_group()),
-                             Gtk.Label(label=_("Pronunciation")))
-        notebook.append_page(_page(self._shortcuts_group()),
-                             Gtk.Label(label=_("Shortcuts")))
-        notebook.append_page(_page(self._translate_group()),
-                             Gtk.Label(label=_("Translation")))
-        notebook.append_page(_page(self._webread_group()),
-                             Gtk.Label(label=_("Web page")))
-        notebook.append_page(_page(self._interface_group()),
-                             Gtk.Label(label=_("Interface")))
-        notebook.append_page(_page(self._misc_group()),
-                             Gtk.Label(label=_("Misc")))
-        self.set_child(notebook)
+        def _lang_title(slot, n):
+            lang = self.state[slot].get("lang", "")
+            native = vf.piper_lang_native(lang) if lang else ""
+            return f"{_('Language')} {n}: {native}" if native else f"{_('Language')} {n}"
+
+        pages = [
+            ("slot1", _lang_title("slot1", 1),
+             _page(self._slot_group("slot1", _("Language 1")))),
+            ("slot2", _lang_title("slot2", 2),
+             _page(self._slot_group("slot2", _("Language 2")))),
+            ("pron", _("Pronunciation"), _page(self._pronunciation_group())),
+            ("dictation", _("Dictation"), _page(self._whisper_group())),
+            ("ai", _("Translation and AI"),
+             _page(self._translate_group(), self._webread_group())),
+            ("shortcuts", _("Shortcuts"), _page(self._shortcuts_group())),
+            ("look", _("Appearance"), _page(self._interface_group())),
+            ("general", _("General"),
+             _page(self._misc_group(), self._documents_group())),
+        ]
+        for name, title, page in pages:
+            stack.add_titled(page, name, title)
+
+        sidebar = Gtk.StackSidebar()
+        sidebar.set_stack(stack)
+        sidebar.set_size_request(190, -1)
+        _a11y(sidebar, _("Settings sections"))
+
+        root = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+        root.append(sidebar)
+        root.append(Gtk.Separator(orientation=Gtk.Orientation.VERTICAL))
+        root.append(stack)
+        self._stack = stack
+        self.set_child(root)
 
         self.connect("close-request", self._on_close)
 
@@ -124,6 +186,26 @@ class PreferencesWindow(Gtk.Window):
             rb.connect("toggled", self._on_scale_toggled, s)
         size_frame.set_child(srow)
         box.append(size_frame)
+
+        # Light or dark, or whatever the desktop uses.
+        scheme_frame = Gtk.Frame(label=_("Light or dark"))
+        crow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(crow, f"set_margin_{m}")(10)
+        cur_scheme = self.state.get("color_scheme", "system")
+        cleader = None
+        for val, lbl in (("system", _("Same as the system")),
+                         ("light", _("Light")), ("dark", _("Dark"))):
+            rb = Gtk.CheckButton(label=lbl)
+            if cleader is None:
+                cleader = rb
+            else:
+                rb.set_group(cleader)
+            rb.set_active(val == cur_scheme)
+            rb.connect("toggled", self._on_scheme_toggled, val)
+            crow.append(rb)
+        scheme_frame.set_child(crow)
+        box.append(scheme_frame)
 
         # Button display: icons only / icon + text / text only.
         view_frame = Gtk.Frame(label=_("Button display"))
@@ -189,23 +271,6 @@ class PreferencesWindow(Gtk.Window):
         top_frame.set_child(tbox)
         box.append(top_frame)
 
-        # Where OCR documents are kept.
-        doc_frame = Gtk.Frame(label=_("Documents"))
-        dbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        for m in ("top", "bottom", "start", "end"):
-            getattr(dbox, f"set_margin_{m}")(10)
-        drow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        self.docs_lbl = Gtk.Label(
-            label=vf.documents.library_dir(self.state), xalign=0.0)
-        self.docs_lbl.set_hexpand(True)
-        self.docs_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
-        drow.append(self.docs_lbl)
-        pick = Gtk.Button(label=_("Change..."))
-        pick.connect("clicked", self._on_pick_docs_dir)
-        drow.append(pick)
-        dbox.append(drow)
-        doc_frame.set_child(dbox)
-        box.append(doc_frame)
 
         # Buttons: per-button visibility toggle + up/down reordering.
         btn_frame = Gtk.Frame(label=_("Buttons"))
@@ -272,6 +337,14 @@ class PreferencesWindow(Gtk.Window):
         self.state["ui_view"] = val
         vf.save_state(self.state)
         self.win._apply_ui_mode()
+
+    def _on_scheme_toggled(self, rb, val):
+        if not rb.get_active():
+            return
+        self.state["color_scheme"] = val
+        vf.save_state(self.state)
+        from voxfox_ui import theme
+        theme.apply(val)
 
     def _on_scale_toggled(self, rb, scale):
         if rb.get_active():
@@ -503,7 +576,7 @@ class PreferencesWindow(Gtk.Window):
                     + "\n" + "\n".join(lines))
         self._shortcut_result.set_text(msg)
 
-    # ── per-slot language + voice + speed ────────────────────────────────────
+    # ── per-slot language + engine + voice + speed ───────────────────────────
     def _slot_group(self, slot, title):
         cfg = self.state[slot]
         frame = Gtk.Frame(label=title)
@@ -512,64 +585,329 @@ class PreferencesWindow(Gtk.Window):
             getattr(grid, f"set_margin_{m}")(10)
         frame.set_child(grid)
 
+        def row(label, widget, r):
+            lbl = Gtk.Label(label=label, xalign=0)
+            grid.attach(lbl, 0, r, 1, 1)
+            grid.attach(widget, 1, r, 1, 1)
+            widget.set_hexpand(True)
+            return lbl
+
         langs = vf.get_languages(self.all_voices)
         if not langs and cfg.get("lang"):
             langs = [cfg["lang"]]
-        lang_dd = _dropdown(langs, cfg.get("lang", ""))
+        # Shown in the language itself ("Nederlands", "Deutsch"), the way
+        # people know their own language; stored by the English name as before.
+        lang_names = [vf.piper_lang_native(lg) or lg for lg in langs]
+        lang_dd = _dropdown(lang_names, lang_names[langs.index(cfg["lang"])]
+                            if cfg.get("lang") in langs else None)
         _a11y(lang_dd, f"{title} — {_('Language')}")
+        row(_("Language:"), lang_dd, 0)
 
+        # Speech engine. Only offered when speech-dispatcher can be used, or
+        # when this slot was already set to it (so the choice stays visible
+        # and can be switched back after python3-speechd was removed).
+        engines = [vf.ENGINE_PIPER, vf.ENGINE_SPEECHD]
+        engine_names = [_("Piper (built-in)"), _("Speech-dispatcher")]
+        engine = cfg.get("engine", vf.ENGINE_PIPER)
+        if engine not in engines:
+            engine = vf.ENGINE_PIPER
+        engine_dd = _dropdown(engine_names, engine_names[engines.index(engine)])
+        _a11y(engine_dd, f"{title} — {_('Speech engine')}")
+        engine_lbl = row(_("Speech engine:"), engine_dd, 1)
+        offer_engine = vf.available() or engine == vf.ENGINE_SPEECHD
+        engine_lbl.set_visible(offer_engine)
+        engine_dd.set_visible(offer_engine)
+
+        # Piper voice
         voices = sorted(vf.get_voices_for_lang(self.all_voices, cfg.get("lang", "")))
         if not voices:
             voices = sorted(v for v in vf.get_local_voices())
-        voice_dd = _dropdown(voices, cfg.get("voice", ""))
+        # The dropdown shows friendly names; voice_keys holds the matching
+        # Piper keys in the same order, which is what gets stored.
+        voice_keys = list(voices)
+        voice_dd = _dropdown([_voice_label(k) for k in voice_keys],
+                             _voice_label(cfg.get("voice", ""))
+                             if cfg.get("voice") in voice_keys else None)
         _a11y(voice_dd, f"{title} — {_('Voice')}")
+        voice_lbl = row(_("Voice:"), voice_dd, 2)
+
+        # speech-dispatcher module + voice, filled in the background: asking
+        # speech-dispatcher may first have to start it.
+        sd_module_dd = _dropdown([cfg.get("sd_module", "")] if cfg.get("sd_module") else [],
+                                 cfg.get("sd_module", ""))
+        _a11y(sd_module_dd, f"{title} — {_('Module')}")
+        sd_module_lbl = row(_("Module:"), sd_module_dd, 3)
+        sd_voice_dd = _dropdown([cfg.get("sd_voice", "")] if cfg.get("sd_voice") else [],
+                                cfg.get("sd_voice", ""))
+        _a11y(sd_voice_dd, f"{title} — {_('Voice')}")
+        sd_voice_lbl = row(_("Voice:"), sd_voice_dd, 4)
+        sd_note = Gtk.Label(xalign=0.0)
+        sd_note.set_wrap(True)
+        sd_note.add_css_class("dim-label")
+        grid.attach(sd_note, 0, 5, 2, 1)
 
         status = Gtk.Label(xalign=0.0)
         status.add_css_class("dim-label")
-
-        grid.attach(Gtk.Label(label=_("Language:"), xalign=0), 0, 0, 1, 1)
-        grid.attach(lang_dd, 1, 0, 1, 1)
-        lang_dd.set_hexpand(True)
-        grid.attach(Gtk.Label(label=_("Voice:"), xalign=0), 0, 1, 1, 1)
-        grid.attach(voice_dd, 1, 1, 1, 1)
-        grid.attach(status, 0, 2, 2, 1)
+        # Wrap: a long message (a file path) must not widen the window.
+        status.set_wrap(True)
+        status.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        grid.attach(status, 0, 6, 2, 1)
 
         speed = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.5, 2.0, 0.05)
         speed.set_value(float(cfg.get("speed", 1.0)))
-        speed.set_hexpand(True)
         speed.set_draw_value(True)
-        grid.attach(Gtk.Label(label=_("Speed:"), xalign=0), 0, 3, 1, 1)
-        grid.attach(speed, 1, 3, 1, 1)
+        row(_("Speed:"), speed, 7)
         _a11y(speed, _("Speed:").rstrip(": "))
 
         # Pitch in semitones: 0 = the voice's natural pitch, negative = lower,
-        # positive = higher. Applied in the speech worker by playing at a shifted
-        # sample rate and compensating the tempo via Piper's length_scale, so the
-        # speaking rate above is unaffected.
+        # positive = higher. For Piper this is applied in the speech worker by
+        # playing at a shifted sample rate and compensating the tempo via
+        # Piper's length_scale; speech-dispatcher gets it as its pitch setting.
         pitch = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, -12, 12, 1)
         pitch.set_value(float(cfg.get("pitch", 0.0)))
-        pitch.set_hexpand(True)
         pitch.set_draw_value(True)
-        grid.attach(Gtk.Label(label=_("Pitch:"), xalign=0), 0, 4, 1, 1)
-        grid.attach(pitch, 1, 4, 1, 1)
+        row(_("Pitch:"), pitch, 8)
         _a11y(pitch, _("Pitch:").rstrip(": "))
 
+        # Preview: hear the slot's current voice, speed and pitch. The text
+        # starts as a sample sentence in the slot's language and can be
+        # changed; it follows the language for as long as nobody edited it.
+        preview_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        preview = Gtk.Entry()
+        preview.set_hexpand(True)
+        preview.set_text(vf.sample_text_for_lang(cfg.get("lang", "")))
+        _a11y(preview, f"{title} — {_('Preview text')}")
+        play_btn = Gtk.Button(label=_("Play"))
+        _a11y(play_btn, f"{title} — {_('Play preview')}")
+        preview_box.append(preview)
+        preview_box.append(play_btn)
+        row(_("Preview:"), preview_box, 9)
+
+        # Installed modules that the user's own speech-dispatcher settings
+        # keep out (Pied writes such a file), with a button to add them.
+        # Placed right under the module/voice rows.
+        hidden_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        hidden_lbl = Gtk.Label(xalign=0.0)
+        hidden_lbl.set_wrap(True)
+        hidden_btn = Gtk.Button(label=_("Make them available"))
+        hidden_btn.set_halign(Gtk.Align.START)
+        hidden_box.append(hidden_lbl)
+        hidden_box.append(hidden_btn)
+        hidden_box.set_visible(False)
+        grid.insert_row(6)
+        grid.attach(hidden_box, 0, 6, 2, 1)
+
+        # While the code itself refills a dropdown, its "selected" signal
+        # must not be taken for a choice by the user.
+        filling = {"on": False}
+
+        def fill(dd, items, value):
+            filling["on"] = True
+            try:
+                _set_dropdown_items(dd, items, value)
+            finally:
+                filling["on"] = False
+
+        def using_sd():
+            return cfg.get("engine", vf.ENGINE_PIPER) == vf.ENGINE_SPEECHD
+
+        def show_engine_rows():
+            sd = using_sd()
+            for w in (voice_lbl, voice_dd):
+                w.set_visible(not sd)
+            for w in (sd_module_lbl, sd_module_dd, sd_voice_lbl, sd_voice_dd, sd_note):
+                w.set_visible(sd)
+            if not sd:
+                hidden_box.set_visible(False)
+            if sd:
+                status.set_text("")
+
+        gen = {"n": 0}
+
+        hidden = {"names": []}
+
+        def show_hidden(names):
+            hidden["names"] = names
+            if names and using_sd():
+                hidden_lbl.set_text(
+                    _("These speech modules are installed but hidden by your "
+                      "speech-dispatcher settings: {names}. That happens when "
+                      "another program, such as Pied, wrote its own settings "
+                      "file.").format(names=", ".join(names)))
+                hidden_box.set_visible(True)
+            else:
+                hidden_box.set_visible(False)
+
+        def on_make_available(_b):
+            ok, detail = vf.enable_hidden_modules(list(hidden["names"]))
+            if not ok:
+                hidden_lbl.set_text(_("Could not change the speech-dispatcher "
+                                      "settings") + f": {detail}")
+                return
+            vf.restart_speechd()
+            hidden_box.set_visible(False)
+            status.set_text(_("Added to your speech-dispatcher settings. The "
+                              "old settings were saved as {path}.").format(path=detail))
+            # speech-dispatcher starts again on the next connection.
+            GLib.timeout_add(800, lambda: (load_sd(), False)[1])
+
+        hidden_btn.connect("clicked", on_make_available)
+
+        def load_sd(only_voices=False):
+            """Ask speech-dispatcher for modules and voices in a thread.
+            A newer request makes the answer to an older one irrelevant."""
+            gen["n"] += 1
+            my = gen["n"]
+            if not vf.available():
+                sd_note.set_text(_("Speech-dispatcher cannot be used: its Python "
+                                   "support (python3-speechd) is not installed. "
+                                   "This slot speaks with Piper until it is."))
+                return
+            sd_note.set_text(_("Asking speech-dispatcher..."))
+            lang = cfg.get("lang", "")
+            module = cfg.get("sd_module", "")
+
+            def work():
+                modules = None if only_voices else vf.list_modules()
+                if modules is not None:
+                    names = vf.hidden_modules()
+                    GLib.idle_add(lambda: (my == gen["n"] and show_hidden(names), False)[1])
+                m = module
+                if modules is not None:
+                    if not modules:
+                        GLib.idle_add(apply, my, [], "", [])
+                        return
+                    if m not in modules:
+                        m = "voxin" if "voxin" in modules else (
+                            "espeak-ng" if "espeak-ng" in modules else modules[0])
+                GLib.idle_add(apply, my, modules, m, vf.list_voices(m, lang))
+            threading.Thread(target=work, daemon=True).start()
+
+        def apply(my, modules, module, voices_):
+            if my != gen["n"]:
+                return False
+            if modules is not None:
+                if not modules:
+                    sd_note.set_text(_("Speech-dispatcher could not be reached, or "
+                                       "it has no speech modules installed."))
+                    fill(sd_module_dd, [], "")
+                    fill(sd_voice_dd, [], "")
+                    return False
+                fill(sd_module_dd, modules, module)
+            voice = cfg.get("sd_voice", "")
+            if voice not in voices_:
+                voice = voices_[0] if voices_ else ""
+            fill(sd_voice_dd, voices_, voice)
+            changed = (cfg.get("sd_module") != module or cfg.get("sd_voice") != voice)
+            cfg["sd_module"], cfg["sd_voice"] = module, voice
+            if changed:
+                vf.save_state(self.state)
+            sd_note.set_text(_("Speed and pitch are passed on to the speech "
+                               "module. How strongly they work differs per "
+                               "module."))
+            return False
+
+        preview_state = {"default": preview.get_text(), "playing": False,
+                         "started": 0.0, "heard": False}
+
+        def preview_done():
+            if preview_state["playing"]:
+                if vf.is_speaking():
+                    preview_state["heard"] = True
+                    return True           # keep polling
+                # speak() can take a moment to begin (it first lets earlier
+                # speech wind down), so not speaking YET is not "finished".
+                if (not preview_state["heard"]
+                        and time.monotonic() - preview_state["started"] < 3.0):
+                    return True
+            preview_state["playing"] = False
+            play_btn.set_label(_("Play"))
+            return False
+
+        def on_play(_b):
+            if preview_state["playing"]:
+                vf.stop_speaking()
+                preview_state["playing"] = False
+                play_btn.set_label(_("Play"))
+                return
+            text = preview.get_text().strip() or preview_state["default"]
+            if (not using_sd() and cfg.get("voice")
+                    and cfg["voice"] not in vf.get_local_voices()):
+                status.set_text(_("This voice has not been downloaded yet."))
+                return
+            preview_state.update(playing=True, heard=False,
+                                 started=time.monotonic())
+            play_btn.set_label(_("Stop"))
+            # speak() may wait for earlier speech to wind down: off the GUI thread.
+            threading.Thread(target=vf.speak, args=(text, dict(cfg)),
+                             daemon=True).start()
+            GLib.timeout_add(250, preview_done)
+
+        play_btn.connect("clicked", on_play)
+        preview.connect("activate", on_play)   # Enter in the text field plays too
+
+        def follow_language(lang):
+            """Switch the sample sentence to the new language, unless the
+            user typed their own text."""
+            if preview.get_text() == preview_state["default"]:
+                preview_state["default"] = vf.sample_text_for_lang(lang)
+                preview.set_text(preview_state["default"])
+            else:
+                preview_state["default"] = vf.sample_text_for_lang(lang)
+
         def on_lang(dd, _p):
-            lang = _dropdown_value(dd)
+            if filling["on"]:
+                return
+            idx = dd.get_selected()
+            if not 0 <= idx < len(langs):
+                return
+            lang = langs[idx]
             cfg["lang"] = lang
+            # Keep the section list on the left in step ("Language 1: ...").
+            stack = getattr(self, "_stack", None)
+            if stack is not None and stack.get_child_by_name(slot) is not None:
+                n = 1 if slot == "slot1" else 2
+                stack.get_page(stack.get_child_by_name(slot)).set_title(
+                    f"{_('Language')} {n}: {vf.piper_lang_native(lang)}")
+            follow_language(lang)
             keys = sorted(vf.get_voices_for_lang(self.all_voices, lang))
             local = vf.get_local_voices()
-            chosen = next((k for k in keys if k in local),
-                          keys[0] if keys else "")
+            chosen = vf.best_voice_for_lang(keys, local, lang)
             cfg["voice"] = chosen
             vf.save_state(self.state)
-            _set_dropdown_items(voice_dd, keys, chosen)
+            voice_keys[:] = keys
+            fill(voice_dd, [_voice_label(k) for k in keys],
+                 _voice_label(chosen) if chosen else None)
+            if chosen and chosen not in local and not using_sd():
+                self._download_voice_async(slot, chosen, status)
+            elif not using_sd():
+                status.set_text("")
+            if using_sd():
+                load_sd(only_voices=True)
             if slot == "slot1":
                 apply_ui_language(lang)
                 self.win.rebuild_ui()
 
+        def on_engine(dd, _p):
+            if filling["on"]:
+                return
+            idx = dd.get_selected()
+            new = engines[idx] if 0 <= idx < len(engines) else vf.ENGINE_PIPER
+            if new == cfg.get("engine", vf.ENGINE_PIPER):
+                return
+            cfg["engine"] = new
+            vf.save_state(self.state)
+            show_engine_rows()
+            if new == vf.ENGINE_SPEECHD:
+                load_sd()
+            elif cfg.get("voice") and cfg["voice"] not in vf.get_local_voices():
+                self._download_voice_async(slot, cfg["voice"], status)
+
         def on_voice(dd, _p):
-            voice = _dropdown_value(dd)
+            if filling["on"]:
+                return
+            idx = dd.get_selected()
+            voice = voice_keys[idx] if 0 <= idx < len(voice_keys) else ""
             if not voice:
                 return
             cfg["voice"] = voice
@@ -578,6 +916,25 @@ class PreferencesWindow(Gtk.Window):
                 self._download_voice_async(slot, voice, status)
             else:
                 status.set_text("")
+
+        def on_sd_module(dd, _p):
+            if filling["on"]:
+                return
+            module = _dropdown_value(dd)
+            if not module or module == cfg.get("sd_module"):
+                return
+            cfg["sd_module"] = module
+            cfg["sd_voice"] = ""
+            vf.save_state(self.state)
+            load_sd(only_voices=True)
+
+        def on_sd_voice(dd, _p):
+            if filling["on"]:
+                return
+            voice = _dropdown_value(dd)
+            if voice and voice != cfg.get("sd_voice"):
+                cfg["sd_voice"] = voice
+                vf.save_state(self.state)
 
         def on_speed(sc):
             cfg["speed"] = round(sc.get_value(), 2)
@@ -588,9 +945,26 @@ class PreferencesWindow(Gtk.Window):
             vf.save_state(self.state)
 
         lang_dd.connect("notify::selected", on_lang)
+        engine_dd.connect("notify::selected", on_engine)
         voice_dd.connect("notify::selected", on_voice)
+        sd_module_dd.connect("notify::selected", on_sd_module)
+        sd_voice_dd.connect("notify::selected", on_sd_voice)
         speed.connect("value-changed", on_speed)
         pitch.connect("value-changed", on_pitch)
+
+        show_engine_rows()
+        if using_sd():
+            load_sd()
+        # For tests and for the rest of this page: the widgets of this slot.
+        self._slot_widgets = getattr(self, "_slot_widgets", {})
+        self._slot_widgets[slot] = {
+            "lang": lang_dd, "engine": engine_dd, "voice": voice_dd,
+            "sd_module": sd_module_dd, "sd_voice": sd_voice_dd,
+            "sd_note": sd_note, "status": status,
+            "preview": preview, "play": play_btn,
+            "hidden_box": hidden_box, "hidden_label": hidden_lbl,
+            "hidden_button": hidden_btn,
+        }
         return frame
 
     def _download_voice_async(self, slot, voice, status_label):
@@ -636,6 +1010,13 @@ class PreferencesWindow(Gtk.Window):
         model_box.append(self.model_dd)
         model_box.append(dl_btn)
         grid.attach(model_box, 1, r, 1, 1)
+        # What the chosen model is good for, in plain words.
+        self.model_hint = Gtk.Label(xalign=0.0)
+        self.model_hint.set_wrap(True)
+        self.model_hint.add_css_class("dim-label")
+        self.model_hint.set_text(_whisper_model_hint(w.get("model", "small")))
+        grid.attach(self.model_hint, 0, r + 1, 2, 1)
+        r += 1
         self.model_status = Gtk.Label(xalign=0.0)
         self.model_status.add_css_class("dim-label")
         self.model_status.set_wrap(True)
@@ -651,13 +1032,22 @@ class PreferencesWindow(Gtk.Window):
         self.install_btn.set_halign(Gtk.Align.START)
         self.install_btn.connect("clicked", self._on_install_whisper)
         self.install_btn.set_visible(False)
-        grid.attach(self.install_btn, 1, r + 1, 1, 1)
+        # On its own row: sharing the status text's row made the button
+        # cover that text ("Speech recogn|Install speech recognition").
+        grid.attach(self.install_btn, 0, r + 2, 2, 1)
         # Download progress for the model button, just below the status text.
         self.dl_progress = Gtk.ProgressBar(show_text=True)
         self.dl_progress.set_visible(False)
-        grid.attach(self.dl_progress, 0, r + 2, 2, 1)
+        grid.attach(self.dl_progress, 0, r + 3, 2, 1)
         self._refresh_model_status()
-        r += 3
+        r += 4
+
+        # Everything below that is technical goes into an "Advanced"
+        # expander at the end; microphone and confirmation stay in view.
+        main_grid = grid
+        adv_grid = Gtk.Grid(row_spacing=8, column_spacing=8)
+        adv_grid.set_margin_top(8)
+        grid = adv_grid
 
         # Compute device (Auto detects an NVIDIA GPU, else CPU).
         grid.attach(Gtk.Label(label=_("Compute:"), xalign=0), 0, r, 1, 1)
@@ -682,6 +1072,7 @@ class PreferencesWindow(Gtk.Window):
         grid.attach(self.dev_status, 0, r + 1, 2, 1)
         r += 2
 
+        grid = main_grid
         # Microphone + refresh
         grid.attach(Gtk.Label(label=_("Mic:"), xalign=0), 0, r, 1, 1)
         mic_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -727,6 +1118,7 @@ class PreferencesWindow(Gtk.Window):
             grid.attach(note, 0, r, 2, 1)
             r += 1
 
+        grid = adv_grid
         # Maximum recording length — a safety net if dictation is left
         # running by accident (recording then auto-stops on its own).
         grid.attach(Gtk.Label(label=_("Max. recording length:"), xalign=0),
@@ -795,6 +1187,9 @@ class PreferencesWindow(Gtk.Window):
         self.remote_box.attach(test_btn,                                 1, 3, 1, 1)
         self.remote_box.attach(self.test_result_lbl,                     0, 4, 2, 1)
         self.remote_box.set_visible(w.get("backend") == "remote")
+        adv = Gtk.Expander(label=_("Advanced"))
+        adv.set_child(adv_grid)
+        main_grid.attach(adv, 0, r + 1, 2, 1)
         return frame
 
     def _save_w(self, key, value):
@@ -854,6 +1249,7 @@ class PreferencesWindow(Gtk.Window):
 
     def _on_model_changed(self, dd, _p):
         self._save_w("model", _dropdown_value(dd))
+        self.model_hint.set_text(_whisper_model_hint(_dropdown_value(dd)))
         self._refresh_model_status()
 
     # ── pronunciation dictionary (slot 1's language) ─────────────────────────
@@ -1058,8 +1454,28 @@ class PreferencesWindow(Gtk.Window):
         vf.set_pronunciations(pron)
 
     # ── misc: line merging + import/export ───────────────────────────────────
+    # ── Documents folder (shown under General) ────────────────────────────
+    def _documents_group(self):
+        # Where OCR documents are kept.
+        doc_frame = Gtk.Frame(label=_("Documents"))
+        dbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(dbox, f"set_margin_{m}")(10)
+        drow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self.docs_lbl = Gtk.Label(
+            label=vf.documents.library_dir(self.state), xalign=0.0)
+        self.docs_lbl.set_hexpand(True)
+        self.docs_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        drow.append(self.docs_lbl)
+        pick = Gtk.Button(label=_("Change..."))
+        pick.connect("clicked", self._on_pick_docs_dir)
+        drow.append(pick)
+        dbox.append(drow)
+        doc_frame.set_child(dbox)
+        return doc_frame
+
     def _misc_group(self):
-        frame = Gtk.Frame(label=_("Misc"))
+        frame = Gtk.Frame(label=_("General"))
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         frame.set_child(box)
 
@@ -1193,6 +1609,10 @@ class PreferencesWindow(Gtk.Window):
                         "with a local Ollama server or any OpenAI-compatible "
                         "API.").format(lang1=_("Language 1")))
         box.append(desc)
+        # Where the translation server is and how to reach it: needed only
+        # for a remote server, so it sits under "Advanced" at the end.
+        conn = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        conn.set_margin_top(8)
 
         urow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         urow.append(Gtk.Label(label=_("URL:"), xalign=0))
@@ -1201,7 +1621,7 @@ class PreferencesWindow(Gtk.Window):
         self.trans_url.set_text(tr.get("url") or vf.DEFAULT_TRANSLATE["url"])
         self.trans_url.connect("changed", self._on_translate_changed)
         urow.append(self.trans_url)
-        box.append(urow)
+        conn.append(urow)
 
         mrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         mrow.append(Gtk.Label(label=_("Model:"), xalign=0))
@@ -1237,16 +1657,16 @@ class PreferencesWindow(Gtk.Window):
         self.trans_key.set_text(tr.get("api_key") or "")
         self.trans_key.connect("changed", self._on_translate_changed)
         krow.append(self.trans_key)
-        box.append(krow)
+        conn.append(krow)
 
         trow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         test = Gtk.Button(label=_("Test connection"))
         test.connect("clicked", self._on_translate_test)
         trow.append(test)
-        box.append(trow)
+        conn.append(trow)
         self.trans_status = Gtk.Label(xalign=0.0, wrap=True)
         self.trans_status.add_css_class("dim-label")
-        box.append(self.trans_status)
+        conn.append(self.trans_status)
 
         # Install helper for a *local* Ollama: only shown when the URL points
         # at this machine and nothing is there yet (see _refresh_ollama_row).
@@ -1298,11 +1718,14 @@ class PreferencesWindow(Gtk.Window):
 
         hint = Gtk.Label(xalign=0.0, wrap=True)
         hint.add_css_class("dim-label")
-        hint.set_text(_("The Translate button is hidden by default; enable "
-                        "it on the {iface} tab. Pick a keyboard shortcut on "
-                        "the {sc} tab.").format(iface=_("Interface"),
-                                                sc=_("Shortcuts")))
+        hint.set_text(_("The Translate button is hidden by default; turn it "
+                        "on under {iface}. Pick a keyboard shortcut under "
+                        "{sc}.").format(iface=_("Appearance"),
+                                        sc=_("Shortcuts")))
         box.append(hint)
+        conn_exp = Gtk.Expander(label=_("Advanced: server and API key"))
+        conn_exp.set_child(conn)
+        box.append(conn_exp)
         return frame
 
     def _on_translate_changed(self, *_a):

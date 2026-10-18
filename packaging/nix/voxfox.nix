@@ -61,6 +61,12 @@
 # tools genuinely are.
 , withDictation ? true   # faster-whisper + sounddevice + soundfile
 , withXlibFastPath ? true # the optional python3Packages.xlib hover speedup
+# speech-dispatcher as a second speech engine (6.0). nixpkgs has no
+# python3Packages.speechd: the Python client ships inside the speechd
+# package itself, so its site-packages is added to PYTHONPATH below.
+# Without it the choice simply does not appear in Settings.
+, withSpeechd ? true
+, speechd ? null
 }:
 
 let
@@ -73,7 +79,7 @@ let
   # multi-line file needs, and a wrong guess there would fail the whole
   # build rather than just this one string, so a plain hardcoded value
   # is the safer choice until someone can verify that on a real system.)
-  version = "5.0.7";
+  version = "6.0.1";
 
   pythonEnv = python3.withPackages (ps: with ps; [
     pygobject3
@@ -94,8 +100,14 @@ let
   ++ lib.optionals withXlibFastPath [ xlib ]
   );
 
+  useSpeechd = withSpeechd && speechd != null;
+
+  pythonPath = "${pythonEnv}/${pythonEnv.sitePackages}"
+    + lib.optionalString useSpeechd ":${speechd}/${python3.sitePackages}";
+
   runtimeTools =
     [ wmctrl xdotool maim xclip tesseract poppler-utils pulseaudio ffmpeg glib ]
+    ++ lib.optionals useSpeechd [ speechd ]
     ++ lib.optionals withWayland
       (lib.filter (p: p != null) [ wl-clipboard wtype grim slurp ]);
 
@@ -208,7 +220,7 @@ DESKTOP
     for prog in voxfox voxfox-quickshot; do
       wrapProgram "$out/bin/$prog" \
         "''${gappsWrapperArgs[@]}" \
-        --set PYTHONPATH "${pythonEnv}/${pythonEnv.sitePackages}" \
+        --set PYTHONPATH "${pythonPath}" \
         --prefix PATH : "${lib.makeBinPath runtimeTools}"
     done
   '';
