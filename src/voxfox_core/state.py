@@ -17,7 +17,7 @@
 
 """voxfox_core.state — Persistent state and history (load/save, atomic writes, migration)."""
 
-import copy, json, os, tempfile, time
+import copy, json, os, tempfile, threading, time
 from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG, DEFAULT_SPEED_FOR_LANG, DEFAULT_PITCH_FOR_LANG, PIPER_LANG_TO_CODE, app
 
 
@@ -44,6 +44,7 @@ DEFAULT_STATE = {
     "type_tiles": {},            # own boards per language code; absent = ready-made
     "type_image_dir": None,      # folder with tile pictures; None = not chosen yet
     "type_last_picture_dir": None,  # where the last tile picture was chosen from
+    "type_icons_added": [],      # boards that got the 6.2 pictograms (once per language)
     "whisper": {
         "model": "small",          # tiny / base / small / medium / large-v3
         "mic_id": "",              # PulseAudio source name; "" = system default
@@ -293,13 +294,18 @@ def save_state(state):
 
 
 def load_history():
-    """Return list of {kind, text, ts} dicts, newest first."""
+    """Return list of {kind, text, ts} dicts, newest first. A damaged or
+    hand-edited file gives what is still usable, never an error."""
     path = HISTORY_FILE if os.path.isfile(HISTORY_FILE) else LEGACY_HISTORY_FILE
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
     except Exception:
         return []
+    if not isinstance(data, list):
+        return []
+    return [x for x in data if isinstance(x, dict)
+            and isinstance(x.get("text"), str)]
 
 
 def save_history(items):
@@ -309,8 +315,33 @@ def save_history(items):
         log.warning(f"Could not save history: {e}")
 
 
+# Reading, dictation and Type and speak can add to the history from
+# different threads; one at a time, so no entry is lost.
+_history_lock = threading.Lock()
+
+
 def add_history(kind, text):
-    """Prepend a {read,dictate} item. Returns the new list (capped at HISTORY_SIZE)."""
+    """Prepend a {read,dictate,translate,type} item. Returns the new list (capped at HISTORY_SIZE)."""
+    with _history_lock:
+        return _add_history(kind, text)
+
+
+def clear_type_history(texts=()):
+    """Remove what Type and speak put in the history: every "type" entry,
+    and "read" entries with one of `texts` (6.1 stored those as "read").
+    Returns the new list."""
+    texts = {t for t in texts if isinstance(t, str)}
+    with _history_lock:
+        items = load_history()
+        kept = [i for i in items
+                if i.get("kind") != "type"
+                and not (i.get("kind") == "read" and i.get("text") in texts)]
+        if len(kept) != len(items):
+            save_history(kept)
+        return kept
+
+
+def _add_history(kind, text):
     if not text or not text.strip():
         return load_history()
     items = load_history()
@@ -466,7 +497,7 @@ __all__ = [
     "save_state",
     "load_history",
     "save_history",
-    "add_history",
+    "add_history", "clear_type_history",
     "UI_SCALES",
     "DEFAULT_UI_SCALE",
     "reconcile_toolbar_layout",

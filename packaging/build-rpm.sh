@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -e
+# Files in the package must be readable for everyone, whatever the
+# builder's own umask is.
+umask 022
 
 # Build an RPM package of VoxFox — the mirror of build-deb.sh, for
 # Fedora/openSUSE-family distributions. EXPERIMENTAL: the file layout is
@@ -62,11 +65,15 @@ for pkg in voxfox_core voxfox_ui; do
 done
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
 
+# Button icons and the pictograms of the ready-made tiles. Not optional:
+# without icons/tiles/ every tile would be empty, so a failed copy stops
+# the build instead of producing a package that looks fine.
+mkdir -p "$INST/usr/share/voxfox/icons"
+cp -r "$ROOT/icons/." "$INST/usr/share/voxfox/icons/"
+for f in tiles/ja.svg tiles/ik-heb-dorst.svg hicolor/scalable/actions/voxfox-type-symbolic.svg; do
+    [ -f "$INST/usr/share/voxfox/icons/$f" ] || { echo "ERROR: icons/$f missing from the package" >&2; exit 1; }
+done
 # Bundled community pronunciation dictionaries (optional).
-if [ -d "$ROOT/icons" ]; then
-    mkdir -p "$INST/usr/share/voxfox/icons"
-    cp -r "$ROOT/icons/." "$INST/usr/share/voxfox/icons/" 2>/dev/null || true
-fi
 if [ -d "$ROOT/dicts" ]; then
     mkdir -p "$INST/usr/share/voxfox/dicts"
     cp "$ROOT/dicts/"*.json "$INST/usr/share/voxfox/dicts/" 2>/dev/null || true
@@ -149,9 +156,11 @@ Release:        1
 Summary:        VoxFox — screen reader and dictation tool
 License:        GPL-3.0-or-later
 URL:            https://github.com/nozem79/voxfox
+Packager:       Daniël Vos <info@voxfox.nl>
+Vendor:         VoxFox
 BuildArch:      noarch
 
-Requires:       python3 >= 3.9
+Requires:       python3 >= 3.10
 Requires:       python3-gobject
 Requires:       python3-pip
 Requires:       gtk4 >= 4.10
@@ -209,13 +218,18 @@ fi
 if ! python3 -c "import faster_whisper, sounddevice, soundfile" 2>/dev/null; then
     echo "VoxFox: installing Python dictation dependencies (faster-whisper, sounddevice, soundfile)..."
     if [ -n "\$REAL_USER" ] && [ "\$REAL_USER" != "root" ]; then
-        su -c "pip install --user --break-system-packages \$PKGS 'av<19' 2>/dev/null || \\
-               pip install --user \$PKGS 'av<19' 2>/dev/null || true" "\$REAL_USER" || true
+        su -c "python3 -m pip install --user --break-system-packages \$PKGS 'av<19' || \\
+               python3 -m pip install --user \$PKGS 'av<19'" "\$REAL_USER"
     else
-        pip install --break-system-packages \$PKGS "av<19" 2>/dev/null || \\
-        pip install \$PKGS "av<19" 2>/dev/null || true
+        python3 -m pip install --break-system-packages \$PKGS "av<19" || \\
+        python3 -m pip install \$PKGS "av<19"
     fi
-    echo "VoxFox: done. Run 'voxfox --setup' to download voices."
+    if [ \$? -eq 0 ]; then
+        echo "VoxFox: done. Run 'voxfox --setup' to download voices."
+    else
+        echo "VoxFox: dictation dependency install failed. Open VoxFox and choose"
+        echo "        Setup assistant to retry with more detail."
+    fi
 fi
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true

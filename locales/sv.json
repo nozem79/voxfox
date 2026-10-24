@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Återställer de färdiga brickorna för det här språket",
   "Change tiles": "Ändra brickor",
   "Click a tile to change, move or remove it": "Klicka på en bricka för att ändra, flytta eller ta bort den",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klicka på en bricka för att ändra den. Klicka på Ändra brickor igen när du är klar.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klicka på en bricka för att ändra den, eller dra den till en annan plats. Klicka på Ändra brickor igen när du är klar.",
   "Click to change this tile": "Klicka för att ändra den här brickan",
   "Put back the standard tiles?": "Återställa standardbrickorna?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Dina egna brickor för det här språket ersätts av de färdiga.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Brickbilder",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox sparar bilderna till dina brickor i en egen mapp. Välj var mappen ska ligga; VoxFox skapar den åt dig.",
   "Where should the folder go?": "Var ska mappen ligga?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Var bilden sitter på brickan; Mitten sätter den ovanför texten"
+  "Where the picture goes on the tile; Middle puts it above the text": "Var bilden sitter på brickan; Mitten sätter den ovanför texten",
+  "Remove the tile “{text}”?": "Ta bort brickan ”{text}”?",
+  "Also removes these sentences from History": "Tar också bort de här meningarna från historiken"
 }

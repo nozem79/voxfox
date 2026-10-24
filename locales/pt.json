@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Repõe os mosaicos prontos para esta língua",
   "Change tiles": "Alterar mosaicos",
   "Click a tile to change, move or remove it": "Clique num mosaico para o alterar, mover ou remover",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Clique num mosaico para o alterar. Clique de novo em Alterar mosaicos quando terminar.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Clique num mosaico para o alterar ou arraste-o para outro lugar. Clique de novo em Alterar mosaicos quando terminar.",
   "Click to change this tile": "Clique para alterar este mosaico",
   "Put back the standard tiles?": "Repor os mosaicos padrão?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Os seus mosaicos para esta língua são substituídos pelos prontos.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Imagens dos mosaicos",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "O VoxFox guarda as imagens dos seus mosaicos numa pasta própria. Escolha onde fica essa pasta; o VoxFox cria-a por si.",
   "Where should the folder go?": "Onde deve ficar a pasta?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Onde a imagem fica no mosaico; Meio coloca-a por cima do texto"
+  "Where the picture goes on the tile; Middle puts it above the text": "Onde a imagem fica no mosaico; Meio coloca-a por cima do texto",
+  "Remove the tile “{text}”?": "Remover o mosaico «{text}»?",
+  "Also removes these sentences from History": "Remove também estas frases do histórico"
 }

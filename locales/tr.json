@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Bu dil için hazır kutucukları geri getirir",
   "Change tiles": "Kutucukları değiştir",
   "Click a tile to change, move or remove it": "Değiştirmek, taşımak veya kaldırmak için bir kutucuğa tıklayın",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Değiştirmek için bir kutucuğa tıklayın. Bitirdiğinizde Kutucukları değiştir'e yeniden tıklayın.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Değiştirmek için bir kutucuğa tıklayın veya başka bir yere sürükleyin. Bitirdiğinizde Kutucukları değiştir'e yeniden tıklayın.",
   "Click to change this tile": "Bu kutucuğu değiştirmek için tıklayın",
   "Put back the standard tiles?": "Standart kutucuklar geri getirilsin mi?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Bu dil için kendi kutucuklarınız hazır olanlarla değiştirilir.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Kutucuk resimleri",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox kutucuklarınızın resimlerini ayrı bir klasörde tutar. Klasörün nereye konacağını seçin; VoxFox onu sizin için oluşturur.",
   "Where should the folder go?": "Klasör nereye konsun?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Resmin kutucukta nerede duracağı; Orta onu metnin üstüne koyar"
+  "Where the picture goes on the tile; Middle puts it above the text": "Resmin kutucukta nerede duracağı; Orta onu metnin üstüne koyar",
+  "Remove the tile “{text}”?": "“{text}” kutucuğu kaldırılsın mı?",
+  "Also removes these sentences from History": "Bu cümleleri geçmişten de kaldırır"
 }

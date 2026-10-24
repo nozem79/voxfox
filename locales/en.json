@@ -463,7 +463,7 @@
   "Puts back the ready-made tiles for this language": "Puts back the ready-made tiles for this language",
   "Change tiles": "Change tiles",
   "Click a tile to change, move or remove it": "Click a tile to change, move or remove it",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Click a tile to change it. Click Change tiles again when you are done.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.",
   "Click to change this tile": "Click to change this tile",
   "Put back the standard tiles?": "Put back the standard tiles?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Your own tiles for this language are replaced by the ready-made ones.",
@@ -503,5 +503,7 @@
   "Tile pictures": "Tile pictures",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.",
   "Where should the folder go?": "Where should the folder go?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Where the picture goes on the tile; Middle puts it above the text"
+  "Where the picture goes on the tile; Middle puts it above the text": "Where the picture goes on the tile; Middle puts it above the text",
+  "Remove the tile “{text}”?": "Remove the tile “{text}”?",
+  "Also removes these sentences from History": "Also removes these sentences from History"
 }

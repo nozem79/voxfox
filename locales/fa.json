@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "کاشی‌های آماده این زبان را برمی‌گرداند",
   "Change tiles": "تغییر کاشی‌ها",
   "Click a tile to change, move or remove it": "برای تغییر، جابه‌جایی یا حذف، روی یک کاشی کلیک کنید",
-  "Click a tile to change it. Click Change tiles again when you are done.": "برای تغییر، روی یک کاشی کلیک کنید. وقتی تمام شد دوباره روی تغییر کاشی‌ها کلیک کنید.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "برای تغییر، روی یک کاشی کلیک کنید یا آن را به جای دیگری بکشید. وقتی تمام شد دوباره روی تغییر کاشی‌ها کلیک کنید.",
   "Click to change this tile": "برای تغییر این کاشی کلیک کنید",
   "Put back the standard tiles?": "کاشی‌های پیش‌فرض برگردانده شوند؟",
   "Your own tiles for this language are replaced by the ready-made ones.": "کاشی‌های خودتان برای این زبان با کاشی‌های آماده جایگزین می‌شوند.",
@@ -502,5 +502,7 @@
   "Tile pictures": "تصویرهای کاشی",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox تصویرهای کاشی‌های شما را در پوشه‌ای جدا نگه می‌دارد. جای این پوشه را انتخاب کنید؛ VoxFox آن را برایتان می‌سازد.",
   "Where should the folder go?": "پوشه کجا باشد؟",
-  "Where the picture goes on the tile; Middle puts it above the text": "جای تصویر روی کاشی؛ «وسط» آن را بالای متن می‌گذارد"
+  "Where the picture goes on the tile; Middle puts it above the text": "جای تصویر روی کاشی؛ «وسط» آن را بالای متن می‌گذارد",
+  "Remove the tile “{text}”?": "کاشی «{text}» حذف شود؟",
+  "Also removes these sentences from History": "این جمله‌ها را از تاریخچه هم حذف می‌کند"
 }

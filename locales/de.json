@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Stellt die fertigen Kacheln für diese Sprache wieder her",
   "Change tiles": "Kacheln anpassen",
   "Click a tile to change, move or remove it": "Klicke auf eine Kachel, um sie zu ändern, zu verschieben oder zu entfernen",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klicke auf eine Kachel, um sie zu ändern. Klicke erneut auf Kacheln anpassen, wenn du fertig bist.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klicke auf eine Kachel, um sie zu ändern, oder ziehe sie an eine andere Stelle. Klicke erneut auf Kacheln anpassen, wenn du fertig bist.",
   "Click to change this tile": "Klicken, um diese Kachel zu ändern",
   "Put back the standard tiles?": "Standardkacheln wiederherstellen?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Deine eigenen Kacheln für diese Sprache werden durch die fertigen ersetzt.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Kachelbilder",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox speichert die Bilder deiner Kacheln in einem eigenen Ordner. Wähle, wo dieser Ordner hin soll; VoxFox erstellt ihn für dich.",
   "Where should the folder go?": "Wo soll der Ordner hin?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Wo das Bild auf der Kachel steht; Mitte setzt es über den Text"
+  "Where the picture goes on the tile; Middle puts it above the text": "Wo das Bild auf der Kachel steht; Mitte setzt es über den Text",
+  "Remove the tile “{text}”?": "Die Kachel „{text}“ entfernen?",
+  "Also removes these sentences from History": "Entfernt diese Sätze auch aus dem Verlauf"
 }

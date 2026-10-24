@@ -8,12 +8,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 3.10 is the oldest Python VoxFox supports; 3.13 is Debian 13's.
+        python-version: ["3.10", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install test tooling
         run: pip install pytest ruff
@@ -34,3 +38,23 @@ jobs:
       # exercised by hand against a real desktop than faked in CI.
       - name: Run the test suite
         run: python3 -m pytest tests/ -v
+
+  # Build the .deb and check that what every tile needs is really in it.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the .deb
+        run: bash packaging/build-deb.sh
+
+      - name: Check the package contents
+        run: |
+          deb=$(ls src/voxfox_*_all.deb)
+          dpkg-deb -c "$deb" > contents.txt
+          for f in usr/share/voxfox/icons/tiles/ja.svg \
+                   usr/share/voxfox/icons/tiles/ik-heb-dorst.svg \
+                   usr/share/voxfox/locales/nl.json \
+                   usr/lib/voxfox/voxfox_ui/typespeak.py; do
+            grep -q "$f" contents.txt || { echo "missing: $f"; exit 1; }
+          done

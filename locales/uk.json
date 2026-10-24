@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Повертає готові плитки для цієї мови",
   "Change tiles": "Змінити плитки",
   "Click a tile to change, move or remove it": "Клацніть плитку, щоб змінити, перемістити або видалити її",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Клацніть плитку, щоб змінити її. Коли закінчите, ще раз клацніть Змінити плитки.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Клацніть плитку, щоб змінити її, або перетягніть її в інше місце. Коли закінчите, ще раз клацніть Змінити плитки.",
   "Click to change this tile": "Клацніть, щоб змінити цю плитку",
   "Put back the standard tiles?": "Повернути стандартні плитки?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Ваші власні плитки для цієї мови буде замінено готовими.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Зображення плиток",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox зберігає зображення ваших плиток в окремій теці. Виберіть, де буде ця тека; VoxFox створить її для вас.",
   "Where should the folder go?": "Де має бути тека?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Де зображення на плитці; Посередині ставить його над текстом"
+  "Where the picture goes on the tile; Middle puts it above the text": "Де зображення на плитці; Посередині ставить його над текстом",
+  "Remove the tile “{text}”?": "Вилучити плитку «{text}»?",
+  "Also removes these sentences from History": "Також вилучає ці речення з історії"
 }

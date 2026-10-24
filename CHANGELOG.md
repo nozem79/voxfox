@@ -1,3 +1,108 @@
+## 6.2.0
+
+First release of the 6.2 series: everything from 6.2.0~dev1 to ~dev3
+below, plus:
+
+- **Clear list** in Type and speak also removes those sentences from
+  History. Sentences said there are stored in History as "Type and
+  speak" (with their own icon), so they can be found and removed;
+  sentences from 6.1 are matched by their text.
+- Removing a tile asks first ("Remove the tile 'Ja'?"); Enter or Escape
+  keeps the tile.
+- The packages name a maintainer address: Daniël Vos
+  <info@voxfox.nl>.
+
+In short, since 6.1.0:
+
+- Pictograms on all ready-made tiles in Dutch, English, German, French
+  and Spanish (50 SVG pictures in `icons/tiles/`); a changed 6.1 board
+  gets them once.
+- Tiles can be dragged to another place while Change tiles is on; the
+  board scrolls along at the edges.
+- Fixes from a second code review: tile board bugs, the RTF reader
+  (quotes, dashes, accents, code pages), size limits when reading
+  documents and pictures, a safer Piper and Ollama install, package and
+  CI checks, Python 3.10 or newer.
+
+## 6.2.0~dev3
+
+Fixes from a second code review.
+
+Tiles
+- A pictogram removed from the ready-made board ("No picture") came
+  back once, right after saving. It now stays removed at once.
+- Switching language (for example with the shortcut) while a tile
+  dialog was open saved the tiles into the other language's board. The
+  board is now fixed when the dialog opens.
+- "Move earlier/later" with an empty text box no longer lets the tile
+  disappear; it keeps the text it had.
+- Loading, the one-time pictograms and saving a board moved from the
+  window to `voxfox_core.typespeak` (`load_board`, `save_board`), with
+  tests.
+- Changing the tile pictures folder after a language switch no longer
+  proposes a second folder with the name in the other language.
+- Enter and Escape no longer interrupt an input method that is still
+  composing (Japanese, Chinese, ...) in Type and speak.
+
+Reading documents
+- RTF: curly quotes, apostrophes and dashes from Word (`\rquote`,
+  `\emdash`, ...) are kept ("zo’n", not "zon"); the fallback after
+  `\uN` is skipped ("café", not "caféé"); `\'hh` bytes use the
+  document's code page (cp1252 by default), so “ and ” and € come out
+  right; pictures, field codes and `{\*...}` groups are not read aloud.
+- Word, LibreOffice, RTF and text files have an upper size (64 MB inside
+  a .docx/.odt, 32 MB for RTF and text), so a "zip bomb" cannot fill the
+  memory. Tile pictures: the size is read from the file header first,
+  and a picture is never decoded larger than 1536 pixels.
+
+Installing and packaging
+- Piper is only unpacked with a known SHA-256 (it was already pinned for
+  all three architectures; now a missing checksum stops the install),
+  and with Python's `data` filter for tar files.
+- The Ollama installer unpacks and checks the download before it
+  replaces the installed copy, so a broken download leaves the old one
+  working. Downloads are HTTPS only, also after redirects.
+- The .deb refreshes the icon and menu caches also on upgrades and on
+  systems without pip; the .rpm uses `python3 -m pip` and says when the
+  install failed instead of hiding it.
+- A failed copy of `icons/` now stops the package build; CI builds the
+  .deb and checks the pictograms are in it, and runs the tests on Python
+  3.10, 3.12 and 3.13.
+- Python 3.10 or newer (was: 3.9); packages are built with umask 022.
+- `packaging/pin_piper_hashes.py` reads the Piper version from
+  `voxfox_ui/common.py` again.
+- README-deb: supported systems corrected (GTK 4.10: Ubuntu 24.04,
+  Mint 22, Debian 13, Fedora 38 or newer).
+
+Smaller
+- The history file is checked when read (a damaged file gives an empty
+  history instead of an error), and adding to it is done one at a time.
+- An error in a shortcut action is logged as an error instead of only
+  at debug level.
+- Tile picture names use SHA-1 with `usedforsecurity=False` (FIPS).
+
+## 6.2.0~dev2
+
+- Tiles can be dragged to another place while Change tiles is on: drag a
+  tile onto the tile whose place it should take. The tile being moved
+  fades and the place it goes gets a blue border. Near the top or bottom
+  of the board it scrolls along, so a tile can be moved to a place that
+  is out of view. Move earlier / Move later in Change tile still work,
+  also with the keyboard.
+
+## 6.2.0~dev1
+
+- Pictograms on the ready-made tiles: every tile of the standard boards
+  (Dutch, English, German, French and Spanish) has its own picture, on
+  the left of the text. The 50 pictures are SVG files in
+  `icons/tiles/`, shared by all five languages.
+- A board you changed in 6.1 gets the pictograms once: every tile that
+  still has its ready-made text and no picture of its own. A picture you
+  remove afterwards (No picture) stays removed.
+- A pictogram can be moved (Left, Right, Middle), removed or replaced by
+  your own picture in Change tile, like any other tile picture.
+  "Standard tiles" puts the board back with its pictograms.
+
 ## 6.1.0
 
 First release of the 6.1 series: everything from 6.1.0~dev1 to ~dev4

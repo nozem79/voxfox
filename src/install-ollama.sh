@@ -15,7 +15,8 @@
 # add the systemd unit. Anyone who wants GPU acceleration can run Ollama's own
 # installer afterwards, knowing what it does.
 #
-# Nothing on the system is touched until the download has finished.
+# Nothing on the system is touched until the download has finished and
+# unpacked correctly.
 #
 # Output, as read by install_ollama() in voxfox_core/translate.py: lines that
 # start with ">>>" are progress, curl's progress bar carries the download
@@ -38,18 +39,38 @@ for tool in curl zstd tar; do
 done
 
 TMP=$(mktemp -d) || fail "could not create a temporary directory"
-trap 'rm -rf "$TMP"' EXIT
+# The unpacked release (several GB with its GPU libraries) is staged on the
+# same disk as /usr, not in /tmp, which is often a small RAM disk.
+STAGE=$(mktemp -d /usr/lib/.voxfox-ollama.XXXXXX) \
+    || fail "could not create a staging directory in /usr/lib"
+trap 'rm -rf "$TMP" "$STAGE"' EXIT
 
 URL="https://ollama.com/download/ollama-linux-$ARCH.tar.zst"
 status "Downloading Ollama"
-curl --fail --show-error --location --progress-bar -o "$TMP/ollama.tar.zst" "$URL" \
+# HTTPS only, also after redirects.
+curl --fail --show-error --location --progress-bar \
+     --proto '=https' --proto-redir '=https' --tlsv1.2 \
+     -o "$TMP/ollama.tar.zst" "$URL" \
     || fail "download failed ($URL)"
+
+# Unpack and check first; only then replace the installed copy, so a broken
+# download leaves a working older Ollama in place.
+status "Unpacking Ollama"
+zstd -d -c "$TMP/ollama.tar.zst" | tar -xf - -C "$STAGE" --no-same-owner \
+    || fail "could not unpack the download"
+[ -f "$STAGE/bin/ollama" ] || fail "the download has no bin/ollama"
 
 status "Installing Ollama to /usr"
 rm -rf /usr/lib/ollama
-zstd -d -c "$TMP/ollama.tar.zst" | tar -xf - -C /usr \
-    || fail "could not unpack the download"
-[ -x /usr/bin/ollama ] || fail "/usr/bin/ollama is missing after unpacking"
+if [ -d "$STAGE/lib/ollama" ]; then
+    mv "$STAGE/lib/ollama" /usr/lib/ollama || fail "could not install /usr/lib/ollama"
+fi
+# The rest (bin/ollama): through tar with --no-overwrite-dir, so existing
+# directories such as /usr/bin keep their own owner and permissions.
+tar -C "$STAGE" -cf - . | tar -xf - -C /usr --no-overwrite-dir --no-same-owner \
+    || fail "could not install Ollama to /usr"
+chmod 755 /usr/bin/ollama
+[ -x /usr/bin/ollama ] || fail "/usr/bin/ollama is missing after installing"
 
 if ! id ollama >/dev/null 2>&1; then
     status "Creating the ollama user"

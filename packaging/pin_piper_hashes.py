@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fetch the SHA-256 of each pinned Piper asset and print the PIPER_SHA256
-block to paste into src/voxfox_gtk.py.
+block to paste into src/voxfox_ui/common.py.
 
 Run on a machine that can reach GitHub:
     python3 packaging/pin_piper_hashes.py
@@ -19,8 +19,9 @@ import urllib.request
 # script and the app can never disagree.
 import os
 HERE = os.path.dirname(os.path.abspath(__file__))
-GTK = os.path.join(HERE, "..", "src", "voxfox_gtk.py")
-src = open(GTK, encoding="utf-8").read()
+# Since 6.1 the Piper constants live in voxfox_ui/common.py.
+COMMON = os.path.join(HERE, "..", "src", "voxfox_ui", "common.py")
+src = open(COMMON, encoding="utf-8").read()
 
 version = re.search(r'PIPER_VERSION\s*=\s*"([^"]+)"', src).group(1)
 base = ("https://github.com/rhasspy/piper/releases/download/" + version)

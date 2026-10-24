@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Vrátí připravené dlaždice pro tento jazyk",
   "Change tiles": "Upravit dlaždice",
   "Click a tile to change, move or remove it": "Klepnutím na dlaždici ji změníte, přesunete nebo odstraníte",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klepnutím na dlaždici ji změníte. Až budete hotovi, klepněte znovu na Upravit dlaždice.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klepnutím na dlaždici ji změníte, nebo ji přetáhněte na jiné místo. Až budete hotovi, klepněte znovu na Upravit dlaždice.",
   "Click to change this tile": "Klepnutím změníte tuto dlaždici",
   "Put back the standard tiles?": "Vrátit výchozí dlaždice?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Vaše vlastní dlaždice pro tento jazyk budou nahrazeny připravenými.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Obrázky dlaždic",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox ukládá obrázky vašich dlaždic do vlastní složky. Vyberte, kde má složka být; VoxFox ji vytvoří za vás.",
   "Where should the folder go?": "Kam má složka přijít?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Kde je obrázek na dlaždici; Uprostřed ho dá nad text"
+  "Where the picture goes on the tile; Middle puts it above the text": "Kde je obrázek na dlaždici; Uprostřed ho dá nad text",
+  "Remove the tile “{text}”?": "Odstranit dlaždici „{text}“?",
+  "Also removes these sentences from History": "Odstraní tyto věty také z historie"
 }

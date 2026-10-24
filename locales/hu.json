@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Visszaállítja a nyelv kész csempéit",
   "Change tiles": "Csempék módosítása",
   "Click a tile to change, move or remove it": "Kattints egy csempére a módosításhoz, áthelyezéshez vagy törléshez",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Kattints egy csempére a módosításhoz. Ha kész vagy, kattints újra a Csempék módosítása gombra.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Kattints egy csempére a módosításhoz, vagy húzd át egy másik helyre. Ha kész vagy, kattints újra a Csempék módosítása gombra.",
   "Click to change this tile": "Kattints a csempe módosításához",
   "Put back the standard tiles?": "Visszaállítod az alap csempéket?",
   "Your own tiles for this language are replaced by the ready-made ones.": "A saját csempéid ennél a nyelvnél a kész csempékre cserélődnek.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Csempeképek",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "A VoxFox a csempék képeit külön mappában tárolja. Válaszd ki, hová kerüljön a mappa; a VoxFox létrehozza neked.",
   "Where should the folder go?": "Hová kerüljön a mappa?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Hol legyen a kép a csempén; a Középen a szöveg fölé teszi"
+  "Where the picture goes on the tile; Middle puts it above the text": "Hol legyen a kép a csempén; a Középen a szöveg fölé teszi",
+  "Remove the tile “{text}”?": "Eltávolítod a(z) „{text}” csempét?",
+  "Also removes these sentences from History": "Ezeket a mondatokat az előzményekből is törli"
 }

@@ -232,3 +232,100 @@ def test_picture_start_folder_when_last_is_gone(tmp_path):
     st = {"type_last_picture_dir": str(tmp_path / "weg")}
     assert ts.picture_start_folder(st, str(tmp_path)) == str(tmp_path)
     assert ts.picture_start_folder(st, None) is None
+
+
+# ── pictograms on the ready-made tiles (6.2) ───────────────────────────────
+import os as _os
+
+_ICON_DIR = _os.path.join(_os.path.dirname(__file__), "..", "icons", "tiles")
+
+
+def test_every_ready_made_tile_has_a_shipped_pictogram():
+    shipped = {f[:-4] for f in _os.listdir(_ICON_DIR) if f.endswith(".svg")}
+    for code in ("nl", "en", "de", "fr", "es"):
+        for t in ts.default_tiles(code):
+            assert ts.is_icon_name(t.get("image")), (code, t["text"])
+            assert t["image"][len(ts.ICON_PREFIX):] in shipped, (code, t["text"])
+            assert t["image_pos"] == "left"
+
+
+def test_pictograms_shared_between_languages():
+    assert ts.default_icon("nl", "dorst") == "icon:dorst"
+    assert ts.default_icon("en", "thirsty") == "icon:dorst"
+    assert ts.default_icon("de", "Durst") == "icon:dorst"
+    assert ts.default_icon("es", "No") == "icon:nee"
+    assert ts.default_icon("es", "no") == "icon:niet"
+    assert ts.default_icon("nl", "?") == "icon:vraagteken"
+    assert ts.default_icon("nl", "fiets") is None
+
+
+def test_icon_names_cannot_leave_the_folder():
+    for bad in ("icon:../x", "icon:", "icon:a/b", "icon:Dorst", "dorst",
+                "icon:" + "a" * 41, None, 5):
+        assert not ts.is_icon_name(bad)
+    assert ts.normalize_tiles([{"text": "x", "image": "icon:../../etc"}]) \
+        == [{"text": "x", "kind": "thing"}]
+    assert ts.normalize_tiles([{"text": "x", "image": "icon:dorst"}]) \
+        == [{"text": "x", "kind": "thing", "image": "icon:dorst",
+             "image_pos": "left"}]
+
+
+def test_add_default_icons_to_an_old_board():
+    old = [{"text": "Ik", "kind": "person"},
+           {"text": "fiets", "kind": "thing"},
+           {"text": "dorst", "kind": "thing", "image": "tile-0123456789abcdef.png",
+            "image_pos": "right"}]
+    new, n = ts.add_default_icons(old, "nl")
+    assert n == 1
+    assert new[0]["image"] == "icon:ik" and new[0]["image_pos"] == "left"
+    assert "image" not in new[1]
+    assert new[2]["image"] == "tile-0123456789abcdef.png"   # own picture kept
+    assert "image" not in old[0]                             # input untouched
+
+
+def test_move_tile_to():
+    t = [{"text": c, "kind": "thing"} for c in "abcde"]
+    txt = lambda ts_: "".join(x["text"] for x in ts_)  # noqa: E731
+    assert txt(ts.move_tile_to(t, 0, 3)) == "bcdae"
+    assert txt(ts.move_tile_to(t, 4, 1)) == "aebcd"
+    assert txt(ts.move_tile_to(t, 2, 2)) == "abcde"
+    assert txt(ts.move_tile_to(t, 9, 1)) == "abcde"
+    assert txt(ts.move_tile_to(t, 1, -1)) == "abcde"
+    assert txt(t) == "abcde"
+
+
+# ── loading and saving a board (6.2, review fixes) ─────────────────────────
+
+def test_new_user_removed_pictogram_stays_removed():
+    state = {}
+    tiles, changed = ts.load_board(state, "nl")
+    assert not changed and tiles[6]["text"] == "Ja" and tiles[6]["image"] == "icon:ja"
+    tiles[6] = {"text": "Ja", "kind": "social"}          # "No picture"
+    ts.save_board(state, "nl", tiles)
+    again, changed = ts.load_board(state, "nl")
+    assert not changed
+    assert "image" not in again[6]
+
+
+def test_board_from_6_1_gets_pictograms_once():
+    state = {"type_tiles": {"nl": [{"text": "Ik", "kind": "person"},
+                                   {"text": "fiets", "kind": "thing"}]}}
+    tiles, changed = ts.load_board(state, "nl")
+    assert changed and tiles[0]["image"] == "icon:ik"
+    assert state["type_icons_added"] == ["nl"]
+    assert state["type_tiles"]["nl"][0]["image"] == "icon:ik"
+    tiles[0] = {"text": "Ik", "kind": "person"}
+    ts.save_board(state, "nl", tiles)
+    again, changed = ts.load_board(state, "nl")
+    assert not changed and "image" not in again[0]
+
+
+def test_boards_are_kept_per_language():
+    state = {}
+    ts.save_board(state, "nl", [{"text": "hoi", "kind": "social"}])
+    ts.save_board(state, "en", [{"text": "hi", "kind": "social"}])
+    assert ts.load_board(state, "nl")[0][0]["text"] == "hoi"
+    assert ts.load_board(state, "en")[0][0]["text"] == "hi"
+    assert ts.load_board(state, "de")[0] == ts.default_tiles("de")
+    ts.save_board(state, "nl", [])
+    assert ts.load_board(state, "nl")[0] == []           # all removed on purpose

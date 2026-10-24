@@ -56,6 +56,13 @@ _ODT_TEXT_NS = "{urn:oasis:names:tc:opendocument:xmlns:text:1.0}"
 _ODT_OFFICE_NS = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
 
 
+# Upper limits for what is read from a file. A real document stays far
+# below them; a "zip bomb" (a tiny .docx that unpacks to gigabytes) or a
+# huge file opened by mistake is refused instead of filling the memory.
+_MAX_ZIP_MEMBER_BYTES = 64 * 1024 * 1024
+_MAX_TEXT_FILE_BYTES = 32 * 1024 * 1024
+
+
 def _read_zip_member(path, member):
     """Bytes of one file inside a zip, or None if the zip or member is bad.
 
@@ -66,8 +73,16 @@ def _read_zip_member(path, member):
     """
     try:
         with zipfile.ZipFile(path) as z:
-            return z.read(member)
-    except (zipfile.BadZipFile, KeyError, OSError) as e:
+            if z.getinfo(member).file_size > _MAX_ZIP_MEMBER_BYTES:
+                log.warning(f"docreader: {member} in {path} is too large")
+                return None
+            with z.open(member) as f:
+                data = f.read(_MAX_ZIP_MEMBER_BYTES + 1)
+            if len(data) > _MAX_ZIP_MEMBER_BYTES:   # the size in the zip lied
+                log.warning(f"docreader: {member} in {path} is too large")
+                return None
+            return data
+    except (zipfile.BadZipFile, KeyError, OSError, RuntimeError) as e:
         log.debug(f"docreader: could not read {member} from {path}: {e}")
         return None
 
@@ -185,10 +200,139 @@ def read_odt(path):
 
 # ── .rtf ───────────────────────────────────────────────────────────────────
 
-_RTF_UNICODE = re.compile(r"\\u(-?\d+)\??")
-_RTF_HEX     = re.compile(r"\\'([0-9a-fA-F]{2})")
-_RTF_CONTROL = re.compile(r"\\[a-zA-Z]+-?\d* ?")
-_RTF_PAR     = re.compile(r"\\(?:par|line)\b")
+# Control words that stand for a character. Word writes curly quotes and
+# dashes this way; dropping them glued words together ("zo'n" -> "zon").
+_RTF_SYMBOLS = {
+    "par": "\n\n", "line": "\n\n", "sect": "\n\n", "page": "\n\n",
+    "tab": " ", "cell": " ", "row": "\n",
+    "lquote": "\u2018", "rquote": "\u2019",
+    "ldblquote": "\u201c", "rdblquote": "\u201d",
+    "emdash": "\u2014", "endash": "\u2013", "bullet": "\u2022",
+    "emspace": " ", "enspace": " ", "qmspace": " ",
+}
+# Groups whose content is never text: pictures, field instructions (the
+# HYPERLINK "..." part of a link) and every {\* ...} destination.
+_RTF_SKIP_GROUPS = ("pict", "fldinst", "object", "header", "footer",
+                    "headerl", "headerr", "footerl", "footerr")
+_RTF_WORD = re.compile(r"\\([a-zA-Z]+)(-?\d+)? ?")
+
+
+def _rtf_to_text(text):
+    """Turn the body of an RTF document into plain text.
+
+    A small scanner rather than a chain of regular expressions, so that
+    \\uN keeps its meaning: after \\u233 comes a fallback for old readers
+    (\\'e9, or \\ucN characters), which must be skipped, not read too.
+    \\'hh bytes are decoded in the document's code page (\\ansicpgN,
+    cp1252 when not given)."""
+    m = re.search(r"\\ansicpg(\d+)", text[:2000])
+    codepage = f"cp{m.group(1)}" if m else "cp1252"
+    try:
+        b"".decode(codepage)
+    except LookupError:
+        codepage = "cp1252"
+
+    out, pending = [], bytearray()   # pending: \'hh bytes not decoded yet
+    uc_stack = [1]                   # \ucN per group: fallback length
+    skip = 0                         # fallback characters still to skip
+    i, n = 0, len(text)
+
+    def flush():
+        if pending:
+            out.append(pending.decode(codepage, errors="replace"))
+            pending.clear()
+
+    while i < n:
+        c = text[i]
+        if c == "{":
+            # A group that holds no text is skipped whole, nested braces
+            # included.
+            m = _RTF_WORD.match(text, i + 1)
+            star = text.startswith("\\*", i + 1)
+            if star or (m and m.group(1) in _RTF_SKIP_GROUPS):
+                depth, j = 1, i + 1
+                while j < n and depth:
+                    if text[j] == "\\":
+                        j += 2
+                        continue
+                    depth += {"{": 1, "}": -1}.get(text[j], 0)
+                    j += 1
+                i = j
+                continue
+            uc_stack.append(uc_stack[-1])
+            skip = 0
+            i += 1
+            continue
+        if c == "}":
+            if len(uc_stack) > 1:
+                uc_stack.pop()
+            skip = 0
+            i += 1
+            continue
+        if c in "\r\n":
+            i += 1                   # line breaks in the file are not text
+            continue
+        if c != "\\":
+            if skip:
+                skip -= 1
+            else:
+                flush()
+                out.append(c)
+            i += 1
+            continue
+        # A backslash: an escape, a hex byte or a control word.
+        nxt = text[i + 1] if i + 1 < n else ""
+        if nxt == "'":
+            hexpart = text[i + 2:i + 4]
+            i += 4
+            if skip:
+                skip -= 1
+                continue
+            try:
+                pending.append(int(hexpart, 16))
+            except ValueError:
+                pass
+            continue
+        if nxt in "\\{}":
+            i += 2
+            if skip:
+                skip -= 1
+            else:
+                flush()
+                out.append(nxt)
+            continue
+        if nxt in "~_-":
+            i += 2
+            flush()
+            out.append({"~": " ", "_": "-", "-": ""}[nxt])
+            continue
+        m = _RTF_WORD.match(text, i)
+        if not m:
+            i += 2                   # a control symbol we do not use
+            continue
+        i = m.end()
+        word, arg = m.group(1), m.group(2)
+        if skip:
+            skip -= 1
+            continue
+        if word == "u" and arg is not None:
+            flush()
+            code = int(arg)
+            out.append(chr(code + 65536 if code < 0 else code))
+            skip = uc_stack[-1]
+            if i < n and text[i] == "?" and skip:   # the usual fallback
+                i += 1
+                skip -= 1
+            continue
+        if word == "uc" and arg is not None:
+            uc_stack[-1] = max(0, int(arg))
+            continue
+        sym = _RTF_SYMBOLS.get(word)
+        if sym is not None:
+            flush()
+            out.append(sym)
+    flush()
+    return "".join(out)
 
 
 def _strip_rtf_destination_groups(text, keywords):
@@ -228,9 +372,12 @@ def read_rtf(path):
     """
     try:
         with open(path, "rb") as fh:
-            raw = fh.read()
+            raw = fh.read(_MAX_TEXT_FILE_BYTES + 1)
     except OSError as e:
         return "", _("Could not open this file: {error}").format(error=e)
+    if len(raw) > _MAX_TEXT_FILE_BYTES:
+        return "", _("Could not open this file: {error}").format(
+            error=f"larger than {_MAX_TEXT_FILE_BYTES // (1024 * 1024)} MB")
 
     try:
         text = raw.decode("latin-1")
@@ -246,11 +393,7 @@ def read_rtf(path):
         text, (r"\fonttbl", r"\colortbl", r"\stylesheet",
                r"\*\generator", r"\info", r"\*\pgptbl"))
 
-    text = _RTF_PAR.sub("\n\n", text)
-    text = _RTF_UNICODE.sub(lambda m: chr(int(m.group(1)) & 0xFFFF), text)
-    text = _RTF_HEX.sub(lambda m: chr(int(m.group(1), 16)), text)
-    text = _RTF_CONTROL.sub("", text)
-    text = text.replace("{", "").replace("}", "").replace("\\", "")
+    text = _rtf_to_text(text)
 
     paras = [p.strip() for p in text.split("\n\n")]
     paras = [re.sub(r"[ \t]+", " ", p) for p in paras if p.strip()]
@@ -264,15 +407,21 @@ def read_plain_text(path):
     and hashes of ** and # are spoken as-is, same as any other plain text
     VoxFox is asked to read.
     """
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read(_MAX_TEXT_FILE_BYTES + 1)
+    except OSError as e:
+        return "", _("Could not open this file: {error}").format(error=e)
+    if len(raw) > _MAX_TEXT_FILE_BYTES:
+        return "", _("Could not open this file: {error}").format(
+            error=f"larger than {_MAX_TEXT_FILE_BYTES // (1024 * 1024)} MB")
     for enc in ("utf-8", "utf-16", "latin-1"):
         try:
-            with open(path, encoding=enc) as fh:
-                text = fh.read()
+            # Same as reading the file in text mode: universal newlines.
+            text = raw.decode(enc).replace("\r\n", "\n").replace("\r", "\n")
             return text.strip(), None
         except (UnicodeDecodeError, UnicodeError):
             continue
-        except OSError as e:
-            return "", _("Could not open this file: {error}").format(error=e)
     return "", _("Could not determine this file's text encoding.")
 
 

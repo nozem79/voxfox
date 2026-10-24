@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Remet les tuiles toutes prêtes pour cette langue",
   "Change tiles": "Modifier les tuiles",
   "Click a tile to change, move or remove it": "Cliquez sur une tuile pour la modifier, la déplacer ou la supprimer",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Cliquez sur une tuile pour la modifier. Cliquez à nouveau sur Modifier les tuiles quand vous avez fini.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Cliquez sur une tuile pour la modifier, ou faites-la glisser à un autre endroit. Cliquez à nouveau sur Modifier les tuiles quand vous avez fini.",
   "Click to change this tile": "Cliquez pour modifier cette tuile",
   "Put back the standard tiles?": "Remettre les tuiles standard ?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Vos propres tuiles pour cette langue seront remplacées par les tuiles toutes prêtes.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Images des tuiles",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox range les images de vos tuiles dans un dossier à part. Choisissez où mettre ce dossier ; VoxFox le crée pour vous.",
   "Where should the folder go?": "Où mettre le dossier ?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Où l'image se place sur la tuile ; Milieu la met au-dessus du texte"
+  "Where the picture goes on the tile; Middle puts it above the text": "Où l'image se place sur la tuile ; Milieu la met au-dessus du texte",
+  "Remove the tile “{text}”?": "Retirer la tuile « {text} » ?",
+  "Also removes these sentences from History": "Retire aussi ces phrases de l’historique"
 }

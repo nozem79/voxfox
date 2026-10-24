@@ -51,7 +51,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "6.1.0"
+APP_VERSION = "6.2.0"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -161,8 +161,10 @@ class RootShim:
         def once():
             try:
                 fn(*args)
-            except Exception as e:
-                log.debug(f"after() callback error: {e}")
+            except Exception:
+                # A shortcut (voxfox --read ...) ends up here; a failure
+                # must be visible in the log, not hidden at debug level.
+                log.exception(f"error in {getattr(fn, '__name__', fn)!s}")
             return False
         if ms and ms > 0:
             GLib.timeout_add(ms, once)

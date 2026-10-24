@@ -193,7 +193,8 @@ cannot speak, or not right now, and to hear how a text sounds.
   says the same one again. Or tick *Empty the text box after speaking*.
 - *Say each word while typing* says every word as soon as it is finished.
 - *Said earlier* lists the last 10 sentences; click one to say it again, or
-  the pencil to put it back in the box.
+  the pencil to put it back in the box. The sentences also appear in
+  History; **Clear list** removes them from both.
 - **A− / A+** (or Ctrl+plus / Ctrl+minus) change the text size; the language
   button switches between Language 1 and 2.
 - **Full screen** (top right, or F11). While the window is full screen or
@@ -212,11 +213,16 @@ last word off, and after speaking the next tile starts a new sentence.
 
 - Ready-made boards for Dutch, English, German, French and Spanish (other
   languages get the English one), with example sentences at the top.
+- Every ready-made tile has a pictogram on the left of its text (50 SVG
+  pictures in `icons/tiles/`, shared by all five boards). A board you
+  changed in 6.1 gets them once, on the tiles that still have their
+  ready-made text and no picture of their own.
 - Colours per kind of word, as on many communication boards: people yellow,
   actions green, describing words blue, things and feelings orange, social
   words pink, questions purple, sentences grey.
 - **Change tiles**: click a tile to change its text or kind, move it earlier
-  or later, or remove it; **New tile** adds one; **Standard tiles** puts the
+  or later, or remove it (after asking); drag a tile onto another one to
+  move it there; **New tile** adds one; **Standard tiles** puts the
   ready-made board back (after asking). Each language has its own board.
 
 ### Pictures on tiles

@@ -109,3 +109,28 @@ def test_load_state_rejects_a_non_object_root(tmp_path, monkeypatch):
     s = state.load_state()
     assert isinstance(s, dict)
     assert os.path.isfile(str(p) + ".bad")
+
+
+def test_load_history_ignores_a_damaged_file(tmp_path, monkeypatch):
+    import voxfox_core.state as st
+    p = tmp_path / "history.json"
+    monkeypatch.setattr(st, "HISTORY_FILE", str(p))
+    for content in ('{"kind": "read"}', '"tekst"', '[1, null, {"text": 5}]', "nep"):
+        p.write_text(content)
+        assert st.load_history() == []
+    p.write_text('[{"kind": "read", "text": "hoi", "ts": 1}, 7]')
+    assert st.load_history() == [{"kind": "read", "text": "hoi", "ts": 1}]
+    items = st.add_history("read", "nieuw")
+    assert [i["text"] for i in items] == ["nieuw", "hoi"]
+
+
+def test_clear_type_history_keeps_the_rest(tmp_path, monkeypatch):
+    import voxfox_core.state as st
+    monkeypatch.setattr(st, "HISTORY_FILE", str(tmp_path / "history.json"))
+    st.add_history("read", "artikel")              # read aloud elsewhere
+    st.add_history("dictate", "gedicteerd")
+    st.add_history("read", "Ik heb pijn")          # typed in 6.1 (kind read)
+    st.add_history("type", "Ik heb dorst")         # typed in 6.2
+    left = st.clear_type_history(["Ik heb pijn", "Ik heb dorst"])
+    assert [i["text"] for i in left] == ["gedicteerd", "artikel"]
+    assert [i["text"] for i in st.load_history()] == ["gedicteerd", "artikel"]

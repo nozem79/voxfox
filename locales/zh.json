@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "恢复此语言的现成卡片",
   "Change tiles": "编辑卡片",
   "Click a tile to change, move or remove it": "点击卡片可更改、移动或删除它",
-  "Click a tile to change it. Click Change tiles again when you are done.": "点击卡片即可更改。完成后再次点击“编辑卡片”。",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "点击卡片即可更改，拖动卡片可移到别处。完成后再次点击“编辑卡片”。",
   "Click to change this tile": "点击以更改此卡片",
   "Put back the standard tiles?": "恢复标准卡片？",
   "Your own tiles for this language are replaced by the ready-made ones.": "此语言的自定义卡片将被现成卡片替换。",
@@ -502,5 +502,7 @@
   "Tile pictures": "卡片图片",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox 把卡片的图片保存在单独的文件夹里。选择文件夹的位置，VoxFox 会为您创建它。",
   "Where should the folder go?": "文件夹放在哪里？",
-  "Where the picture goes on the tile; Middle puts it above the text": "图片在卡片上的位置；“中间”把它放在文字上方"
+  "Where the picture goes on the tile; Middle puts it above the text": "图片在卡片上的位置；“中间”把它放在文字上方",
+  "Remove the tile “{text}”?": "要移除卡片“{text}”吗？",
+  "Also removes these sentences from History": "同时从历史记录中删除这些句子"
 }

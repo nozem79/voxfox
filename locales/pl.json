@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Przywraca gotowe kafelki dla tego języka",
   "Change tiles": "Zmień kafelki",
   "Click a tile to change, move or remove it": "Kliknij kafelek, aby go zmienić, przesunąć lub usunąć",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Kliknij kafelek, aby go zmienić. Gdy skończysz, kliknij ponownie Zmień kafelki.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Kliknij kafelek, aby go zmienić, albo przeciągnij go w inne miejsce. Gdy skończysz, kliknij ponownie Zmień kafelki.",
   "Click to change this tile": "Kliknij, aby zmienić ten kafelek",
   "Put back the standard tiles?": "Przywrócić kafelki standardowe?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Twoje własne kafelki dla tego języka zostaną zastąpione gotowymi.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Obrazki kafelków",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox przechowuje obrazki kafelków we własnym folderze. Wybierz, gdzie ma być ten folder; VoxFox utworzy go za Ciebie.",
   "Where should the folder go?": "Gdzie ma być folder?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Gdzie obrazek jest na kafelku; Na środku umieszcza go nad tekstem"
+  "Where the picture goes on the tile; Middle puts it above the text": "Gdzie obrazek jest na kafelku; Na środku umieszcza go nad tekstem",
+  "Remove the tile “{text}”?": "Usunąć kafelek „{text}”?",
+  "Also removes these sentences from History": "Usuwa te zdania również z historii"
 }

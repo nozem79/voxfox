@@ -117,5 +117,8 @@ end up calling: `voxfox --read` sends `read` over the socket, and
 - New user-facing text goes through `_()` and into all files in
   `locales/` (the keys are the English text).
 - VoxFox needs GTK 4.10 or newer (`Gtk.FileDialog`, `Gtk.AlertDialog`).
+- The pictograms of the ready-made tiles are `icons/tiles/<name>.svg`; a
+  tile points at one as `"image": "icon:<name>"` (`voxfox_core/typespeak.py`
+  has the words per language, `voxfox_ui/tilepics.py` finds the files).
 - Packaging copies every folder with an `__init__.py` under `voxfox_core/`
   and `voxfox_ui/`, so new sub-packages need no packaging change.

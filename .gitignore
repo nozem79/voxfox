@@ -11,3 +11,8 @@ __pycache__/
 # Editor/OS
 .DS_Store
 *.swp
+
+# Test and lint output
+.coverage
+.pytest_cache/
+.ruff_cache/

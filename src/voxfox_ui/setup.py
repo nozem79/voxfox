@@ -83,15 +83,21 @@ def _safe_extract_piper(tar, dest):
         elif not (member.isfile() or member.isdir()):
             raise ValueError(f"special member not allowed: {member.name!r}")
         member.name = name
-        tar.extract(member, dest)
+        # Python's own "data" filter (PEP 706) on top of the checks above:
+        # it also drops setuid bits and odd permissions. Older Pythons
+        # without it get the checks above only.
+        if hasattr(tarfile, "data_filter"):
+            tar.extract(member, dest, filter="data")
+        else:
+            tar.extract(member, dest)
 
 
 def install_piper(progress=lambda m: None, frac=lambda *_a: None):
     """Download the Piper binary for this architecture into ~/.piper.
 
-    The download is pinned to PIPER_VERSION. When a SHA-256 is known for the
-    architecture (PIPER_SHA256), it is verified before extraction; extraction
-    itself is always hardened against tar-slip (see _safe_extract_piper)."""
+    The download is pinned to PIPER_VERSION and to its SHA-256 per
+    architecture (PIPER_SHA256), verified before extraction; extraction is
+    hardened against tar-slip (see _safe_extract_piper)."""
     if os.path.exists(vf.PIPER_BIN):
         progress(_("Piper already installed"))
         return True, "ok"
@@ -120,13 +126,16 @@ def install_piper(progress=lambda m: None, frac=lambda *_a: None):
                 if total:
                     frac(done / total, "Piper")
 
-        # Verify the checksum when we have one pinned for this asset.
+        # Every asset has a pinned SHA-256; without one nothing is unpacked
+        # (fail closed), so a new architecture or Piper version cannot slip
+        # in unchecked. packaging/pin_piper_hashes.py makes the list.
         expected = PIPER_SHA256.get(asset)
-        if expected:
-            got = hasher.hexdigest()
-            if got != expected:
-                return False, (f"checksum mismatch for {asset}: "
-                               f"expected {expected[:12]}…, got {got[:12]}…")
+        if not expected:
+            return False, f"no checksum known for {asset}"
+        got = hasher.hexdigest()
+        if got != expected:
+            return False, (f"checksum mismatch for {asset}: "
+                           f"expected {expected[:12]}…, got {got[:12]}…")
 
         progress(_("Extracting Piper..."))
         with tarfile.open(tmp, "r:gz") as tar:

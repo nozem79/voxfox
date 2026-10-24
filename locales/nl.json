@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Zet de kant-en-klare tegels voor deze taal terug",
   "Change tiles": "Tegels aanpassen",
   "Click a tile to change, move or remove it": "Klik op een tegel om hem te veranderen, verplaatsen of weg te halen",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klik op een tegel om hem te veranderen. Klik nog eens op Tegels aanpassen als je klaar bent.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klik op een tegel om hem te veranderen, of sleep hem naar een andere plek. Klik nog eens op Tegels aanpassen als je klaar bent.",
   "Click to change this tile": "Klik om deze tegel te veranderen",
   "Put back the standard tiles?": "Standaardtegels terugzetten?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Je eigen tegels voor deze taal worden vervangen door de kant-en-klare.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Tegelafbeeldingen",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox bewaart de afbeeldingen van je tegels in een eigen map. Kies waar die map komt; VoxFox maakt hem voor je aan.",
   "Where should the folder go?": "Waar moet de map komen?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Waar de afbeelding op de tegel komt; Midden zet hem boven de tekst"
+  "Where the picture goes on the tile; Middle puts it above the text": "Waar de afbeelding op de tegel komt; Midden zet hem boven de tekst",
+  "Remove the tile “{text}”?": "De tegel ‘{text}’ weghalen?",
+  "Also removes these sentences from History": "Haalt deze zinnen ook uit Geschiedenis weg"
 }

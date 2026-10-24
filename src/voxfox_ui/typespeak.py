@@ -36,7 +36,7 @@ import threading
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Gdk, Gtk, Pango  # noqa: E402
+from gi.repository import Gdk, GLib, GObject, Gtk, Pango  # noqa: E402
 
 import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
@@ -67,6 +67,10 @@ button.vf-tile-describe { background-color: #cfe3fb; }
 button.vf-tile-thing    { background-color: #ffd9b3; }
 button.vf-tile-question { background-color: #e2d4f6; }
 button.vf-tile-edit { border: 2px dashed #555555; }
+/* Dragging a tile: the tile being moved fades, the place it would go
+   gets a thick blue border. */
+button.vf-tile-dragging { opacity: 0.35; }
+button.vf-tile-drop { border: 4px solid #1c71d8; }
 button.vf-tile-add  { background-color: transparent; color: inherit;
                       border: 2px dashed alpha(currentColor, 0.5); }
 button.vf-tile-add label { color: inherit; }
@@ -150,6 +154,11 @@ class TypeSpeakWindow(Gtk.Window):
         self.text_frame = frame
         outer.append(frame)
 
+        # While an input method is composing (Japanese, Chinese, ...),
+        # Enter and Escape belong to the composition, not to Speak/Stop.
+        self._preedit = ""
+        self.tv.connect("preedit-changed",
+                        lambda _tv, text: setattr(self, "_preedit", text or ""))
         keys = Gtk.EventControllerKey()
         keys.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         keys.connect("key-pressed", self._on_key)
@@ -209,6 +218,8 @@ class TypeSpeakWindow(Gtk.Window):
         head.append(lbl)
         self.clear_recent_btn = Gtk.Button(label=_("Clear list"))
         self.clear_recent_btn.add_css_class("flat")
+        self.clear_recent_btn.set_tooltip_text(
+            _("Also removes these sentences from History"))
         self.clear_recent_btn.connect("clicked", self._on_clear_recent)
         head.append(self.clear_recent_btn)
         self.type_part.append(head)
@@ -252,8 +263,9 @@ class TypeSpeakWindow(Gtk.Window):
         self.tile_part.append(tbar)
 
         self.edit_hint = Gtk.Label(
-            label=_("Click a tile to change it. Click Change tiles again "
-                    "when you are done."), xalign=0.0, wrap=True)
+            label=_("Click a tile to change it, or drag it to another place. "
+                    "Click Change tiles again when you are done."),
+            xalign=0.0, wrap=True)
         self.edit_hint.add_css_class("dim-label")
         self.tile_part.append(self.edit_hint)
 
@@ -269,6 +281,15 @@ class TypeSpeakWindow(Gtk.Window):
         fsw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         fsw.set_child(self.flow)
         self.tile_part.append(fsw)
+        self.flow_sw = fsw
+        # While a tile is dragged near the top or bottom edge, the board
+        # scrolls, so a tile can be moved to a place that is out of view.
+        self._scroll_speed = 0
+        self._scroll_timer = 0
+        motion = Gtk.DropControllerMotion()
+        motion.connect("motion", self._on_drag_motion)
+        motion.connect("leave", lambda *_a: self._set_drag_scroll(0))
+        fsw.add_controller(motion)
         outer.append(self.tile_part)
 
         self.status = Gtk.Label(xalign=0.0,
@@ -407,6 +428,8 @@ class TypeSpeakWindow(Gtk.Window):
 
     # ── keys and typing ──
     def _on_key(self, _ctl, keyval, _code, mods):
+        if self._preedit:
+            return False
         ctrl = bool(mods & Gdk.ModifierType.CONTROL_MASK)
         if keyval in _ENTER_KEYS and not (mods & Gdk.ModifierType.SHIFT_MASK):
             self.speak_text()
@@ -475,7 +498,7 @@ class TypeSpeakWindow(Gtk.Window):
             return
         self._sync_voice()
         self._say(text)
-        vf.add_history("read", text)
+        vf.add_history("type", text)
         self._remember(text)
         self.status.set_text(_("Speaking..."))
         buf = self.tv.get_buffer()
@@ -506,18 +529,14 @@ class TypeSpeakWindow(Gtk.Window):
     # ── tiles ──
     def _board(self):
         code = _lang_code(self.win._active_cfg())
-        boards = self.state.get("type_tiles")
-        stored = boards.get(code) if isinstance(boards, dict) else None
-        tiles = vf.normalize_tiles(stored)
-        return code, (vf.default_tiles(code) if tiles is None else tiles)
+        tiles, changed = vf.load_board(self.state, code)
+        if changed:
+            log.info(f"type and speak: pictograms added to the saved tiles ({code})")
+            vf.save_state(self.state)
+        return code, tiles
 
-    def _save_board(self, tiles):
-        code = _lang_code(self.win._active_cfg())
-        boards = self.state.get("type_tiles")
-        if not isinstance(boards, dict):
-            boards = {}
-        boards[code] = vf.normalize_tiles(tiles) or []
-        self.state["type_tiles"] = boards
+    def _save_board(self, tiles, code):
+        vf.save_board(self.state, code, tiles)
         vf.save_state(self.state)
 
     def _reload_tiles(self):
@@ -538,6 +557,8 @@ class TypeSpeakWindow(Gtk.Window):
                 btn.set_tooltip_text(_("Click to change this tile"))
             set_accessible_label(btn, tile["text"])
             btn.connect("clicked", self._on_tile, i)
+            if self._editing:
+                self._make_draggable(btn, i)
             self.flow.append(btn)
             btn.get_parent().set_focusable(False)
         if self._editing or not tiles:
@@ -547,6 +568,80 @@ class TypeSpeakWindow(Gtk.Window):
             add.connect("clicked", lambda *_a: self._edit_tile(None))
             self.flow.append(add)
             add.get_parent().set_focusable(False)
+
+    # ── moving tiles by dragging (only while changing tiles) ──
+    _DRAG_PREFIX = "voxfox-tile:"
+
+    def _make_draggable(self, btn, index):
+        """Let a tile be dragged onto the place of another tile. The drag
+        carries "voxfox-tile:<index>", so text dropped from another
+        program is ignored."""
+        src = Gtk.DragSource(actions=Gdk.DragAction.MOVE)
+        src.connect("prepare", lambda _s, _x, _y: Gdk.ContentProvider.new_for_value(
+            GObject.Value(str, f"{self._DRAG_PREFIX}{index}")))
+        src.connect("drag-begin", self._on_drag_begin, btn)
+        src.connect("drag-end", self._on_drag_end, btn)
+        btn.add_controller(src)
+
+        drop = Gtk.DropTarget.new(GObject.TYPE_STRING, Gdk.DragAction.MOVE)
+        drop.connect("enter", self._on_drag_enter, btn)
+        drop.connect("leave", lambda *_a: btn.remove_css_class("vf-tile-drop"))
+        drop.connect("drop", self._on_drop, btn, index)
+        btn.add_controller(drop)
+
+    def _on_drag_motion(self, _ctl, _x, y):
+        edge = 48
+        h = self.flow_sw.get_height()
+        if y < edge:
+            self._set_drag_scroll(-1)
+        elif y > h - edge:
+            self._set_drag_scroll(+1)
+        else:
+            self._set_drag_scroll(0)
+
+    def _set_drag_scroll(self, direction):
+        self._scroll_speed = direction
+        if direction and not self._scroll_timer:
+            self._scroll_timer = GLib.timeout_add(30, self._drag_scroll_step)
+
+    def _drag_scroll_step(self):
+        if not self._scroll_speed:
+            self._scroll_timer = 0
+            return False
+        adj = self.flow_sw.get_vadjustment()
+        top = adj.get_upper() - adj.get_page_size()
+        adj.set_value(max(0, min(top, adj.get_value() + 12 * self._scroll_speed)))
+        return True
+
+    def _on_drag_begin(self, source, _drag, btn):
+        source.set_icon(Gtk.WidgetPaintable.new(btn),
+                        btn.get_width() // 2, btn.get_height() // 2)
+        btn.add_css_class("vf-tile-dragging")
+
+    def _on_drag_end(self, _source, _drag, _delete, btn):
+        btn.remove_css_class("vf-tile-dragging")
+        self._set_drag_scroll(0)
+
+    def _on_drag_enter(self, _target, _x, _y, btn):
+        btn.add_css_class("vf-tile-drop")
+        return Gdk.DragAction.MOVE
+
+    def _on_drop(self, _target, value, _x, _y, btn, dst):
+        btn.remove_css_class("vf-tile-drop")
+        if not isinstance(value, str) or not value.startswith(self._DRAG_PREFIX):
+            return False
+        try:
+            src = int(value[len(self._DRAG_PREFIX):])
+        except ValueError:
+            return False
+        code, tiles = self._board()
+        moved = vf.move_tile_to(tiles, src, dst)
+        if moved == tiles:
+            return False
+        # Rebuild the board after the drop has finished, not while GTK is
+        # still busy with the tile that was dropped on.
+        GLib.idle_add(lambda: (self.tiles_changed(moved, code), False)[1])
+        return True
 
     def _tile_content(self, tile):
         """The inside of a tile: its text, with its picture to the left,
@@ -612,11 +707,14 @@ class TypeSpeakWindow(Gtk.Window):
         self.tile_say_chk.set_visible(not self._editing)
 
     def _edit_tile(self, index):
-        _code, tiles = self._board()
-        TileDialog(self, tiles, index).present()
+        # The board's language is fixed when the dialog opens: switching
+        # language meanwhile (a shortcut works while it is open) must not
+        # save these tiles into the other language's board.
+        code, tiles = self._board()
+        TileDialog(self, tiles, index, code).present()
 
-    def tiles_changed(self, tiles):
-        self._save_board(tiles)
+    def tiles_changed(self, tiles, code):
+        self._save_board(tiles, code)
         self._reload_tiles()
 
     def _on_reset_tiles(self, *_a):
@@ -627,12 +725,12 @@ class TypeSpeakWindow(Gtk.Window):
         dlg.set_buttons([_("Cancel"), _("Standard tiles")])
         dlg.set_cancel_button(0)
         dlg.set_default_button(0)
+        code = _lang_code(self.win._active_cfg())
 
         def done(d, res):
             try:
                 if d.choose_finish(res) == 1:
-                    code = _lang_code(self.win._active_cfg())
-                    self.tiles_changed(vf.default_tiles(code))
+                    self.tiles_changed(vf.default_tiles(code), code)
             except Exception as e:
                 log.debug(f"type and speak: reset dialog: {e}")
         dlg.choose(self, None, done)
@@ -688,7 +786,7 @@ class TypeSpeakWindow(Gtk.Window):
         if not text:
             return
         self._say(text)
-        vf.add_history("read", text)
+        vf.add_history("type", text)
         self._remember(text)
         self.status.set_text(_("Speaking..."))
 
@@ -697,6 +795,9 @@ class TypeSpeakWindow(Gtk.Window):
         self.tv.grab_focus()
 
     def _on_clear_recent(self, *_a):
+        # What was typed here can be personal: the sentences go from
+        # History too, not only from this list.
+        vf.clear_type_history(self.state.get("type_recent", []))
         self.state["type_recent"] = []
         vf.save_state(self.state)
         self._reload_recent()

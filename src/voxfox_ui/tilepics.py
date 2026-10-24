@@ -37,8 +37,37 @@ log = vf.log
 
 # ── files ────────────────────────────────────────────────────────────────────
 
+_MAX_PIXELS = 100_000_000      # 100 megapixels: far above any camera photo
+_LOAD_SIDE = 1536
+
+def icon_dirs():
+    """Where the pictograms of the ready-made tiles can be: installed
+    packages ship icons/ under the system data folder, the Nix package
+    puts it next to voxfox_ui/, a git checkout two levels up."""
+    from voxfox_ui.common import SYSTEM_DATA_DIR
+    here = os.path.dirname(os.path.abspath(__file__))
+    return [os.path.join(SYSTEM_DATA_DIR, "icons", "tiles"),
+            os.path.normpath(os.path.join(here, "..", "icons", "tiles")),
+            os.path.normpath(os.path.join(here, "..", "..", "icons", "tiles"))]
+
+
+def icon_path(name):
+    """Full path of a pictogram ("icon:dorst"), or None."""
+    if not vf.is_icon_name(name):
+        return None
+    file = name[len(vf.ICON_PREFIX):] + ".svg"
+    for d in icon_dirs():
+        path = os.path.join(d, file)
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 def picture_path(state, name):
-    """Full path of a tile's picture, or None when it is not there."""
+    """Full path of a tile's picture (a pictogram VoxFox ships, or a
+    picture the user added), or None when it is not there."""
+    if vf.is_icon_name(name):
+        return icon_path(name)
     folder = vf.image_dir(state)
     if not folder or not vf.is_safe_image_name(name):
         return None
@@ -80,8 +109,18 @@ def shrink_picture(path):
         raise ValueError(_("Could not open the picture: %s") % e) from e
     # Always open it, also when it is small: a file that only has a
     # picture's name is refused here rather than showing an empty tile.
+    # First only the header: a small file can still claim to be an
+    # enormous picture, and decoding that whole would fill the memory.
+    # The picture is then decoded at most _LOAD_SIDE pixels wide or high,
+    # enough for a tile (target_sides stays below 400).
+    fmt, w, h = GdkPixbuf.Pixbuf.get_file_info(path)
+    if fmt is None or not w or not h:
+        raise ValueError(_("This file is not a picture VoxFox can read."))
+    if w * h > _MAX_PIXELS:
+        raise ValueError(_("This file is not a picture VoxFox can read."))
     try:
-        pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            path, min(w, _LOAD_SIDE), min(h, _LOAD_SIDE), True)
         pixbuf = pixbuf.apply_embedded_orientation() or pixbuf
     except GLib.Error as e:
         raise ValueError(_("This file is not a picture VoxFox can read.")) from e
@@ -149,6 +188,11 @@ class FolderDialog(Gtk.Window):
         current = vf.image_dir(state)
         self.parent_dir = (os.path.dirname(current) if current
                            else vf.documents.default_dir())
+        # An existing folder keeps its own name. Taking the translated
+        # name again would, after a language switch, propose a second
+        # folder ("Tile pictures" next to "Tegelafbeeldingen").
+        self.dir_name = (os.path.basename(current) if current
+                         else _(vf.IMAGE_DIR_NAME))
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         for m in ("top", "bottom", "start", "end"):
@@ -188,7 +232,7 @@ class FolderDialog(Gtk.Window):
         self._show_path()
 
     def _target(self):
-        return os.path.join(self.parent_dir, _(vf.IMAGE_DIR_NAME))
+        return os.path.join(self.parent_dir, self.dir_name)
 
     def _show_path(self):
         path, home = self._target(), os.path.expanduser("~")

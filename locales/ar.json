@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "يعيد البلاطات الجاهزة لهذه اللغة",
   "Change tiles": "تعديل البلاطات",
   "Click a tile to change, move or remove it": "انقر على بلاطة لتغييرها أو نقلها أو إزالتها",
-  "Click a tile to change it. Click Change tiles again when you are done.": "انقر على بلاطة لتغييرها. انقر على تعديل البلاطات مرة أخرى عند الانتهاء.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "انقر على بلاطة لتغييرها، أو اسحبها إلى مكان آخر. انقر على تعديل البلاطات مرة أخرى عند الانتهاء.",
   "Click to change this tile": "انقر لتغيير هذه البلاطة",
   "Put back the standard tiles?": "إعادة البلاطات القياسية؟",
   "Your own tiles for this language are replaced by the ready-made ones.": "ستُستبدل بلاطاتك الخاصة بهذه اللغة بالبلاطات الجاهزة.",
@@ -502,5 +502,7 @@
   "Tile pictures": "صور البلاطات",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "يحفظ VoxFox صور بلاطاتك في مجلد خاص بها. اختر مكان هذا المجلد، وسينشئه VoxFox لك.",
   "Where should the folder go?": "أين يوضع المجلد؟",
-  "Where the picture goes on the tile; Middle puts it above the text": "موضع الصورة على البلاطة؛ «وسط» يضعها فوق النص"
+  "Where the picture goes on the tile; Middle puts it above the text": "موضع الصورة على البلاطة؛ «وسط» يضعها فوق النص",
+  "Remove the tile “{text}”?": "هل تريد إزالة البلاطة “{text}”؟",
+  "Also removes these sentences from History": "يزيل هذه الجمل من السجل أيضًا"
 }

@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Mengembalikan ubin siap pakai untuk bahasa ini",
   "Change tiles": "Ubah ubin",
   "Click a tile to change, move or remove it": "Klik ubin untuk mengubah, memindahkan, atau menghapusnya",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klik ubin untuk mengubahnya. Klik Ubah ubin lagi jika sudah selesai.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klik ubin untuk mengubahnya, atau seret ke tempat lain. Klik Ubah ubin lagi jika sudah selesai.",
   "Click to change this tile": "Klik untuk mengubah ubin ini",
   "Put back the standard tiles?": "Kembalikan ubin standar?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Ubin Anda sendiri untuk bahasa ini diganti dengan ubin siap pakai.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Gambar ubin",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox menyimpan gambar ubin Anda di folder tersendiri. Pilih di mana folder itu berada; VoxFox membuatkannya untuk Anda.",
   "Where should the folder go?": "Di mana folder itu berada?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Letak gambar pada ubin; Tengah menaruhnya di atas teks"
+  "Where the picture goes on the tile; Middle puts it above the text": "Letak gambar pada ubin; Tengah menaruhnya di atas teks",
+  "Remove the tile “{text}”?": "Hapus ubin “{text}”?",
+  "Also removes these sentences from History": "Juga menghapus kalimat ini dari Riwayat"
 }

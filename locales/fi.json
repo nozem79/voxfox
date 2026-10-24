@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Palauttaa tämän kielen valmiit laatat",
   "Change tiles": "Muokkaa laattoja",
   "Click a tile to change, move or remove it": "Napsauta laattaa muuttaaksesi, siirtääksesi tai poistaaksesi sen",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Napsauta laattaa muuttaaksesi sitä. Napsauta Muokkaa laattoja uudelleen, kun olet valmis.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Napsauta laattaa muuttaaksesi sitä tai vedä se toiseen paikkaan. Napsauta Muokkaa laattoja uudelleen, kun olet valmis.",
   "Click to change this tile": "Napsauta muuttaaksesi tätä laattaa",
   "Put back the standard tiles?": "Palautetaanko vakiolaatat?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Omat laattasi tälle kielelle korvataan valmiilla laatoilla.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Laattojen kuvat",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox säilyttää laattojesi kuvat omassa kansiossaan. Valitse, minne kansio tulee; VoxFox luo sen puolestasi.",
   "Where should the folder go?": "Minne kansio tulee?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Mihin kuva tulee laatassa; Keskellä laittaa sen tekstin yläpuolelle"
+  "Where the picture goes on the tile; Middle puts it above the text": "Mihin kuva tulee laatassa; Keskellä laittaa sen tekstin yläpuolelle",
+  "Remove the tile “{text}”?": "Poistetaanko laatta ”{text}”?",
+  "Also removes these sentences from History": "Poistaa nämä lauseet myös historiasta"
 }

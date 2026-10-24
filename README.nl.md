@@ -201,6 +201,8 @@ klinkt.
 - *Elk woord voorlezen tijdens het typen* zegt elk woord zodra het af is.
 - *Eerder gezegd* toont de laatste 10 zinnen; klik op een zin om hem opnieuw
   te laten zeggen, of op het potloodje om hem terug in het tekstvak te zetten.
+  De zinnen staan ook in Geschiedenis; **Lijst wissen** haalt ze uit allebei
+  weg.
 - **A− / A+** (of Ctrl+plus / Ctrl+min) veranderen de tekstgrootte; de
   taalknop wisselt tussen Taal 1 en 2.
 - **Volledig scherm** (rechtsboven, of F11). Zolang het venster volledig scherm
@@ -220,12 +222,17 @@ volgende tegel een nieuwe zin.
 
 - Kant-en-klare tegels voor Nederlands, Engels, Duits, Frans en Spaans (andere
   talen krijgen de Engelse), met voorbeeldzinnen bovenaan.
+- Elke kant-en-klare tegel heeft een pictogram links van de tekst (50
+  SVG-plaatjes in `icons/tiles/`, voor alle vijf de talen). Een bord dat je
+  in 6.1 hebt aangepast krijgt ze één keer, op de tegels die nog hun
+  kant-en-klare tekst hebben en geen eigen afbeelding.
 - Kleuren per soort woord, zoals op veel communicatieborden: personen geel,
   doe-woorden groen, beschrijvingen blauw, dingen en gevoelens oranje,
   sociale woorden roze, vragen paars, zinnen grijs.
 - **Tegels aanpassen**: klik op een tegel om de tekst of soort te veranderen,
-  hem naar voren of achteren te verplaatsen, of weg te halen; **Nieuwe tegel**
-  voegt er een toe; **Standaardtegels** zet de kant-en-klare tegels terug (na
+  hem naar voren of achteren te verplaatsen, of weg te halen (na een vraag);
+  sleep een tegel naar een andere tegel om hem daarheen te verplaatsen;
+  **Nieuwe tegel** voegt er een toe; **Standaardtegels** zet de kant-en-klare tegels terug (na
   een vraag). Elke taal heeft zijn eigen tegels.
 
 ### Afbeeldingen op tegels

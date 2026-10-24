@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Vuelve a poner las fichas predefinidas de este idioma",
   "Change tiles": "Cambiar fichas",
   "Click a tile to change, move or remove it": "Haz clic en una ficha para cambiarla, moverla o quitarla",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Haz clic en una ficha para cambiarla. Vuelve a hacer clic en Cambiar fichas cuando termines.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Haz clic en una ficha para cambiarla o arrástrala a otro lugar. Vuelve a hacer clic en Cambiar fichas cuando termines.",
   "Click to change this tile": "Haz clic para cambiar esta ficha",
   "Put back the standard tiles?": "¿Volver a las fichas estándar?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Tus propias fichas de este idioma se sustituyen por las predefinidas.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Imágenes de fichas",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox guarda las imágenes de tus fichas en una carpeta propia. Elige dónde va esa carpeta; VoxFox la crea por ti.",
   "Where should the folder go?": "¿Dónde va la carpeta?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Dónde va la imagen en la ficha; Centro la pone encima del texto"
+  "Where the picture goes on the tile; Middle puts it above the text": "Dónde va la imagen en la ficha; Centro la pone encima del texto",
+  "Remove the tile “{text}”?": "¿Quitar la ficha «{text}»?",
+  "Also removes these sentences from History": "También quita estas frases del historial"
 }

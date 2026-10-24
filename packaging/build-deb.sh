@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -e
+# Files in the package must be readable for everyone, whatever the
+# builder's own umask is.
+umask 022
 
 # Repo root, relative to this script (packaging/ lives one level below root).
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -44,11 +47,15 @@ for pkg in voxfox_core voxfox_ui; do
 done
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
 
+# Button icons and the pictograms of the ready-made tiles. Not optional:
+# without icons/tiles/ every tile would be empty, so a failed copy stops
+# the build instead of producing a package that looks fine.
+mkdir -p "$INST/usr/share/voxfox/icons"
+cp -r "$ROOT/icons/." "$INST/usr/share/voxfox/icons/"
+for f in tiles/ja.svg tiles/ik-heb-dorst.svg hicolor/scalable/actions/voxfox-type-symbolic.svg; do
+    [ -f "$INST/usr/share/voxfox/icons/$f" ] || { echo "ERROR: icons/$f missing from the package" >&2; exit 1; }
+done
 # Bundled community pronunciation dictionaries (optional).
-if [ -d "$ROOT/icons" ]; then
-    mkdir -p "$INST/usr/share/voxfox/icons"
-    cp -r "$ROOT/icons/." "$INST/usr/share/voxfox/icons/" 2>/dev/null || true
-fi
 if [ -d "$ROOT/dicts" ]; then
     mkdir -p "$INST/usr/share/voxfox/dicts"
     cp "$ROOT/dicts/"*.json "$INST/usr/share/voxfox/dicts/" 2>/dev/null || true
@@ -130,8 +137,8 @@ cat > "$INST/DEBIAN/control" <<CTRL
 Package: voxfox
 Version: $VERSION
 Architecture: all
-Maintainer: Daniël Vos
-Depends: python3 (>= 3.9),
+Maintainer: Daniël Vos <info@voxfox.nl>
+Depends: python3 (>= 3.10),
  python3-gi,
  python3-pip,
  gir1.2-gtk-4.0 (>= 4.10),
@@ -170,6 +177,17 @@ set -e
 # as a redirection by the shell su -c starts. faster-whisper only asks for
 # av>=11, and PyAV 19 removed an argument it still passes.
 PKGS="faster-whisper sounddevice soundfile"
+
+# Refresh the icon cache and desktop database so the menu/taskbar pick up the
+# voxfox icon and .desktop entry immediately (otherwise the icon may not
+# resolve until the next login, showing a generic fallback). All best-effort.
+# First, before the dictation part: that part can end the script early.
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
+fi
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
 
 # Find the real user (not root) to install pip packages for
 REAL_USER="${SUDO_USER:-$USER}"
@@ -228,16 +246,6 @@ if ! pip_install; then
     echo "        Set up VoxFox to retry with more detail."
 fi
 echo "VoxFox: done. Run 'voxfox --setup' to download voices."
-
-# Refresh the icon cache and desktop database so the menu/taskbar pick up the
-# voxfox icon and .desktop entry immediately (otherwise the icon may not
-# resolve until the next login, showing a generic fallback). All best-effort.
-if command -v gtk-update-icon-cache >/dev/null 2>&1; then
-    gtk-update-icon-cache -f -t /usr/share/icons/hicolor >/dev/null 2>&1 || true
-fi
-if command -v update-desktop-database >/dev/null 2>&1; then
-    update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
-fi
 
 exit 0
 POSTINST

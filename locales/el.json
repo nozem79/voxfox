@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Επαναφέρει τα έτοιμα πλακίδια για αυτή τη γλώσσα",
   "Change tiles": "Αλλαγή πλακιδίων",
   "Click a tile to change, move or remove it": "Κάντε κλικ σε ένα πλακίδιο για αλλαγή, μετακίνηση ή αφαίρεση",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Κάντε κλικ σε ένα πλακίδιο για να το αλλάξετε. Κάντε ξανά κλικ στο Αλλαγή πλακιδίων όταν τελειώσετε.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Κάντε κλικ σε ένα πλακίδιο για να το αλλάξετε ή σύρετέ το σε άλλη θέση. Κάντε ξανά κλικ στο Αλλαγή πλακιδίων όταν τελειώσετε.",
   "Click to change this tile": "Κάντε κλικ για να αλλάξετε αυτό το πλακίδιο",
   "Put back the standard tiles?": "Επαναφορά των τυπικών πλακιδίων;",
   "Your own tiles for this language are replaced by the ready-made ones.": "Τα δικά σας πλακίδια για αυτή τη γλώσσα αντικαθίστανται από τα έτοιμα.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Εικόνες πλακιδίων",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "Το VoxFox κρατά τις εικόνες των πλακιδίων σας σε δικό τους φάκελο. Επιλέξτε πού θα μπει ο φάκελος· το VoxFox τον δημιουργεί για εσάς.",
   "Where should the folder go?": "Πού να μπει ο φάκελος;",
-  "Where the picture goes on the tile; Middle puts it above the text": "Πού μπαίνει η εικόνα στο πλακίδιο· η Μέση τη βάζει πάνω από το κείμενο"
+  "Where the picture goes on the tile; Middle puts it above the text": "Πού μπαίνει η εικόνα στο πλακίδιο· η Μέση τη βάζει πάνω από το κείμενο",
+  "Remove the tile “{text}”?": "Αφαίρεση του πλακιδίου «{text}»;",
+  "Also removes these sentences from History": "Αφαιρεί αυτές τις προτάσεις και από το ιστορικό"
 }

@@ -227,3 +227,71 @@ def test_fully_unknown_extension(tmp_path):
     text, err = dr.read_document(str(p))
     assert err is not None
     assert "xyz" in err
+
+
+# ── RTF characters (review fixes, 6.2) ──────────────────────────────────────
+
+def _rtf(tmp_path, body, name="t.rtf"):
+    p = tmp_path / name
+    p.write_bytes(body.encode("latin-1"))
+    return dr.read_rtf(str(p))[0]
+
+
+def test_rtf_word_quotes_and_dashes_are_kept(tmp_path):
+    text = _rtf(tmp_path, r"{\rtf1\ansi zo\rquote n goed\emdash echt, "
+                          r"\ldblquote hoi\rdblquote\endash ja\par}")
+    assert text == "zo’n goed—echt, “hoi”–ja"
+
+
+def test_rtf_unicode_fallback_is_skipped(tmp_path):
+    assert _rtf(tmp_path, r"{\rtf1\ansi caf\u233\'e9 en na\u239?ef\par}") \
+        == "café en naïef"
+    # \uc2: two fallback characters; \uc0: none.
+    assert _rtf(tmp_path, r"{\rtf1\ansi\uc2 a\u8364\'80\'80b {\uc0 c\u8364 d}\par}") \
+        == "a€b c€d"
+    # Negative numbers above 32767, as Word writes them.
+    assert _rtf(tmp_path, r"{\rtf1\ansi \u-3937?\par}") == ""
+
+
+def test_rtf_hex_bytes_use_the_code_page(tmp_path):
+    assert _rtf(tmp_path, r"{\rtf1\ansi \'93quote\'94 \'80\par}") == "“quote” €"
+    assert _rtf(tmp_path, r"{\rtf1\ansi\ansicpg1251 \'cf\'f0\'e8\par}") == "При"
+
+
+def test_rtf_pictures_fields_and_star_groups_are_not_read(tmp_path):
+    text = _rtf(tmp_path, r"{\rtf1\ansi Zie {\field{\*\fldinst HYPERLINK "
+                          r"\"https://x.nl\"}{\fldrslt de site}}"
+                          r"{\pict\pngblip 89504e47}{\*\bkmkstart a} nu.\par}")
+    assert text == "Zie de site nu."
+
+
+def test_rtf_escapes_and_line_breaks_in_the_file(tmp_path):
+    assert _rtf(tmp_path, "{\\rtf1\\ansi een\r\n twee \\{x\\} \\\\ y\\~z\\par}") \
+        == "een twee {x} \\ y z"
+
+
+def test_zip_member_over_the_limit_is_refused(tmp_path, monkeypatch):
+    p = tmp_path / "groot.docx"
+    with zipfile.ZipFile(p, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("word/document.xml", "<a>" + "x" * 5000 + "</a>")
+    monkeypatch.setattr(dr, "_MAX_ZIP_MEMBER_BYTES", 1000)
+    assert dr._read_zip_member(str(p), "word/document.xml") is None
+    monkeypatch.setattr(dr, "_MAX_ZIP_MEMBER_BYTES", 10000)
+    assert dr._read_zip_member(str(p), "word/document.xml").startswith(b"<a>")
+
+
+def test_text_file_over_the_limit_is_refused(tmp_path, monkeypatch):
+    p = tmp_path / "groot.txt"
+    p.write_text("woord " * 500)
+    monkeypatch.setattr(dr, "_MAX_TEXT_FILE_BYTES", 1000)
+    text, err = dr.read_plain_text(str(p))
+    assert text == "" and err
+    monkeypatch.setattr(dr, "_MAX_TEXT_FILE_BYTES", 10000)
+    text, err = dr.read_plain_text(str(p))
+    assert err is None and text.startswith("woord woord")
+
+
+def test_plain_text_line_endings(tmp_path):
+    p = tmp_path / "dos.txt"
+    p.write_bytes(b"een\r\ntwee\rdrie\n")
+    assert dr.read_plain_text(str(p)) == ("een\ntwee\ndrie", None)

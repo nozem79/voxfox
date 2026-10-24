@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Rimette le tessere predefinite per questa lingua",
   "Change tiles": "Modifica tessere",
   "Click a tile to change, move or remove it": "Fai clic su una tessera per modificarla, spostarla o toglierla",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Fai clic su una tessera per modificarla. Fai di nuovo clic su Modifica tessere quando hai finito.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Fai clic su una tessera per modificarla o trascinala in un altro punto. Fai di nuovo clic su Modifica tessere quando hai finito.",
   "Click to change this tile": "Fai clic per modificare questa tessera",
   "Put back the standard tiles?": "Rimettere le tessere standard?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Le tue tessere per questa lingua vengono sostituite da quelle predefinite.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Immagini delle tessere",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox tiene le immagini delle tessere in una cartella a parte. Scegli dove metterla; VoxFox la crea per te.",
   "Where should the folder go?": "Dove deve andare la cartella?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Dove va l'immagine sulla tessera; Centro la mette sopra il testo"
+  "Where the picture goes on the tile; Middle puts it above the text": "Dove va l'immagine sulla tessera; Centro la mette sopra il testo",
+  "Remove the tile “{text}”?": "Rimuovere la tessera «{text}»?",
+  "Also removes these sentences from History": "Rimuove queste frasi anche dalla cronologia"
 }

@@ -110,10 +110,11 @@ preview: type a sentence and press **Play**.
 **Menu → Type and speak** opens a window where you type a text and VoxFox says
 it: press **Enter**, or **Speak**. Shift+Enter starts a new line, Escape stops.
 The last 10 sentences stay under *Said earlier*; click one to say it again.
+**Clear list** removes them from there and from History.
 
 Switch on **Tiles** to get a board of word and sentence tiles: press *Ik*,
 *heb*, *dorst* and VoxFox says "Ik heb dorst". There are ready-made tiles for
-Dutch, English, German, French and Spanish; under **Change tiles** you change,
+Dutch, English, German, French and Spanish, each with a pictogram; under **Change tiles** you change,
 move, remove or add tiles, and give them a picture (left, right or above the
 text, at most 50 kB, scaled down automatically). **F11** (or the button top
 right) makes the window full screen; the main VoxFox window is then minimised.
@@ -306,8 +307,9 @@ Building only needs `dpkg-deb`.
 - **Desktop:** designed for GNOME. Some features are session-dependent:
   always-on-top (via `wmctrl`) works on X11, not Wayland; text selection and
   region screenshots work on both; hover (AT-SPI) works best on X11.
-- **Python / GTK:** Python 3.9+ and GTK 4 (so Debian 12+, Ubuntu 22.04+ or
-  newer).
+- **Python / GTK:** Python 3.10+ and GTK 4.10+ (since 6.1): Ubuntu 24.04,
+  Linux Mint 22, Debian 13, Fedora 38 or newer. Ubuntu 22.04, Mint 21 and
+  Debian 12 have an older GTK, so the package cannot be installed there.
 - **CPU architecture:** the package is `Architecture: all` (pure Python). The
   practical limit is the components fetched during setup: the Piper binary is
   available for `x86_64`, `aarch64` and `armv7l`, and `faster-whisper` runs

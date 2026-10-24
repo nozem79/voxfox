@@ -100,10 +100,14 @@ class HistoryWindow(Gtk.Window):
             getattr(box, f"set_margin_{m}")(6)
 
         is_dict = (kind == "dictate")
-        icon = Gtk.Image.new_from_icon_name(
-            "audio-input-microphone-symbolic" if is_dict
-            else "audio-volume-high-symbolic")
-        icon.set_tooltip_text(_("Dictate") if is_dict else _("Read"))
+        if kind == "type":
+            icon = Gtk.Image.new_from_icon_name("voxfox-type-symbolic")
+            icon.set_tooltip_text(_("Type and speak"))
+        else:
+            icon = Gtk.Image.new_from_icon_name(
+                "audio-input-microphone-symbolic" if is_dict
+                else "audio-volume-high-symbolic")
+            icon.set_tooltip_text(_("Dictate") if is_dict else _("Read"))
         box.append(icon)
 
         lbl = Gtk.Label(label=preview, xalign=0.0)

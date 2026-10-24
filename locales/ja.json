@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "この言語の既製のタイルに戻します",
   "Change tiles": "タイルを編集",
   "Click a tile to change, move or remove it": "タイルをクリックして変更・移動・削除します",
-  "Click a tile to change it. Click Change tiles again when you are done.": "タイルをクリックすると変更できます。終わったらもう一度「タイルを編集」をクリックします。",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "タイルをクリックすると変更でき、ドラッグすると別の場所に移動できます。終わったらもう一度「タイルを編集」をクリックします。",
   "Click to change this tile": "クリックしてこのタイルを変更",
   "Put back the standard tiles?": "標準のタイルに戻しますか?",
   "Your own tiles for this language are replaced by the ready-made ones.": "この言語の自分のタイルは既製のタイルに置き換えられます。",
@@ -502,5 +502,7 @@
   "Tile pictures": "タイル画像",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox はタイルの画像を専用のフォルダーに保存します。フォルダーの場所を選ぶと、VoxFox が作成します。",
   "Where should the folder go?": "フォルダーをどこに作りますか?",
-  "Where the picture goes on the tile; Middle puts it above the text": "タイル上の画像の位置。「中央」は文字の上に置きます"
+  "Where the picture goes on the tile; Middle puts it above the text": "タイル上の画像の位置。「中央」は文字の上に置きます",
+  "Remove the tile “{text}”?": "タイル「{text}」を削除しますか？",
+  "Also removes these sentences from History": "これらの文を履歴からも削除します"
 }

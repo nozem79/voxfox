@@ -48,13 +48,14 @@ class TileDialog(Gtk.Window):
     """Change one tile (text, kind, place, or remove it), or add a new one
     when `index` is None."""
 
-    def __init__(self, owner, tiles, index):
+    def __init__(self, owner, tiles, index, code):
         new = index is None
         super().__init__(title=_("New tile") if new else _("Change tile"),
                          transient_for=owner, modal=True)
         self.owner = owner
         self.tiles = list(tiles)
         self.index = index
+        self.code = code            # the board these tiles belong to
         self.set_default_size(420, -1)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -191,19 +192,37 @@ class TileDialog(Gtk.Window):
             self.tiles.append(tile)
         else:
             self.tiles[self.index] = tile
-        self.owner.tiles_changed(self.tiles)
+        self.owner.tiles_changed(self.tiles, self.code)
         self.close()
 
     def _move(self, delta):
         if self.index is None:
             return
-        self.tiles[self.index] = self._tile()
+        tile = self._tile()
+        if not " ".join(tile["text"].split()):
+            # An empty text box: move the tile with the text it had.
+            tile["text"] = self.tiles[self.index]["text"]
+        self.tiles[self.index] = tile
         self.tiles, self.index = vf.move_tile(self.tiles, self.index, delta)
-        self.owner.tiles_changed(self.tiles)
+        self.owner.tiles_changed(self.tiles, self.code)
 
     def _remove(self):
         if self.index is None:
             return
-        del self.tiles[self.index]
-        self.owner.tiles_changed(self.tiles)
-        self.close()
+        dlg = Gtk.AlertDialog(message=_("Remove the tile \u201c{text}\u201d?").format(
+            text=self.tiles[self.index]["text"]))
+        dlg.set_buttons([_("Cancel"), _("Remove tile")])
+        dlg.set_cancel_button(0)
+        dlg.set_default_button(0)       # Enter keeps the tile
+
+        def done(d, res):
+            try:
+                if d.choose_finish(res) != 1:
+                    return
+            except Exception as e:      # closed without choosing
+                log.debug(f"tile dialog: remove question: {e}")
+                return
+            del self.tiles[self.index]
+            self.owner.tiles_changed(self.tiles, self.code)
+            self.close()
+        dlg.choose(self, None, done)

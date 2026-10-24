@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Pune la loc plăcuțele gata făcute pentru această limbă",
   "Change tiles": "Modifică plăcuțele",
   "Click a tile to change, move or remove it": "Fă clic pe o plăcuță ca să o modifici, muți sau elimini",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Fă clic pe o plăcuță ca să o modifici. Fă din nou clic pe Modifică plăcuțele când ai terminat.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Fă clic pe o plăcuță ca să o modifici sau trage-o în alt loc. Fă din nou clic pe Modifică plăcuțele când ai terminat.",
   "Click to change this tile": "Fă clic ca să modifici această plăcuță",
   "Put back the standard tiles?": "Pui la loc plăcuțele standard?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Plăcuțele tale pentru această limbă sunt înlocuite cu cele gata făcute.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Imaginile plăcuțelor",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox păstrează imaginile plăcuțelor într-un dosar separat. Alege unde va fi dosarul; VoxFox îl creează pentru tine.",
   "Where should the folder go?": "Unde să fie dosarul?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Unde stă imaginea pe plăcuță; Mijloc o pune deasupra textului"
+  "Where the picture goes on the tile; Middle puts it above the text": "Unde stă imaginea pe plăcuță; Mijloc o pune deasupra textului",
+  "Remove the tile “{text}”?": "Elimini plăcuța „{text}”?",
+  "Also removes these sentences from History": "Elimină aceste propoziții și din istoric"
 }

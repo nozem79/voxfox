@@ -462,7 +462,7 @@
   "Puts back the ready-made tiles for this language": "Sætter de færdige fliser for dette sprog tilbage",
   "Change tiles": "Ret fliser",
   "Click a tile to change, move or remove it": "Klik på en flise for at ændre, flytte eller fjerne den",
-  "Click a tile to change it. Click Change tiles again when you are done.": "Klik på en flise for at ændre den. Klik på Ret fliser igen, når du er færdig.",
+  "Click a tile to change it, or drag it to another place. Click Change tiles again when you are done.": "Klik på en flise for at ændre den, eller træk den til et andet sted. Klik på Ret fliser igen, når du er færdig.",
   "Click to change this tile": "Klik for at ændre denne flise",
   "Put back the standard tiles?": "Sæt standardfliserne tilbage?",
   "Your own tiles for this language are replaced by the ready-made ones.": "Dine egne fliser for dette sprog erstattes af de færdige.",
@@ -502,5 +502,7 @@
   "Tile pictures": "Flisebilleder",
   "VoxFox keeps the pictures of your tiles in a folder of their own. Choose where that folder goes; VoxFox makes it for you.": "VoxFox gemmer billederne til dine fliser i en mappe for sig. Vælg hvor mappen skal ligge; VoxFox opretter den for dig.",
   "Where should the folder go?": "Hvor skal mappen ligge?",
-  "Where the picture goes on the tile; Middle puts it above the text": "Hvor billedet sidder på flisen; Midt sætter det over teksten"
+  "Where the picture goes on the tile; Middle puts it above the text": "Hvor billedet sidder på flisen; Midt sætter det over teksten",
+  "Remove the tile “{text}”?": "Fjern flisen ”{text}”?",
+  "Also removes these sentences from History": "Fjerner også disse sætninger fra historikken"
 }

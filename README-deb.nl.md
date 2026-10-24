@@ -116,10 +116,11 @@ slot heeft een voorbeeld: typ een zin en druk op **Afspelen**.
 VoxFox hem uitspreekt: druk op **Enter** of **Uitspreken**. Shift+Enter begint
 een nieuwe regel, Escape stopt. De laatste 10 zinnen blijven staan onder
 *Eerder gezegd*; klik op een zin om hem opnieuw te laten zeggen.
+**Lijst wissen** haalt ze daar en uit Geschiedenis weg.
 
 Zet **Tegels** aan voor een bord met woord- en zintegels: druk op *Ik*, *heb*,
 *dorst* en VoxFox zegt "Ik heb dorst". Er zijn kant-en-klare tegels voor
-Nederlands, Engels, Duits, Frans en Spaans; bij **Tegels aanpassen** verander,
+Nederlands, Engels, Duits, Frans en Spaans, elk met een pictogram; bij **Tegels aanpassen** verander,
 verplaats, verwijder of voeg je tegels toe, en geef je ze een afbeelding
 (links, rechts of boven de tekst, hooguit 50 kB, vanzelf verkleind). Met
 **F11** (of de knop rechtsboven) wordt het venster volledig scherm; het
@@ -323,7 +324,10 @@ Voor het bouwen heb je alleen `dpkg-deb` nodig.
 - **Bureaublad:** ontworpen voor GNOME. Sommige functies zijn sessie-afhankelijk:
   altijd-op-de-voorgrond (via `wmctrl`) werkt op X11, niet op Wayland; tekstselectie
   en schermafdrukken werken op beide; hover (AT-SPI) werkt het best op X11.
-- **Python / GTK:** Python 3.9+ en GTK 4 (dus Debian 12+, Ubuntu 22.04+ of nieuwer).
+- **Python / GTK:** Python 3.10+ en GTK 4.10+ (sinds 6.1): Ubuntu 24.04,
+  Linux Mint 22, Debian 13, Fedora 38 of nieuwer. Ubuntu 22.04, Mint 21 en
+  Debian 12 hebben een oudere GTK; daar kan het pakket niet geïnstalleerd
+  worden.
 - **Processorarchitectuur:** het pakket is `Architecture: all` (pure Python). De
   praktische beperking zit in de onderdelen die de setup ophaalt: de
   Piper-binary is er voor `x86_64`, `aarch64` en `armv7l`, en `faster-whisper`
