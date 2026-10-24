@@ -67,10 +67,10 @@ everything up. Setup downloads:
   (`nl_NL-pim-medium`)
 - `faster-whisper` (for local dictation), via `pip --user`
 
-The first run also creates `~/.config/voxfox_state.json` (your settings) and
-logs to `~/.cache/voxfox.log` for debugging.
+The first run also creates `~/.config/voxfox/state.json` (your settings) and
+logs to `~/.cache/voxfox/voxfox.log` for debugging.
 
-For hover-to-read, the accessibility bus must be on. The menu's *Set up VoxFox…*
+For hover-to-read, the accessibility bus must be on. The menu's *Setup assistant…*
 window can switch it on for you (it flips the GNOME `toolkit-accessibility`
 setting); restart the target app afterwards (and
 launch Chromium browsers with `--force-renderer-accessibility`).
@@ -78,29 +78,43 @@ launch Chromium browsers with `--force-renderer-accessibility`).
 ## The window
 
 The main window is deliberately small and hugs its content. By default the
-buttons are **Read**, **Stop**, **Pause**, **Speak** (dictate), **Hover**,
-**Select** and **OCR**, plus the language-switch button. You can show or hide
-any of them and change their order, and scale the whole interface to 75 %,
-100 % or 125 % — both under **Settings → Interface** (see below). The title bar
-has a **Settings** (gear) button and a **Menu** (hamburger) button.
+buttons are **Read**, **Stop**, **Dictate**, **Mouse**, **Screen** and
+**File**, plus the language-switch button. **Pause**, **Translate** and
+**Type** are there too but start hidden. You can show or hide any button,
+change their order, and scale the whole interface to 75 %, 100 % or 125 % —
+all under **Settings → Appearance** (see below).
+
+While VoxFox is reading, the **Read** button turns into **Pause** (and then
+**Resume**), so a separate Pause button is rarely needed. For longer texts a
+thin bar under the buttons shows how far reading has got. While dictating,
+the Dictate button turns red, is called **Stop**, and its icon blinks.
+
+The title bar has one **Menu** button (three lines) with: *Settings*, *Type
+and speak*, *Library*, *History*, *Live transcription*, *Setup assistant…*,
+*About VoxFox* and *Quit* (Ctrl+Q). Hover the mouse over a button to see in one
+sentence what it does and which shortcut belongs to it.
 
 A status line appears below the buttons while something is happening and hides
 itself when idle. It is exposed as a live region, so a screen reader announces
 messages like "Reading…" automatically. Just below it, a progress bar shows the
 progress of any download in flight.
 
-| Button   | Function                                                |
-|----------|---------------------------------------------------------|
-| Read     | Read the currently selected text aloud                  |
-| Stop     | Stop speaking immediately                               |
-| Pause    | Pause / resume the current speech                       |
-| Speak    | Dictate: record your voice; Whisper transcribes and types it |
-| Hover    | Toggle hover-to-read                                     |
-| Select   | Select a screen region and read its text aloud (OCR)    |
-| OCR      | Open a PDF or image and read its text aloud             |
-| Language | Switch between Language 1 and Language 2                |
-| Settings | Open Settings (tabs: Language 1 / 2, Dictation, Pronunciation, Misc, Interface, Shortcuts) |
-| Menu     | Set up VoxFox…, History, About, Quit |
+| Button    | Function                                                 |
+|-----------|----------------------------------------------------------|
+| Read      | Read the selected text aloud; while reading: Pause / Resume |
+| Stop      | Stop speaking immediately                                |
+| Pause     | Pause / resume (hidden by default)                       |
+| Dictate   | Record your voice; Whisper transcribes it and types it   |
+| Mouse     | Toggle hover-to-read (also works on VoxFox's own windows) |
+| Screen    | Draw a box around part of the screen and read its text (OCR) |
+| File      | Open a document, PDF or picture and read it aloud        |
+| Translate | Translate the selection and read it (hidden by default)  |
+| Type      | Open Type and speak (hidden by default; also in the menu) |
+| Language  | Switch between Language 1 and Language 2                 |
+
+Settings is a list of sections on the left: *Language 1*, *Language 2*,
+*Pronunciation*, *Dictation*, *Translation and AI*, *Shortcuts*,
+*Appearance* and *General*. Changes are saved straight away.
 
 ## Reading text aloud
 
@@ -112,14 +126,29 @@ way.
 When the text comes from OCR or a selection that is only word-wrapped (for
 example copied from a PDF), VoxFox joins those wrapped lines into proper
 paragraphs first, so it doesn't pause in the middle of a sentence. You can turn
-that off under *Settings → Misc* (see below).
+that off under *Settings → General* (see below).
 
 ## Two language slots
 
 VoxFox keeps two independent voice slots — *Language 1* and *Language 2* — each
 with its own language, voice and speed. The language-switch button flips
 between them in one click, which is much faster than reopening a picker when you
-regularly read in two languages. The interface language follows Slot 1.
+regularly read in two languages. The interface language follows Slot 1. When
+you change a slot's language, VoxFox picks the best voice for it by itself.
+
+Each slot has a **speech engine**:
+
+- **Piper** (built in, the default) — fast, natural offline voices that VoxFox
+  downloads for you.
+- **Speech-dispatcher** — use the voices of other programs on your computer,
+  such as espeak-ng, RHVoice or the commercial Voxin. Choose a *module* and
+  then a *voice*. This choice only appears when speech-dispatcher is installed
+  (with its Python part, `python3-speechd`). If a program such as Pied has
+  hidden modules, VoxFox says so and offers **Make available**.
+
+Every slot also has a **preview**: type a sentence (it starts as "This is a
+sample voice. Does this sound good?" in the slot's language) and press
+**Play** to hear the voice with the current speed and pitch.
 
 ## Pronunciation dictionary
 
@@ -146,15 +175,66 @@ stored per language in your settings file.
 VoxFox keeps your last 20 read and dictated items. Open *Menu → History* to see
 them: each entry can be read again (▶) or copied to the clipboard so you can
 paste it wherever you like. **Clear all** empties the list. Stored in
-`~/.config/voxfox_history.json`.
+`~/.config/voxfox/history.json`.
 
 (Copy rather than re-type: VoxFox stays always-on-top and holds focus, so typed
 text would land in the wrong window — copying lets you paste it where you
 actually want it.)
 
-## Settings → Misc
+## Type and speak
 
-The *Misc* tab holds two things:
+*Menu → Type and speak* (or the **Type** button, once switched on) opens a
+window where you type a text and VoxFox says it out loud: for people who
+cannot speak, or not right now, and to hear how a text sounds.
+
+- Type and press **Enter** to say it; **Shift+Enter** starts a new line,
+  **Escape** stops. Select part of the text to say only that part.
+- After speaking the text stays selected: typing starts a new text, Enter
+  says the same one again. Or tick *Empty the text box after speaking*.
+- *Say each word while typing* says every word as soon as it is finished.
+- *Said earlier* lists the last 10 sentences; click one to say it again, or
+  the pencil to put it back in the box.
+- **A− / A+** (or Ctrl+plus / Ctrl+minus) change the text size; the language
+  button switches between Language 1 and 2.
+- **Full screen** (top right, or F11). While the window is full screen or
+  maximised, the small main VoxFox window is minimised so it does not sit on
+  top; it comes back afterwards.
+- Also `voxfox --type-speak`, and a shortcut you can set under
+  *Settings → Shortcuts* (none by default).
+
+### Tiles
+
+Switch on **Tiles** and the text box shrinks to about two lines; the rest of
+the window becomes a board of tiles. Pressing *Ik*, *heb* and *dorst* builds
+"Ik heb dorst"; **Speak** (or Enter) says the sentence. Each tile is said
+when pressed (*Say a tile when it is pressed*), **Remove word** takes the
+last word off, and after speaking the next tile starts a new sentence.
+
+- Ready-made boards for Dutch, English, German, French and Spanish (other
+  languages get the English one), with example sentences at the top.
+- Colours per kind of word, as on many communication boards: people yellow,
+  actions green, describing words blue, things and feelings orange, social
+  words pink, questions purple, sentences grey.
+- **Change tiles**: click a tile to change its text or kind, move it earlier
+  or later, or remove it; **New tile** adds one; **Standard tiles** puts the
+  ready-made board back (after asking). Each language has its own board.
+
+### Pictures on tiles
+
+In the tile dialog, **Choose picture…** adds an icon or photo (PNG, JPEG,
+SVG, WebP or GIF). **Place** puts it on the left (default), right, or in the
+middle above the text; the text gets a little smaller so both fit.
+
+- Pictures are at most 50 kB; a bigger one is scaled down automatically
+  (icons stay PNG where possible, photos become JPEG).
+- The first time, VoxFox asks where the folder for tile pictures should go
+  (standard: inside the VoxFox documents folder) and makes it. Change it
+  later under *Settings → General*; the pictures are copied along.
+- The picture chooser opens in the folder the previous picture came from.
+
+## Settings → General
+
+The *General* section holds:
 
 - **Merge wrapped lines into paragraphs** (on by default) — the line-joining
   behaviour described under *Reading text aloud*. Turn it off to read every
@@ -162,32 +242,36 @@ The *Misc* tab holds two things:
 - **Import / Export settings** — save the current configuration to a JSON file
   and restore it on another machine. Voices referenced in an imported file are
   downloaded automatically on first use.
+- **Documents** — the folder of the document library, and the **folder for
+  tile pictures** of Type and speak, each with **Change…**.
 
 ```bash
-# On the source machine: Settings → Misc → Export to voxfox-settings.json
+# On the source machine: Settings → General → Export to voxfox-settings.json
 scp voxfox-settings.json other-machine:~/
-# On the other machine: open VoxFox, Settings → Misc → Import
+# On the other machine: open VoxFox, Settings → General → Import
 ```
 
-## Settings → Interface
+## Settings → Appearance
 
-The *Interface* tab lets you tailor the toolbar and overall size:
+The *Appearance* section lets you tailor the toolbar and overall look:
 
 - **Interface size** — scale the whole window to 75 %, 100 % or 125 %. Useful
   on high-DPI screens or when you want larger hit targets.
+- **Light or dark** — *Like the system* (default), *Light* or *Dark*. VoxFox
+  uses the light or dark variant of your desktop theme where there is one.
 - **Button display** — show the toolbar buttons as *icon only*, *icon and
   text*, or *text only*. With icon-only buttons the text stays available as a
   tooltip, and screen readers keep announcing the button names in every mode.
 - **Orientation** — lay the buttons out *horizontally* (rows, the default) or
   *vertically* (a narrow column you can park at the edge of your screen).
   Vertical with icon-only gives the narrowest form: the title bar shrinks to
-  just a close button and the Settings and Menu buttons move to the bottom of
-  the column.
+  just a close button and the menu button moves to the bottom of the column.
+- **Window** — *Keep above other windows*.
 - **Buttons** — show or hide each toolbar button with a checkbox, and reorder
-  them with the up/down arrows. Hide the ones you never use (for example *Pause*
-  or *OCR*) to keep the window compact; the layout is remembered.
+  them with the up/down arrows. *Pause*, *Translate* and *Type* start hidden;
+  switch them on here. The layout is remembered.
 
-The *Shortcuts* tab is covered under **Keyboard shortcuts** below.
+The *Shortcuts* section is covered under **Keyboard shortcuts** below.
 
 ## Speech-to-text (Whisper)
 
@@ -302,11 +386,11 @@ yourself before installing.
 Select text in any language, trigger **Translate**, and VoxFox translates it
 into the language of Language 1 and reads it aloud with that voice. The
 feature is off by default: enable the Translate button under **Settings →
-Interface**, and assign a keyboard shortcut of your choice under **Settings →
+Appearance**, and assign a keyboard shortcut of your choice under **Settings →
 Shortcuts** (like live transcription, it ships without a default binding).
 
 Translation runs through any OpenAI-compatible API, configured under
-**Settings → Translation** with a URL, a model name and an optional API key:
+**Settings → Translation and AI** with a URL, a model name and an optional API key:
 
 - **Local (private):** an [Ollama](https://ollama.com) server on your own
   machine — the default, `http://localhost:11434/v1` with e.g. `llama3.2`.
@@ -348,7 +432,7 @@ button (Select already has one, and this is a variant of it rather than
 a separate everyday action); assign a key for it under **Settings →
 Shortcuts**.
 
-OCR output has its word-wrapped lines merged into paragraphs (the *Misc*
+OCR output has its word-wrapped lines merged into paragraphs (the *General*
 toggle), so reading flows naturally instead of pausing at every line.
 
 The OCR language follows the active slot. If Slot 1 is Dutch, Tesseract uses
@@ -387,7 +471,11 @@ When hover mode is on, the text under your mouse pointer is read automatically �
 no need to select first. Useful for skimming lists, menus, or
 accessibility-poor websites. It works best on X11 and XWayland; on pure Wayland
 it depends on AT-SPI events, which not every app emits, so some windows do
-nothing. Toggle with **Hover**, `--hover-toggle`, or your shortcut.
+nothing. Toggle with **Mouse**, `--hover-toggle`, or your shortcut.
+
+Hover reading also works on VoxFox's own windows — the buttons, the menu,
+every section of Settings and the tiles of Type and speak — and keyboard focus
+moving inside them is read too.
 
 ## Always on top
 
@@ -411,6 +499,9 @@ voxfox --toggle-slot      # Switch between Language 1 and Language 2
 voxfox --hover-toggle     # Toggle hover mode on/off
 voxfox --whisper-toggle   # Start/stop dictation (speech-to-text)
 voxfox --live-toggle      # Open/close the live transcription window
+voxfox --type-speak       # Open the Type and speak window
+voxfox --translate        # Translate the selection and read it
+voxfox --read-page        # Read the focused web page (experimental)
 voxfox --ocr-select       # Select a screen region and read its text (OCR)
 voxfox --ocr <file>       # OCR a PDF or image and read aloud (works without GUI)
 voxfox --status           # Print whether VoxFox is running
@@ -421,10 +512,11 @@ voxfox --verbose          # Enable debug logging
 
 ## Keyboard shortcuts
 
-VoxFox can register seven global shortcuts for you, but never does so
+VoxFox can register ten global shortcuts for you, but never does so
 automatically — some desktops already use these keys for other things. Six
-of them ship with a suggested default; Live transcription has no default, so
-give it a key of your own before installing. Open
+of them ship with a suggested default; the other four (OCR select &
+translate, Live transcription, Translate & read, Type and speak) have no
+default, so give them a key of your own before installing if you want them. Open
 **Settings → Shortcuts**, optionally change any combination (click it and press
 the keys you want), then choose **Install shortcuts**. They are written to your
 desktop on **Cinnamon, GNOME, LXQt, XFCE and KDE Plasma** (on Cinnamon the desktop is
@@ -432,7 +524,7 @@ briefly reloaded so the new keys take effect immediately). **Reset to defaults**
 restores the originals, and you can always change or remove them later in your
 desktop's own keyboard settings.
 
-The seven installable actions and their defaults:
+The ten installable actions and their defaults:
 
 | Action          | Command                   | Default   |
 |-----------------|---------------------------|-----------|
@@ -442,7 +534,10 @@ The seven installable actions and their defaults:
 | Dictate         | `voxfox --whisper-toggle` | `Super+W` |
 | OCR select      | `voxfox --ocr-select`     | `Super+A` |
 | Read web page   | `voxfox --read-page`      | `Super+V` |
+| OCR select & translate | `voxfox --ocr-select-translate` | *(none)* |
 | Live transcription | `voxfox --live-toggle` | *(none)*  |
+| Translate & read | `voxfox --translate`    | *(none)*  |
+| Type and speak  | `voxfox --type-speak`     | *(none)*  |
 
 You can also run `voxfox --install-shortcuts` from a terminal. Other commands
 (`voxfox --pause`, `voxfox --hover-toggle`) aren't in the installer but can be
@@ -512,7 +607,7 @@ entries fall back to English, so partial translations work fine.
 Buttons carry accessible names and tooltips, the status line is a live region,
 and labels avoid emoji (which some screen readers read out character by
 character). Hover-to-read and switching on the accessibility bus (via the
-*Set up VoxFox…* window) are described above.
+*Setup assistant…*) are described above.
 
 ## Dependencies
 
@@ -538,6 +633,8 @@ Downloaded per user on first use: the Piper engine and voices, and
 | `~/.local/share/voxfox/.migrated`   | One-time migration marker (see below)           |
 | `~/.config/voxfox/state.json`       | Your settings                                   |
 | `~/.config/voxfox/history.json`     | Read/dictation history                          |
+| `~/Documents/VoxFox/`               | Document library (change under Settings → General) |
+| `~/Documents/VoxFox/Tile pictures/` | Pictures on tiles (the folder you chose)        |
 | `~/.cache/voxfox/voxfox.log`        | Log file                                        |
 | `~/.cache/huggingface/`             | Cached Whisper models (respects `$HF_HOME`)     |
 | `~/.piper/`                         | Piper engine, and any not-yet-migrated voices   |
@@ -662,7 +759,7 @@ timeout. Use a faster model on the server, or make shorter recordings.
 isn't installed. Check `tesseract --list-langs`; install e.g.
 `sudo apt install tesseract-ocr-nld`.
 
-**Reading pauses oddly / merges things it shouldn't** — toggle *Settings → Misc
+**Reading pauses oddly / merges things it shouldn't** — toggle *Settings → General
 → Merge wrapped lines into paragraphs* off (or on) to match the text you're
 reading.
 
@@ -680,7 +777,8 @@ lives under your home directory and is left untouched; remove it manually if you
 want a clean slate:
 
 ```bash
-rm -rf ~/.piper ~/.config/voxfox_state.json ~/.config/voxfox_history.json
+rm -rf ~/.piper ~/.config/voxfox ~/.local/share/voxfox ~/.cache/voxfox
+# older versions also used ~/.config/voxfox_state.json and ~/.config/voxfox_history.json
 ```
 
 ## License

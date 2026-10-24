@@ -53,25 +53,34 @@ voxfox --setup
 Dit downloadt de Piper-engine voor jouw processorarchitectuur, twee
 standaardstemmen (`en_GB-alba-medium` en `nl_NL-pim-medium`) naar `~/.piper`, en
 installeert `faster-whisper` en `pytesseract` met pip. Je mag dit veilig opnieuw
-uitvoeren; het is ook beschikbaar via het venster *VoxFox instellen…* in het
-menu.
+uitvoeren; het is ook beschikbaar via *Installatiehulp…* in het menu.
 
 > De setup heeft `python3-pip` nodig (een aanbevolen afhankelijkheid). OCR werkt
 > ook zonder `pytesseract`, omdat VoxFox terugvalt op de `tesseract`-opdrachtregel.
 
 ## Het venster
 
-De titelbalk toont de programmanaam, met **Instellingen** (tandwiel) en het
-**menu** rechts. Twee rijen knoppen:
+De titelbalk toont de programmanaam, met rechts één **Menu**-knop (drie
+streepjes): *Instellingen*, *Typen en uitspreken*, *Bibliotheek*,
+*Geschiedenis*, *Live transcriptie*, *Installatiehulp…*, *Over VoxFox* en
+*Afsluiten*. Twee rijen knoppen:
 
-- **Rij 1:** Voorlezen · Stop · Pauze
-- **Rij 2:** Spreek · Hover · Kies · OCR · NL/EN (de taalwisselaar)
+- **Rij 1:** Voorlezen · Stop · Dicteren · Muis
+- **Rij 2:** Scherm · Bestand · NL/EN (de taalwisselaar)
+
+*Pauze*, *Vertaal* en *Typen* staan standaard uit; zet ze aan bij
+**Instellingen → Weergave → Knoppen**. Tijdens het voorlezen wordt
+**Voorlezen** de knop **Pauze** / **Verder**.
 
 Onder de knoppen verschijnt een statusregel zolang er iets gebeurt; daarna
 verbergt die zich weer. De statusregel is gemarkeerd als live-gebied, zodat een
 schermlezer meldingen als "Aan het voorlezen…" automatisch voorleest. Terwijl
 een Whisper-model of een Piper-stem wordt gedownload, verschijnt er net onder de
 statusregel een voortgangsbalk, zodat je ziet hoe ver de download is.
+
+**Instellingen** is een lijst met onderdelen: Taal 1, Taal 2, Uitspraak,
+Dicteren, Vertalen en AI, Sneltoetsen, Weergave (grootte, licht of donker,
+knoppen) en Algemeen.
 
 ## Tekst voorlezen
 
@@ -84,7 +93,7 @@ slot. **Stop** stopt het afspelen; **Pauze** pauzeert en hervat.
 VoxFox houdt twee stem-/taalslots bij, zodat je snel kunt wisselen tussen
 bijvoorbeeld Nederlands en Engels. De **NL/EN**-knop (en `voxfox --toggle-slot`)
 wisselt het actieve slot. De taal, stem en snelheid van elk slot stel je in bij
-**Instellingen** (het tandwiel). Wanneer je de taal van slot 1 wijzigt, wordt de
+**Instellingen**. Wanneer je de taal van slot 1 wijzigt, wordt de
 hele interface meteen in die taal opnieuw weergegeven.
 
 ## Geschiedenis
@@ -94,6 +103,28 @@ Geschiedenis** om ze te zien: elk item kun je opnieuw laten voorlezen (▶) of n
 het klembord kopiëren om het te plakken waar je wilt. **Alles wissen** leegt de
 lijst.
 
+## Spraakmotor
+
+Elk taalslot gebruikt **Piper** (ingebouwd, de standaard) of
+**Speech-dispatcher**, waarmee VoxFox de stemmen van andere programma's
+gebruikt, zoals espeak-ng, RHVoice of Voxin (installeer `python3-speechd`). Elk
+slot heeft een voorbeeld: typ een zin en druk op **Afspelen**.
+
+## Typen en uitspreken
+
+**Menu → Typen en uitspreken** opent een venster waarin je een tekst typt en
+VoxFox hem uitspreekt: druk op **Enter** of **Uitspreken**. Shift+Enter begint
+een nieuwe regel, Escape stopt. De laatste 10 zinnen blijven staan onder
+*Eerder gezegd*; klik op een zin om hem opnieuw te laten zeggen.
+
+Zet **Tegels** aan voor een bord met woord- en zintegels: druk op *Ik*, *heb*,
+*dorst* en VoxFox zegt "Ik heb dorst". Er zijn kant-en-klare tegels voor
+Nederlands, Engels, Duits, Frans en Spaans; bij **Tegels aanpassen** verander,
+verplaats, verwijder of voeg je tegels toe, en geef je ze een afbeelding
+(links, rechts of boven de tekst, hooguit 50 kB, vanzelf verkleind). Met
+**F11** (of de knop rechtsboven) wordt het venster volledig scherm; het
+hoofdvenster van VoxFox wordt dan geminimaliseerd.
+
 ## Uitspraakwoordenboek
 
 VoxFox kan woorden herschrijven voordat ze worden uitgesproken — handig voor
@@ -102,23 +133,24 @@ namen, afkortingen en leenwoorden die de stem verkeerd uitspreekt. Open
 slot 1. Voeg regels toe als *woord → uitspreken als* (bijv. `VoxFox →
 Voks-foks`, `GUI → goe-wie`) en gebruik **Test** om ze te beluisteren. Matching
 gebeurt op hele woorden en hoofdletterongevoelig, en de regels gelden voor alles
-wat in die taal wordt voorgelezen (Voorlezen, Hover, OCR).
+wat in die taal wordt voorgelezen (Voorlezen, Muis, OCR).
 
-## Afgebroken tekst voorlezen, en Instellingen → Overig
+## Afgebroken tekst voorlezen, en Instellingen → Algemeen
 
 Bij het voorlezen van OCR-tekst of geselecteerde tekst (bijvoorbeeld gekopieerd
 uit een pdf) voegt VoxFox regels die alleen zijn afgebroken samen tot echte
 alinea's, zodat hij niet meer middenin een zin pauzeert. Je schakelt dit onder
-**Instellingen → Overig** ("Afgebroken regels samenvoegen tot alinea's") — zet
-het uit om elke regel apart voor te lezen (handig voor lijsten of code). Op het
-tabblad Overig staat ook **Instellingen importeren/exporteren** om je
-configuratie te bewaren of te verplaatsen.
+**Instellingen → Algemeen** ("Afgebroken regels samenvoegen tot alinea's") — zet
+het uit om elke regel apart voor te lezen (handig voor lijsten of code). Bij
+Algemeen staat ook **Instellingen importeren/exporteren** om je configuratie te
+bewaren of te verplaatsen, en de mappen voor documenten en tegelafbeeldingen.
 
 ## Dicteren (spraak naar tekst)
 
-Druk op **Spreek** (of `voxfox --whisper-toggle`) om de opname te starten; druk
-nogmaals om te stoppen. VoxFox transcribeert de audio en typt het resultaat in
-de toepassing die de focus heeft. Onder **Instellingen → Whisper** kies je het
+Druk op **Dicteren** (of `voxfox --whisper-toggle`) om de opname te starten; de
+knop wordt rood en heet **Stop**; druk erop om te stoppen. VoxFox transcribeert
+de audio en typt het resultaat in de toepassing die de focus heeft. Onder
+**Instellingen → Dicteren** kies je het
 model, de microfoon, en of de tekst eerst bevestigd moet worden voordat hij
 getypt wordt.
 
@@ -133,7 +165,8 @@ getypt wordt.
 
 ### GPU-versnelling
 
-Whisper kan een NVIDIA-GPU gebruiken. Onder **Instellingen → Compute**:
+Whisper kan een NVIDIA-GPU gebruiken. Onder **Instellingen → Dicteren →
+Geavanceerd → Rekenen**:
 
 - **Auto** (standaard) gebruikt de GPU zodra er een CUDA-runtime gedetecteerd
   wordt, anders de CPU. Mislukt de GPU-initialisatie, dan valt hij automatisch
@@ -157,21 +190,22 @@ realtime, dus daar is geen GPU-build voor.
 
 ## OCR — tekst uit afbeeldingen en het scherm
 
-- Met **Kies** (`voxfox --ocr-select`) trek je een rechthoek op het scherm; de
+- Met **Scherm** (`voxfox --ocr-select`) trek je een rechthoek op het scherm; de
   tekst daarbinnen wordt via OCR gelezen en voorgelezen. Het gebruikt de eigen
   schermafdruktool van je bureaublad, dus het werkt op zowel X11 als Wayland.
-- **OCR** opent een PDF- of afbeeldingsbestand en leest de tekst voor.
+- **Bestand** opent een document, pdf of afbeelding en leest de tekst voor.
 
 OCR gebruikt Tesseract. Het werkt al met alleen het pakket `tesseract-ocr` (plus
 de taalgegevens, bijv. `tesseract-ocr-nld`); `pytesseract` is optioneel.
 
 ## Hover-modus
 
-**Hover** (`voxfox --hover-toggle`) leest de interfacetekst onder de muisaanwijzer
-voor, via de AT-SPI-toegankelijkheidsboom.
+**Muis** (`voxfox --hover-toggle`) leest de interfacetekst onder de muisaanwijzer
+voor, via de AT-SPI-toegankelijkheidsboom. Het werkt ook in de vensters van
+VoxFox zelf.
 
-Hiervoor moet de toegankelijkheidsbus aanstaan. Het venster *VoxFox instellen…*
-in het menu kan die voor je aanzetten (het zet de GNOME-instelling
+Hiervoor moet de toegankelijkheidsbus aanstaan. De *Installatiehulp…* in het
+menu kan die voor je aanzetten (het zet de GNOME-instelling
 `toolkit-accessibility` aan); herstart daarna de betreffende toepassing.
 Chromium-browsers moeten bovendien gestart worden met
 `--force-renderer-accessibility`. Hover werkt het
@@ -185,11 +219,11 @@ daar kan het zonder effect blijven.
 
 ## Sneltoetsen
 
-VoxFox kan zes globale sneltoetsen voor je installeren — open
+VoxFox kan tot tien globale sneltoetsen voor je installeren — open
 **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie door erop te
 klikken en de toetsen in te drukken, en kies dan **Sneltoetsen installeren**.
-Dit werkt op Cinnamon, GNOME, LXQt en XFCE; er wordt niets automatisch
-geïnstalleerd. Standaardtoetsen:
+Dit werkt op Cinnamon, GNOME, LXQt, XFCE en KDE Plasma; er wordt niets
+automatisch geïnstalleerd. Zes hebben een standaardtoets:
 
 | Commando                   | Actie                        | Standaard |
 |----------------------------|------------------------------|-----------|
@@ -199,6 +233,11 @@ geïnstalleerd. Standaardtoetsen:
 | `voxfox --whisper-toggle`  | Dicteren (spraak naar tekst) | `Super+W` |
 | `voxfox --ocr-select`      | Schermgebied voorlezen (OCR) | `Super+A` |
 | `voxfox --read-page`       | Webpagina voorlezen (experimenteel) | `Super+V` |
+
+De andere vier hebben geen standaardtoets; geef ze eerst een toets als je ze
+wilt gebruiken: OCR-selectie & vertaling (`voxfox --ocr-select-translate`),
+Live transcriptie (`voxfox --live-toggle`), Vertaal & lees voor
+(`voxfox --translate`) en Typen en uitspreken (`voxfox --type-speak`).
 
 `voxfox --install-shortcuts` doet hetzelfde vanuit een terminal. Overige
 commando's (`voxfox --pause`, `voxfox --hover-toggle`) kun je handmatig koppelen

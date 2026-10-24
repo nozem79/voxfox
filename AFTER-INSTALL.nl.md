@@ -15,9 +15,12 @@ laat zien of die al gedaan is:
    voorlezen). Chromium-browsers moeten bovendien gestart worden met
    `--force-renderer-accessibility`.
 
-3. **Sneltoetsen.** Registreer desgewenst de zes VoxFox-sneltoetsen op je
+3. **Sneltoetsen.** Registreer desgewenst de VoxFox-sneltoetsen op je
    bureaublad. Wijzig eerst de toetsen onder Instellingen → Sneltoetsen als je
    wilt.
+
+4. **Grotere knoppen en tekst.** Zet dit aan om het venster van VoxFox 125 %
+   groter te maken.
 
 Voor OCR in andere talen installeer je het bijbehorende Tesseract-pakket, bijv.
 `sudo apt install tesseract-ocr-nld` (of `-chi-sim`, `-ara`, …).

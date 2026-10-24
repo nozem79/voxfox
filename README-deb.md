@@ -49,24 +49,34 @@ voxfox --setup
 This downloads the Piper engine for your CPU architecture, two default voices
 (`en_GB-alba-medium` and `nl_NL-pim-medium`) into `~/.piper`, and installs
 `faster-whisper` and `pytesseract` with pip. It is safe to re-run, and is also
-available from the *Set up VoxFox…* window in the menu.
+available from *Setup assistant…* in the menu.
 
 > Setup needs `python3-pip` (a recommended dependency). OCR works even without
 > `pytesseract` because VoxFox falls back to the `tesseract` command line.
 
 ## The window
 
-The title bar shows the program name, with **Settings** (gear) and the **menu**
-on the right. Two rows of buttons:
+The title bar shows the program name, with one **Menu** button (three lines)
+on the right: *Settings*, *Type and speak*, *Library*, *History*, *Live
+transcription*, *Setup assistant…*, *About VoxFox* and *Quit*. Two rows of
+buttons:
 
-- **Row 1:** Read · Stop · Pause
-- **Row 2:** Speak · Hover · Select · OCR · NL/EN (the language switcher)
+- **Row 1:** Read · Stop · Dictate · Mouse
+- **Row 2:** Screen · File · NL/EN (the language switcher)
+
+*Pause*, *Translate* and *Type* start hidden; switch them on under
+**Settings → Appearance → Buttons**. While VoxFox is reading, **Read** turns
+into **Pause** / **Resume**.
 
 A status line appears below the buttons while something is happening and hides
 itself again when idle. It is marked as a live region, so a screen reader
 announces messages such as "Reading…" automatically. While a Whisper model or a
 Piper voice is downloading, a progress bar appears just below the status line so
 you can see how far along the download is.
+
+**Settings** is a list of sections: Language 1, Language 2, Pronunciation,
+Dictation, Translation and AI, Shortcuts, Appearance (size, light or dark,
+buttons) and General.
 
 ## Reading text aloud
 
@@ -79,7 +89,7 @@ VoxFox speaks it with the active slot's voice. **Stop** halts playback;
 VoxFox keeps two voice/language slots so you can switch between, say, Dutch and
 English quickly. The **NL/EN** button (and `voxfox --toggle-slot`) switches the
 active slot. Each slot's language, voice and speed are configured under
-**Settings** (the gear). Changing slot 1's language also re-renders the whole
+**Settings**. Changing slot 1's language also re-renders the whole
 interface in that language immediately.
 
 ## History
@@ -88,6 +98,26 @@ VoxFox keeps your last 20 read and dictated items. Open **Menu → History** to
 see them: each entry can be read again (▶) or copied to the clipboard so you can
 paste it wherever you like. **Clear all** empties the list.
 
+## Speech engine
+
+Each language slot uses **Piper** (built in, the default) or
+**Speech-dispatcher**, which gives VoxFox the voices of other programs such as
+espeak-ng, RHVoice or Voxin (install `python3-speechd`). Every slot has a
+preview: type a sentence and press **Play**.
+
+## Type and speak
+
+**Menu → Type and speak** opens a window where you type a text and VoxFox says
+it: press **Enter**, or **Speak**. Shift+Enter starts a new line, Escape stops.
+The last 10 sentences stay under *Said earlier*; click one to say it again.
+
+Switch on **Tiles** to get a board of word and sentence tiles: press *Ik*,
+*heb*, *dorst* and VoxFox says "Ik heb dorst". There are ready-made tiles for
+Dutch, English, German, French and Spanish; under **Change tiles** you change,
+move, remove or add tiles, and give them a picture (left, right or above the
+text, at most 50 kB, scaled down automatically). **F11** (or the button top
+right) makes the window full screen; the main VoxFox window is then minimised.
+
 ## Pronunciation dictionary
 
 VoxFox can re-spell words before they are spoken — handy for names,
@@ -95,22 +125,24 @@ abbreviations and loanwords the voice gets wrong. Open **Settings →
 Pronunciation**; it edits the dictionary for slot 1's language. Add rules as
 *word → pronounce as* (e.g. `VoxFox → Voks-foks`, `GUI → goo-ee`) and use
 **Test** to hear them. Matching is whole-word and case-insensitive, and the
-rules apply to everything spoken in that language (Read, Hover, OCR).
+rules apply to everything spoken in that language (Read, Mouse, OCR).
 
-## Reading wrapped text, and Settings → Misc
+## Reading wrapped text, and Settings → General
 
 When you read OCR output or text you've selected (for instance copied from a
 PDF), VoxFox joins lines that are only word-wrapped into proper paragraphs, so
 it no longer pauses in the middle of a sentence. Toggle this under
-**Settings → Misc** ("Merge wrapped lines into paragraphs") — turn it off to
-read every line on its own (handy for lists or code). The Misc tab also has
-**Import / Export settings** to back up or move your configuration.
+**Settings → General** ("Merge wrapped lines into paragraphs") — turn it off to
+read every line on its own (handy for lists or code). General also has
+**Import / Export settings** to back up or move your configuration, and the
+folders for documents and tile pictures.
 
 ## Dictation (speech to text)
 
-Press **Speak** (or `voxfox --whisper-toggle`) to start recording; press again
-to stop. VoxFox transcribes the audio and types the result into the focused
-application. Under **Settings → Whisper** you can choose the model, the
+Press **Dictate** (or `voxfox --whisper-toggle`) to start recording; the
+button turns red and is called **Stop**; press it to stop. VoxFox transcribes
+the audio and types the result into the focused application. Under
+**Settings → Dictation** you can choose the model, the
 microphone, and whether to confirm the text before it is typed.
 
 ### Local vs. remote (API)
@@ -123,7 +155,7 @@ microphone, and whether to confirm the text before it is typed.
 
 ### GPU acceleration
 
-Whisper can use an NVIDIA GPU. Under **Settings → Compute**:
+Whisper can use an NVIDIA GPU. Under **Settings → Dictation → Advanced → Compute**:
 
 - **Auto** (default) uses the GPU when a CUDA runtime is detected, otherwise the
   CPU. If GPU initialisation fails it falls back to the CPU automatically.
@@ -145,21 +177,22 @@ build — it is already faster than real time, so there is no GPU build for it.
 
 ## OCR — read text from images and the screen
 
-- **Select** (`voxfox --ocr-select`) lets you drag a rectangle on screen; the
+- **Screen** (`voxfox --ocr-select`) lets you drag a rectangle on screen; the
   text inside is OCR'd and read aloud. It uses your desktop's native region
   screenshot tool, so it works on both X11 and Wayland.
-- **OCR** opens a PDF or image file and reads its text.
+- **File** opens a document, PDF or picture and reads its text.
 
 OCR uses Tesseract. It works with just the `tesseract-ocr` package (plus the
 language data, e.g. `tesseract-ocr-nld`); `pytesseract` is optional.
 
 ## Hover mode
 
-**Hover** (`voxfox --hover-toggle`) reads the UI text under the mouse pointer
-aloud, using the AT-SPI accessibility tree.
+**Mouse** (`voxfox --hover-toggle`) reads the UI text under the mouse pointer
+aloud, using the AT-SPI accessibility tree. It also works on VoxFox's own
+windows.
 
-For this to work the accessibility bus must be enabled. The *Set up VoxFox…*
-window in the menu can switch it on for you (it sets the GNOME
+For this to work the accessibility bus must be enabled. *Setup assistant…*
+in the menu can switch it on for you (it sets the GNOME
 `toolkit-accessibility` option); restart the target application afterwards.
 Chromium-based browsers additionally need to be launched with
 `--force-renderer-accessibility`.
@@ -173,10 +206,11 @@ may not take effect.
 
 ## Keyboard shortcuts
 
-VoxFox can install six global shortcuts for you — open
+VoxFox can install up to ten global shortcuts for you — open
 **Settings → Shortcuts**, optionally change any combination by clicking it and
 pressing the keys, then choose **Install shortcuts**. This works on Cinnamon,
-GNOME, LXQt and XFCE; nothing is installed automatically. Defaults:
+GNOME, LXQt, XFCE and KDE Plasma; nothing is installed automatically. Six
+have a default key:
 
 | Command                    | Action                     | Default   |
 |----------------------------|----------------------------|-----------|
@@ -186,6 +220,11 @@ GNOME, LXQt and XFCE; nothing is installed automatically. Defaults:
 | `voxfox --whisper-toggle`  | Dictate (speech to text)   | `Super+W` |
 | `voxfox --ocr-select`      | Read a screen region (OCR) | `Super+A` |
 | `voxfox --read-page`       | Read web page (experimental) | `Super+V` |
+
+The other four have no default key; give them one first if you want them:
+OCR select & translate (`voxfox --ocr-select-translate`), Live transcription
+(`voxfox --live-toggle`), Translate & read (`voxfox --translate`) and Type and
+speak (`voxfox --type-speak`).
 
 `voxfox --install-shortcuts` does the same from a terminal. Other commands
 (`voxfox --pause`, `voxfox --hover-toggle`) can be bound by hand in your

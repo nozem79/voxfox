@@ -66,11 +66,11 @@ aan alles in te stellen. De setup downloadt:
   (`nl_NL-pim-medium`)
 - `faster-whisper` (voor lokaal dicteren), via `pip --user`
 
-Bij de eerste start wordt ook `~/.config/voxfox_state.json` aangemaakt (je
-instellingen) en wordt er gelogd naar `~/.cache/voxfox.log`.
+Bij de eerste start wordt ook `~/.config/voxfox/state.json` aangemaakt (je
+instellingen) en wordt er gelogd naar `~/.cache/voxfox/voxfox.log`.
 
 Voor hover-voorlezen moet de toegankelijkheidsbus aanstaan. Het venster
-*VoxFox instellen…* in het menu kan die voor je aanzetten (het zet de
+*Installatiehulp…* in het menu kan die voor je aanzetten (het zet de
 GNOME-instelling `toolkit-accessibility` om); herstart daarna het
 betreffende programma (en start Chromium-browsers met
 `--force-renderer-accessibility`).
@@ -78,30 +78,45 @@ betreffende programma (en start Chromium-browsers met
 ## Het venster
 
 Het hoofdvenster is bewust klein en omsluit zijn inhoud. Standaard zijn de
-knoppen **Voorlezen**, **Stop**, **Pauzeren**, **Spreken** (dicteren),
-**Zweven**, **Selecteren** en **OCR**, plus de taalwisselknop. Je kunt elke knop
-tonen of verbergen en de volgorde wijzigen, en de hele interface schalen naar
-75 %, 100 % of 125 % — beide onder **Instellingen → Interface** (zie hieronder).
-De titelbalk heeft een **Instellingen**-knop (tandwiel) en een **Menu**-knop
-(hamburger).
+knoppen **Voorlezen**, **Stop**, **Dicteren**, **Muis**, **Scherm** en
+**Bestand**, plus de taalwisselknop. **Pauze**, **Vertaal** en **Typen** zijn er
+ook, maar staan standaard uit. Je kunt elke knop tonen of verbergen, de volgorde
+wijzigen en de hele interface schalen naar 75 %, 100 % of 125 % — allemaal onder
+**Instellingen → Weergave** (zie hieronder).
+
+Tijdens het voorlezen wordt de knop **Voorlezen** de knop **Pauze** (en daarna
+**Verder**), zodat een aparte pauzeknop zelden nodig is. Bij een langere tekst
+laat een dunne balk onder de knoppen zien hoe ver VoxFox is. Tijdens het
+dicteren wordt de knop Dicteren rood, heet hij **Stop** en knippert het
+pictogram.
+
+De titelbalk heeft één **Menu**-knop (drie streepjes) met: *Instellingen*,
+*Typen en uitspreken*, *Bibliotheek*, *Geschiedenis*, *Live transcriptie*,
+*Installatiehulp…*, *Over VoxFox* en *Afsluiten* (Ctrl+Q). Houd de muis even
+stil op een knop om in één zin te zien wat hij doet en welke sneltoets erbij
+hoort.
 
 Onder de knoppen verschijnt een statusregel zolang er iets gebeurt; daarna
 verbergt die zich weer. De statusregel is een live-gebied, zodat een schermlezer
 meldingen als "Aan het voorlezen…" automatisch voorleest. Net daaronder toont
 een voortgangsbalk de voortgang van een lopende download.
 
-| Knop        | Functie                                                       |
-|-------------|---------------------------------------------------------------|
-| Voorlezen   | Lees de geselecteerde tekst voor                              |
-| Stop        | Stop direct met voorlezen                                    |
-| Pauzeren    | Pauzeer / hervat het voorlezen                               |
-| Spreken     | Dicteren: neem je stem op; Whisper zet het om en typt het    |
-| Zweven      | Hover-voorlezen aan/uit                                      |
-| Selecteren  | Kies een schermgebied en lees de tekst voor (OCR)            |
-| OCR         | Open een pdf of afbeelding en lees de tekst voor             |
-| Taal        | Wissel tussen Taal 1 en Taal 2                               |
-| Instellingen| Open instellingen (tabbladen: Taal 1/2, Dicteren, Uitspraak, Overig, Interface, Sneltoetsen) |
-| Menu        | VoxFox instellen…, Geschiedenis, Over, Afsluiten |
+| Knop      | Functie                                                        |
+|-----------|----------------------------------------------------------------|
+| Voorlezen | Lees de geselecteerde tekst voor; tijdens het voorlezen: Pauze / Verder |
+| Stop      | Stop direct met voorlezen                                     |
+| Pauze     | Pauzeer / ga verder (staat standaard uit)                     |
+| Dicteren  | Neem je stem op; Whisper zet het om en typt het               |
+| Muis      | Zweefvoorlezen aan/uit (werkt ook in VoxFox zelf)             |
+| Scherm    | Trek een vak om een stuk scherm en lees de tekst voor (OCR)   |
+| Bestand   | Open een document, pdf of afbeelding en lees het voor         |
+| Vertaal   | Vertaal de selectie en lees die voor (staat standaard uit)    |
+| Typen     | Open Typen en uitspreken (staat standaard uit; ook in het menu) |
+| Taal      | Wissel tussen Taal 1 en Taal 2                                |
+
+Instellingen is een lijst met onderdelen aan de linkerkant: *Taal 1*, *Taal 2*,
+*Uitspraak*, *Dicteren*, *Vertalen en AI*, *Sneltoetsen*, *Weergave* en
+*Algemeen*. Wijzigingen worden meteen bewaard.
 
 ## Tekst voorlezen
 
@@ -113,14 +128,30 @@ kunt **Pauzeren** en **Stoppen**.
 Wanneer de tekst uit OCR komt of uit een selectie die alleen is afgebroken
 (bijvoorbeeld gekopieerd uit een pdf), voegt VoxFox die afgebroken regels eerst
 samen tot echte alinea's, zodat hij niet middenin een zin pauzeert. Dat kun je
-uitzetten onder *Instellingen → Overig* (zie hieronder).
+uitzetten onder *Instellingen → Algemeen* (zie hieronder).
 
 ## Twee taalslots
 
 VoxFox houdt twee onafhankelijke stemslots bij — *Taal 1* en *Taal 2* — elk met
 een eigen taal, stem en snelheid. De taalwisselknop schakelt er in één klik
 tussen, veel sneller dan een keuzelijst heropenen als je regelmatig in twee
-talen leest. De interfacetaal volgt slot 1.
+talen leest. De interfacetaal volgt slot 1. Verander je de taal van een slot,
+dan kiest VoxFox zelf de beste stem voor die taal.
+
+Elk slot heeft een **spraakmotor**:
+
+- **Piper** (ingebouwd, de standaard) — snelle, natuurlijke offline stemmen die
+  VoxFox voor je downloadt.
+- **Speech-dispatcher** — gebruik de stemmen van andere programma's op je
+  computer, zoals espeak-ng, RHVoice of het betaalde Voxin. Kies een *module*
+  en daarna een *stem*. Deze keuze zie je alleen als speech-dispatcher is
+  geïnstalleerd (met het Python-deel, `python3-speechd`). Heeft een programma
+  als Pied modules verborgen, dan meldt VoxFox dat en biedt het **Beschikbaar
+  maken** aan.
+
+Elk slot heeft ook een **voorbeeld**: typ een zin (standaard "Dit is een
+voorbeeldstem, klinkt dit goed?" in de taal van het slot) en druk op
+**Afspelen** om de stem te horen met de huidige snelheid en toonhoogte.
 
 ## Uitspraakwoordenboek
 
@@ -148,15 +179,72 @@ OCR). Jouw regels worden per taal opgeslagen in je instellingenbestand.
 VoxFox onthoudt je laatste 20 voorgelezen en gedicteerde items. Open *Menu →
 Geschiedenis* om ze te zien: elk item kun je opnieuw laten voorlezen (▶) of naar
 het klembord kopiëren om het te plakken waar je wilt. **Alles wissen** leegt de
-lijst. Opgeslagen in `~/.config/voxfox_history.json`.
+lijst. Opgeslagen in `~/.config/voxfox/history.json`.
 
 (Kopiëren in plaats van opnieuw typen: VoxFox staat altijd-bovenop en houdt
 focus, dus getypte tekst zou in het verkeerde venster belanden — met kopiëren
 plak je het waar je het echt wilt.)
 
-## Instellingen → Overig
+## Typen en uitspreken
 
-Het tabblad *Overig* bevat twee dingen:
+*Menu → Typen en uitspreken* (of de knop **Typen**, als je die hebt aangezet)
+opent een venster waarin je een tekst typt en VoxFox hem uitspreekt: voor
+mensen die niet (of even niet) kunnen praten, en om te horen hoe een tekst
+klinkt.
+
+- Typ en druk op **Enter** om de tekst uit te spreken; **Shift+Enter** begint
+  een nieuwe regel, **Escape** stopt. Selecteer een stuk tekst om alleen dat
+  stuk uit te spreken.
+- Na het uitspreken blijft de tekst geselecteerd: typen begint een nieuwe
+  tekst, Enter zegt dezelfde tekst nog eens. Of zet een vinkje bij
+  *Tekstvak leegmaken na uitspreken*.
+- *Elk woord voorlezen tijdens het typen* zegt elk woord zodra het af is.
+- *Eerder gezegd* toont de laatste 10 zinnen; klik op een zin om hem opnieuw
+  te laten zeggen, of op het potloodje om hem terug in het tekstvak te zetten.
+- **A− / A+** (of Ctrl+plus / Ctrl+min) veranderen de tekstgrootte; de
+  taalknop wisselt tussen Taal 1 en 2.
+- **Volledig scherm** (rechtsboven, of F11). Zolang het venster volledig scherm
+  of gemaximaliseerd is, wordt het kleine hoofdvenster van VoxFox
+  geminimaliseerd, zodat het er niet overheen staat; daarna komt het terug.
+- Ook `voxfox --type-speak`, en een sneltoets die je kunt instellen bij
+  *Instellingen → Sneltoetsen* (standaard geen).
+
+### Tegels
+
+Zet **Tegels** aan, dan wordt het tekstvak ongeveer twee regels hoog en wordt
+de rest van het venster een bord met tegels. Druk op *Ik*, *heb* en *dorst*
+en je hebt "Ik heb dorst"; **Uitspreken** (of Enter) zegt de zin. Elke tegel
+wordt uitgesproken als je erop drukt (*Tegel uitspreken bij aantikken*),
+**Woord weg** haalt het laatste woord weg, en na het uitspreken begint de
+volgende tegel een nieuwe zin.
+
+- Kant-en-klare tegels voor Nederlands, Engels, Duits, Frans en Spaans (andere
+  talen krijgen de Engelse), met voorbeeldzinnen bovenaan.
+- Kleuren per soort woord, zoals op veel communicatieborden: personen geel,
+  doe-woorden groen, beschrijvingen blauw, dingen en gevoelens oranje,
+  sociale woorden roze, vragen paars, zinnen grijs.
+- **Tegels aanpassen**: klik op een tegel om de tekst of soort te veranderen,
+  hem naar voren of achteren te verplaatsen, of weg te halen; **Nieuwe tegel**
+  voegt er een toe; **Standaardtegels** zet de kant-en-klare tegels terug (na
+  een vraag). Elke taal heeft zijn eigen tegels.
+
+### Afbeeldingen op tegels
+
+In het venster van een tegel voeg je met **Afbeelding kiezen…** een icoon of
+foto toe (PNG, JPEG, SVG, WebP of GIF). Met **Plaats** zet je hem links
+(standaard), rechts of in het midden boven de tekst; de tekst wordt dan iets
+kleiner zodat alles past.
+
+- Afbeeldingen zijn hooguit 50 kB; een grotere wordt vanzelf verkleind
+  (iconen blijven waar mogelijk PNG, foto's worden JPEG).
+- De eerste keer vraagt VoxFox waar de map voor tegelafbeeldingen moet komen
+  (standaard: in de VoxFox-documentenmap) en maakt hem aan. Later verander je
+  dat bij *Instellingen → Algemeen*; de afbeeldingen gaan mee.
+- Het kiesvenster opent in de map waar de vorige afbeelding vandaan kwam.
+
+## Instellingen → Algemeen
+
+Het onderdeel *Algemeen* bevat:
 
 - **Afgebroken regels samenvoegen tot alinea's** (standaard aan) — het
   samenvoeggedrag beschreven onder *Tekst voorlezen*. Zet het uit om elke regel
@@ -165,33 +253,38 @@ Het tabblad *Overig* bevat twee dingen:
   JSON-bestand en zet 'm terug op een andere machine. Stemmen waarnaar een
   geïmporteerd bestand verwijst, worden bij het eerste gebruik automatisch
   gedownload.
+- **Documenten** — de map van de bibliotheek, en de **map voor
+  tegelafbeeldingen** van Typen en uitspreken, elk met **Wijzigen…**.
 
 ```bash
-# Op de bronmachine: Instellingen → Overig → Exporteren naar voxfox-settings.json
+# Op de bronmachine: Instellingen → Algemeen → Exporteren naar voxfox-settings.json
 scp voxfox-settings.json andere-machine:~/
-# Op de andere machine: open VoxFox, Instellingen → Overig → Importeren
+# Op de andere machine: open VoxFox, Instellingen → Algemeen → Importeren
 ```
 
-## Instellingen → Interface
+## Instellingen → Weergave
 
-Met het tabblad *Interface* pas je de toolbar en de algehele grootte aan:
+Met het onderdeel *Weergave* pas je de knoppenbalk en het uiterlijk aan:
 
 - **Interfacegrootte** — schaal het hele venster naar 75 %, 100 % of 125 %.
   Handig op high-DPI-schermen of als je grotere klikdoelen wilt.
-- **Knopweergave** — toon de toolbarknoppen als *alleen icoon*, *icoon en
-  tekst* of *alleen tekst*. Bij alleen-icoon blijft de tekst beschikbaar als
-  tooltip, en schermlezers blijven in elke stand de knopnamen aankondigen.
+- **Licht of donker** — *Zoals het systeem* (standaard), *Licht* of *Donker*.
+  VoxFox gebruikt de lichte of donkere variant van je bureaubladthema als die
+  er is.
+- **Knopweergave** — toon de knoppen als *alleen icoon*, *icoon en tekst* of
+  *alleen tekst*. Bij alleen-icoon blijft de tekst beschikbaar als tooltip, en
+  schermlezers blijven in elke stand de knopnamen aankondigen.
 - **Oriëntatie** — zet de knoppen *horizontaal* (rijen, de standaard) of
   *verticaal* (een smalle kolom die je aan de rand van je scherm kunt
   parkeren). Verticaal met alleen-icoon geeft de smalste vorm: de titelbalk
-  krimpt tot alleen een sluitknop en de knoppen Instellingen en Menu
-  verhuizen naar onderin de kolom.
-- **Knoppen** — toon of verberg elke toolbarknop met een vinkje en wijzig de
-  volgorde met de pijltjes omhoog/omlaag. Verberg de knoppen die je nooit
-  gebruikt (bijvoorbeeld *Pauzeren* of *OCR*) om het venster compact te houden;
-  de indeling wordt onthouden.
+  krimpt tot alleen een sluitknop en de menuknop verhuist naar onderin de
+  kolom.
+- **Venster** — *Boven andere vensters blijven*.
+- **Knoppen** — toon of verberg elke knop met een vinkje en wijzig de volgorde
+  met de pijltjes omhoog/omlaag. *Pauze*, *Vertaal* en *Typen* staan standaard
+  uit; zet ze hier aan. De indeling wordt onthouden.
 
-Het tabblad *Sneltoetsen* wordt behandeld onder **Sneltoetsen** hieronder.
+Het onderdeel *Sneltoetsen* wordt behandeld onder **Sneltoetsen** hieronder.
 
 ## Spraak-naar-tekst (Whisper)
 
@@ -310,11 +403,11 @@ standaardtoets, dus wijs er zelf een toe voordat je installeert.
 Selecteer tekst in een willekeurige taal, activeer **Vertaal**, en VoxFox
 vertaalt hem naar de taal van Taal 1 en leest hem voor met die stem. De
 functie staat standaard uit: zet de Vertaal-knop aan onder **Instellingen →
-Interface** en kies zelf een sneltoets onder **Instellingen → Sneltoetsen**
+Weergave** en kies zelf een sneltoets onder **Instellingen → Sneltoetsen**
 (net als live transcriptie zonder standaardbinding geleverd).
 
 Het vertalen loopt via elke OpenAI-compatibele API, ingesteld onder
-**Instellingen → Vertaling** met een URL, een modelnaam en een optionele
+**Instellingen → Vertalen en AI** met een URL, een modelnaam en een optionele
 API-sleutel:
 
 - **Lokaal (privé):** een [Ollama](https://ollama.com)-server op je eigen
@@ -360,7 +453,7 @@ heeft er al een, en dit is een variant daarop, geen aparte alledaagse
 actie); ken er een toets aan toe onder **Instellingen → Sneltoetsen**.
 
 OCR-uitvoer krijgt de afgebroken regels samengevoegd tot alinea's (de
-*Overig*-schakelaar), zodat het voorlezen vloeiend gaat in plaats van bij elke
+*Algemeen*-schakelaar), zodat het voorlezen vloeiend gaat in plaats van bij elke
 regel te pauzeren.
 
 De OCR-taal volgt het actieve slot. Staat slot 1 op Nederlands, dan gebruikt
@@ -400,8 +493,12 @@ Als de hover-modus aanstaat, wordt de tekst onder je muisaanwijzer automatisch
 voorgelezen — zonder eerst te selecteren. Handig voor het doorlopen van lijsten,
 menu's of slecht toegankelijke websites. Het werkt het best op X11 en XWayland;
 op puur Wayland hangt het af van AT-SPI-gebeurtenissen, die niet elk programma
-verstuurt, dus boven sommige vensters gebeurt er niets. Schakel met **Zweven**,
+verstuurt, dus boven sommige vensters gebeurt er niets. Schakel met **Muis**,
 `--hover-toggle` of je sneltoets.
+
+Zweefvoorlezen werkt ook in de vensters van VoxFox zelf — de knoppen, het
+menu, alle onderdelen van Instellingen en de tegels van Typen en uitspreken —
+en ook als je daar met het toetsenbord van knop naar knop gaat.
 
 ## Altijd op de voorgrond
 
@@ -425,6 +522,9 @@ voxfox --toggle-slot      # Wissel tussen Taal 1 en Taal 2
 voxfox --hover-toggle     # Hover-modus aan/uit
 voxfox --whisper-toggle   # Dicteren starten/stoppen (spraak-naar-tekst)
 voxfox --live-toggle      # Live-transcriptievenster openen/sluiten
+voxfox --type-speak       # Het venster Typen en uitspreken openen
+voxfox --translate        # Vertaal de selectie en lees die voor
+voxfox --read-page        # Lees de actieve webpagina voor (experimenteel)
 voxfox --ocr-select       # Kies een schermgebied en lees de tekst voor (OCR)
 voxfox --ocr <bestand>    # OCR een pdf of afbeelding en lees voor (werkt zonder GUI)
 voxfox --status           # Print of VoxFox draait
@@ -435,10 +535,12 @@ voxfox --verbose          # Debug-logging aanzetten
 
 ## Sneltoetsen
 
-VoxFox kan zeven globale sneltoetsen voor je instellen, maar doet dat nooit
+VoxFox kan tien globale sneltoetsen voor je instellen, maar doet dat nooit
 automatisch — sommige bureaubladen gebruiken deze toetsen al voor iets anders.
-Zes ervan hebben een voorgestelde standaardtoets; Live transcriptie heeft
-geen standaard, dus geef die zelf een toets voordat je installeert.
+Zes ervan hebben een voorgestelde standaardtoets; de andere vier
+(OCR-selectie & vertaling, Live transcriptie, Vertaal & lees voor, Typen en
+uitspreken) hebben er geen, dus geef die zelf een toets als je ze wilt
+gebruiken.
 Open **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie (klik erop
 en druk de gewenste toetsen in) en kies dan **Sneltoetsen installeren**. Ze
 worden geschreven naar je bureaublad op **Cinnamon, GNOME, LXQt, XFCE en KDE Plasma** (op
@@ -446,7 +548,7 @@ Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
 werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
 later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
 
-De zeven installeerbare acties en hun standaardtoetsen:
+De tien installeerbare acties en hun standaardtoetsen:
 
 | Actie           | Opdracht                  | Standaard |
 |-----------------|---------------------------|-----------|
@@ -456,7 +558,10 @@ De zeven installeerbare acties en hun standaardtoetsen:
 | Dicteren        | `voxfox --whisper-toggle` | `Super+W` |
 | OCR-selectie    | `voxfox --ocr-select`     | `Super+A` |
 | Webpagina voorlezen | `voxfox --read-page`  | `Super+V` |
+| OCR-selectie & vertaling | `voxfox --ocr-select-translate` | *(geen)* |
 | Live transcriptie | `voxfox --live-toggle` | *(geen)*  |
+| Vertaal & lees voor | `voxfox --translate`  | *(geen)*  |
+| Typen en uitspreken | `voxfox --type-speak` | *(geen)*  |
 
 Je kunt ook `voxfox --install-shortcuts` in een terminal draaien. Andere
 opdrachten (`voxfox --pause`, `voxfox --hover-toggle`) zitten niet in de
@@ -531,7 +636,7 @@ vertalingen werken prima.
 Knoppen hebben toegankelijke namen en tooltips, de statusregel is een
 live-gebied, en labels vermijden emoji (die sommige schermlezers teken voor
 teken voorlezen). Hover-voorlezen en het aanzetten van de toegankelijkheidsbus
-(via het venster *VoxFox instellen…*) staan hierboven beschreven.
+(via de *Installatiehulp…*) staan hierboven beschreven.
 
 ## Afhankelijkheden
 
@@ -557,6 +662,8 @@ Per gebruiker bij het eerste gebruik gedownload: de Piper-engine en -stemmen, en
 | `~/.local/share/voxfox/.migrated`   | Eenmalige migratiemarkering (zie hieronder)       |
 | `~/.config/voxfox/state.json`       | Je instellingen                                   |
 | `~/.config/voxfox/history.json`     | Voorlees-/dicteergeschiedenis                     |
+| `~/Documenten/VoxFox/`              | Bibliotheek (wijzigen bij Instellingen → Algemeen) |
+| `~/Documenten/VoxFox/Tegelafbeeldingen/` | Afbeeldingen op tegels (de map die je koos) |
 | `~/.cache/voxfox/voxfox.log`        | Logbestand                                        |
 | `~/.cache/huggingface/`             | Gecachete Whisper-modellen (respecteert `$HF_HOME`) |
 | `~/.piper/`                         | Piper-engine, en eventuele nog niet gemigreerde stemmen |
@@ -690,7 +797,7 @@ geïnstalleerd. Controleer met `tesseract --list-langs`; installeer bijv.
 `sudo apt install tesseract-ocr-nld`.
 
 **Voorlezen pauzeert raar / voegt dingen samen die niet samen horen** — zet
-*Instellingen → Overig → Afgebroken regels samenvoegen tot alinea's* uit (of aan)
+*Instellingen → Algemeen → Afgebroken regels samenvoegen tot alinea's* uit (of aan)
 naargelang de tekst die je leest.
 
 **Al het andere** — VoxFox logt naar `~/.cache/voxfox.log`; start met
@@ -707,7 +814,8 @@ Whisper-modellen) staan in je thuismap en blijven ongemoeid; verwijder ze
 handmatig voor een schone start:
 
 ```bash
-rm -rf ~/.piper ~/.config/voxfox_state.json ~/.config/voxfox_history.json
+rm -rf ~/.piper ~/.config/voxfox ~/.local/share/voxfox ~/.cache/voxfox
+# oudere versies gebruikten ook ~/.config/voxfox_state.json en ~/.config/voxfox_history.json
 ```
 
 ## Licentie

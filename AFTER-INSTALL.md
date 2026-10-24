@@ -13,8 +13,11 @@ already done:
    in (or restart the apps you want read). Chromium-based browsers also need to
    be started with `--force-renderer-accessibility`.
 
-3. **Keyboard shortcuts.** Optionally register the six VoxFox shortcuts on your
+3. **Keyboard shortcuts.** Optionally register the VoxFox shortcuts on your
    desktop. Change the keys first under Settings → Shortcuts if you like.
+
+4. **Bigger buttons and text.** Switch this on to make the VoxFox window
+   125 % larger.
 
 For OCR in other languages, install the matching Tesseract pack, e.g.
 `sudo apt install tesseract-ocr-nld` (or `-chi-sim`, `-ara`, …).
