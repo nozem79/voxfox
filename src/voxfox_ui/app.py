@@ -36,7 +36,7 @@ from voxfox_ui.common import ACCENT_CSS, APP_VERSION, MANUAL_URL, SYSTEM_ICON, S
 from voxfox_ui.history import HistoryWindow  # noqa: E402
 from voxfox_ui.main_window import VoxFoxWindow  # noqa: E402
 from voxfox_ui.setup import SetupDialog, apply_ui_language, run_setup  # noqa: E402
-from voxfox_ui.shortcuts import _cinnamon_reload, _install_shortcuts, reconcile_cinnamon_shortcuts, reconcile_gnome_shortcuts  # noqa: E402
+from voxfox_ui.shortcuts import cinnamon_reload, install_desktop_shortcuts, reconcile_cinnamon_shortcuts, reconcile_gnome_shortcuts  # noqa: E402
 
 
 class VoxFoxApplication(Gtk.Application):
@@ -54,6 +54,7 @@ class VoxFoxApplication(Gtk.Application):
         for name, cb in (("about", self._on_about),
                          ("history", self._on_history),
                          ("library", self._on_library),
+                         ("type_speak", self._on_type_speak),
                          ("first_run", self._on_first_run),
                          ("preferences", self._on_preferences),
                          ("quit",  self._on_quit)):
@@ -143,7 +144,7 @@ class VoxFoxApplication(Gtk.Application):
             changed = False
             if reconcile_cinnamon_shortcuts(state):
                 changed = True
-                _cinnamon_reload()
+                cinnamon_reload()
             if reconcile_gnome_shortcuts(state):
                 changed = True
             if changed:
@@ -177,7 +178,7 @@ class VoxFoxApplication(Gtk.Application):
 
             def _do_warmup():
                 try:
-                    vf._piper_server.synth(
+                    vf.piper_server.synth(
                         " ", model, length_scale, 0.1)
                     log.debug("Piper server warmed up")
                 except Exception as e:
@@ -203,6 +204,10 @@ class VoxFoxApplication(Gtk.Application):
             return
         self.hist_win = HistoryWindow(self.win)
         self.hist_win.present()
+
+    def _on_type_speak(self, *_a):
+        if self.win:
+            self.win.do_type_speak()
 
     def _on_library(self, *_a):
         if not self.win:
@@ -235,6 +240,7 @@ class VoxFoxApplication(Gtk.Application):
             ("voxfox --ocr-select",     _("Read a screen region (OCR)")),
             ("voxfox --read-page",      _("Read web page (experimental)")),
             ("voxfox --live-toggle",    _("Toggle live transcription")),
+            ("voxfox --type-speak",     _("Type and speak")),
         ]
         shortcuts = [
             ("Super+Z", _("Read selected text")),
@@ -301,6 +307,8 @@ def _build_arg_parser():
                    help="Translate the selection into the UI language and read it")
     g.add_argument("--read-page",     dest="read_page",     action="store_true",
                    help="Read the focused browser page aloud (experimental)")
+    g.add_argument("--type-speak",    dest="type_speak",    action="store_true",
+                   help="Open the Type and speak window")
     g.add_argument("--ocr",           dest="ocr",           metavar="FILE")
     g.add_argument("--status",        dest="status",        action="store_true")
     g.add_argument("--quit",          dest="quit",          action="store_true")
@@ -312,7 +320,15 @@ def _build_arg_parser():
     return p
 
 
-_X_ERROR_HANDLER_REF = None
+class _XErrorHandler:
+    """Keeps the installed X error handler alive: ctypes must not let it be
+    garbage-collected while libX11 still calls it."""
+
+    def __init__(self):
+        self.ref = None
+
+
+_x_error_handler = _XErrorHandler()
 
 
 def _install_x_error_handler():
@@ -321,7 +337,6 @@ def _install_x_error_handler():
     being queried) takes the whole app down. We install a handler that swallows
     such transient errors instead. Installed in do_startup, after GDK has opened
     its display, so this overrides GDK's default (last XSetErrorHandler wins)."""
-    global _X_ERROR_HANDLER_REF
     try:
         import ctypes
         x11 = ctypes.CDLL("libX11.so.6")
@@ -330,8 +345,8 @@ def _install_x_error_handler():
         def _handler(_display, _event):
             return 0  # ignore; do not abort the process
 
-        _X_ERROR_HANDLER_REF = proto(_handler)  # keep a ref so it is not GC'd
-        x11.XSetErrorHandler(_X_ERROR_HANDLER_REF)
+        _x_error_handler.ref = proto(_handler)  # keep a ref so it is not GC'd
+        x11.XSetErrorHandler(_x_error_handler.ref)
         log.debug("Installed non-fatal X error handler")
     except Exception as e:
         log.debug(f"could not install X error handler: {e}")
@@ -414,12 +429,12 @@ def main():
     # Manual (re)install of the desktop keyboard shortcuts.
     if args.install_shortcuts:
         st = vf.load_state()
-        ok = _install_shortcuts(st)
+        ok = install_desktop_shortcuts(st)
         if ok:
             st["shortcuts_installed"] = True
         vf.save_state(st)
         if ok:
-            _cinnamon_reload()
+            cinnamon_reload()
         print("Shortcuts installed." if ok
               else "Could not install shortcuts on this desktop "
                    "(no supported method found).")
@@ -430,12 +445,12 @@ def main():
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
             args.ocr_select_translate,
             args.read_page, args.live_toggle, args.translate,
-            args.ocr, args.status,
+            args.type_speak, args.ocr, args.status,
             args.quit]):
         vf.run_cli(args)
         return 0
 
-    if not vf._ensure_runtime_dir():
+    if not vf.ensure_runtime_dir():
         print(f"VoxFox could not safely use its runtime directory "
               f"({vf.RUNTIME_DIR}). See the log for details -- this is not "
               f"the \"already running\" case.")

@@ -103,7 +103,7 @@ def _find_active_document():
     falls back to any frame with STATE_ACTIVE. Returns the accessible with
     ROLE_DOCUMENT_WEB, or None."""
     import pyatspi
-    from .a11y import get_active_pid
+    from .pointer import get_active_pid
 
     active_pid = get_active_pid()
     desktop = pyatspi.Registry.getDesktop(0)
@@ -609,7 +609,7 @@ def _hard_slice(s, limit):
     return out
 
 
-def _split_paragraph_chunks(text, limit):
+def split_paragraph_chunks(text, limit):
     chunks, cur = [], ""
     for para in text.split("\n"):
         candidate = (cur + "\n" + para) if cur else para
@@ -695,7 +695,7 @@ def ollama_refine(text, mode="filter", url=DEFAULT_OLLAMA_URL,
                 url, model, _SUMMARY_PROMPT.format(payload=payload),
                 api_key=api_key)
         # filter mode: chunk-wise, so long pages fit the context window
-        chunks = _split_paragraph_chunks(text, _CHUNK_CHARS)
+        chunks = split_paragraph_chunks(text, _CHUNK_CHARS)
         out = []
         for i, chunk in enumerate(chunks, 1):
             if progress:

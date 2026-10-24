@@ -33,6 +33,15 @@ cp "$SRC/nl.voxfox.install-ollama.policy" "$INST/usr/share/polkit-1/actions/"
 chmod 644 "$INST/usr/share/polkit-1/actions/nl.voxfox.install-ollama.policy"
 cp "$SRC/voxfox_core/"*.py     "$INST/usr/lib/voxfox/voxfox_core/"
 cp "$SRC/voxfox_ui/"*.py       "$INST/usr/lib/voxfox/voxfox_ui/"
+# Sub-packages (voxfox_ui/preferences/, ...): every folder with an __init__.py.
+for pkg in voxfox_core voxfox_ui; do
+    for d in "$SRC/$pkg"/*/; do
+        [ -f "$d/__init__.py" ] || continue
+        sub="$INST/usr/lib/voxfox/$pkg/$(basename "$d")"
+        mkdir -p "$sub"
+        cp "$d"*.py "$sub/"
+    done
+done
 cp "$LOCALES/"*.json           "$INST/usr/share/voxfox/locales/"
 
 # Bundled community pronunciation dictionaries (optional).
@@ -125,7 +134,7 @@ Maintainer: Daniël Vos
 Depends: python3 (>= 3.9),
  python3-gi,
  python3-pip,
- gir1.2-gtk-4.0,
+ gir1.2-gtk-4.0 (>= 4.10),
  gir1.2-glib-2.0,
  at-spi2-core,
  xdotool,

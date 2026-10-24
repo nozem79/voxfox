@@ -74,8 +74,8 @@ def available():
 def lang_code(piper_lang_name):
     """The ISO 639-1 code for a slot's language name ("Dutch" -> "nl"),
     or "" if unknown. Same table the dictation side uses."""
-    from .stt import _WHISPER_LANG_MAP
-    return _WHISPER_LANG_MAP.get(piper_lang_name or "", "") or ""
+    from .stt import WHISPER_LANG_MAP
+    return WHISPER_LANG_MAP.get(piper_lang_name or "", "") or ""
 
 
 def rate_for_speed(speed):
@@ -544,7 +544,7 @@ def slot_voice_label(slot_config):
     cfg = slot_config or {}
     if slot_uses_speechd(cfg):
         return cfg.get("sd_voice") or cfg.get("sd_module") or "speech-dispatcher"
-    from .tts import voice_display_parts   # here: tts imports this module
+    from .voices import voice_display_parts
     return voice_display_parts(cfg.get("voice", ""))[0]
 
 

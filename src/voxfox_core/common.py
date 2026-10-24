@@ -53,7 +53,7 @@ CACHE_DIR  = os.path.join(XDG_CACHE_HOME, "voxfox")
 # ~/.piper/locales (migrated on first run). Read-only defaults ship in
 # /usr/share/voxfox/locales and are used as a fallback by the GUI.
 # Optional per-language overrides of the blanket 1.0 speed / 0.0 pitch
-# used when a language is freshly assigned (see state._fresh_state()).
+# used when a language is freshly assigned (see state.fresh_state()).
 # Sparse on purpose: most languages simply aren't listed here, meaning
 # "use the blanket default" -- this only exists for voices that read
 # noticeably better at a different rate/pitch than Piper's own default.
@@ -64,19 +64,31 @@ DEFAULT_PITCH_FOR_LANG = {
     "Dutch": -2.0,
 }
 
+# The per-user translation folder (the default). Where translations are
+# actually read from is locales_dir(): the front-end may point it at the
+# system folder instead.
 LOCALES_DIR = os.path.join(DATA_DIR, "locales")
 LEGACY_LOCALES_DIR = os.path.expanduser("~/.piper/locales")
+
+
+class _Locales:
+    """Where translation files are read from. One instance, `_locales`."""
+
+    def __init__(self, path):
+        self.dir = path
+
+
+_locales = _Locales(LOCALES_DIR)
 
 
 def set_locales_dir(path):
     """Override where translation files are read from (the GTK front-end points
     this at the system locale dir when no per-user set exists)."""
-    global LOCALES_DIR
-    LOCALES_DIR = path
+    _locales.dir = path
 
 
 def locales_dir():
-    return LOCALES_DIR
+    return _locales.dir
 
 RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/voxfox-{os.getuid()}"
 SOCKET_PATH = os.path.join(RUNTIME_DIR, "voxfox.sock")
@@ -170,17 +182,17 @@ class AppState:
 
     # ── i18n ──────────────────────────────────────────────────────────────
     def load_translations(self):
-        """Scan LOCALES_DIR for *.json files and (re)build the translation
+        """Scan locales_dir() for *.json files and (re)build the translation
         tables. A malformed locale is logged and skipped — one broken file must
         never stop VoxFox from starting."""
         self.translations = {}
         self.ui_lang_names = {"en": "English"}
-        if not os.path.isdir(LOCALES_DIR):
+        if not os.path.isdir(_locales.dir):
             return
-        for fname in sorted(os.listdir(LOCALES_DIR)):
+        for fname in sorted(os.listdir(_locales.dir)):
             if not fname.endswith(".json"):
                 continue
-            path = os.path.join(LOCALES_DIR, fname)
+            path = os.path.join(_locales.dir, fname)
             try:
                 with open(path, encoding="utf-8") as f:
                     data = json.load(f)
@@ -603,7 +615,7 @@ def gui_child_env():
 
 
 @functools.lru_cache(maxsize=None)
-def _have(cmd):
+def have_command(cmd):
     """Return True if `cmd` is on PATH.
 
     Cached: this is checked from several hot paths (get_selection() alone
@@ -676,5 +688,5 @@ __all__ = [
     "is_x11_client",
     "confirm_typing_forced",
     "gui_child_env",
-    "_have",
+    "have_command",
 ]

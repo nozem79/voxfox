@@ -34,6 +34,16 @@ DEFAULT_STATE = {
     "ui_orientation": "horizontal",  # toolbar layout: horizontal / vertical
     "live_font_px": 22,        # live transcription text size
     "live_sensitivity": "high",  # live transcription speech detection
+    # "Type and speak" window (6.1): text size, options, recent sentences.
+    "type_font_px": 26,
+    "type_clear_after": False,   # empty the box after speaking
+    "type_echo_words": False,    # say each word as it is typed
+    "type_recent": [],           # last sentences spoken there, newest first
+    "type_tiles_on": False,      # show the tile board
+    "type_tile_say": True,       # say a tile when it is pressed
+    "type_tiles": {},            # own boards per language code; absent = ready-made
+    "type_image_dir": None,      # folder with tile pictures; None = not chosen yet
+    "type_last_picture_dir": None,  # where the last tile picture was chosen from
     "whisper": {
         "model": "small",          # tiny / base / small / medium / large-v3
         "mic_id": "",              # PulseAudio source name; "" = system default
@@ -94,7 +104,7 @@ DEFAULT_STATE = {
     "ui_layout": {"version": 1, "scale": 100, "buttons": []},
     # 3.3 custom shortcuts: the user's chosen key binding per VoxFox action,
     # as accelerator strings ("<Super>z"). Empty/missing means "use the built-in
-    # default" (see _SHORTCUT_ACTIONS in the GTK layer). Shortcuts are no longer
+    # default" (see SHORTCUT_ACTIONS in the GTK layer). Shortcuts are no longer
     # auto-installed; the user picks keys and installs them from the settings.
     "shortcut_bindings": {},
     # Experimental "read web page" (webread.py): stage 2 (Ollama) is off by
@@ -117,7 +127,7 @@ DEFAULT_STATE = {
 }
 
 
-def _fresh_state():
+def fresh_state():
     """A brand-new state for a first install, with Slot 1 seeded from the
     system language when we recognise it. A Dutch system therefore starts in
     Dutch (UI + first voice) instead of always defaulting to English; Slot 2
@@ -157,7 +167,7 @@ def load_state():
     # True fresh install: no state file anywhere. Seed from the system language
     # so a Dutch desktop starts in Dutch instead of defaulting to English.
     if not os.path.isfile(path):
-        s = _fresh_state()
+        s = fresh_state()
         set_language(ui_code_for_piper_lang(s["slot1"].get("lang", "")))
         return s
     try:
@@ -234,13 +244,13 @@ def load_state():
         except OSError as rename_err:
             log.warning(f"Could not preserve the broken settings file: "
                        f"{rename_err}")
-        s = _fresh_state()
+        s = fresh_state()
         ui_code = ui_code_for_piper_lang(s["slot1"].get("lang", ""))
         set_language(ui_code)
         return s
 
 
-def _atomic_write_json(path, obj, mode=0o600):
+def atomic_write_json(path, obj, mode=0o600):
     """Write JSON to `path` atomically and with restricted permissions.
 
     Writes to a uniquely-named temp file in the same directory, fsyncs it,
@@ -279,7 +289,7 @@ def _atomic_write_json(path, obj, mode=0o600):
 
 
 def save_state(state):
-    _atomic_write_json(STATE_FILE, state, mode=0o600)
+    atomic_write_json(STATE_FILE, state, mode=0o600)
 
 
 def load_history():
@@ -294,7 +304,7 @@ def load_history():
 
 def save_history(items):
     try:
-        _atomic_write_json(HISTORY_FILE, items, mode=0o600)
+        atomic_write_json(HISTORY_FILE, items, mode=0o600)
     except Exception as e:
         log.warning(f"Could not save history: {e}")
 
@@ -446,13 +456,13 @@ def save_dict_file(path, language, rules):
                   "generator": "VoxFox"},
         "rules": dict(sorted(rules.items(), key=lambda kv: kv[0].lower())),
     }
-    _atomic_write_json(path, data)
+    atomic_write_json(path, data)
 
 
 __all__ = [
     "DEFAULT_STATE",
     "load_state",
-    "_atomic_write_json",
+    "atomic_write_json",
     "save_state",
     "load_history",
     "save_history",

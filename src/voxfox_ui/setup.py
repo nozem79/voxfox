@@ -39,8 +39,8 @@ from voxfox_core import _  # translation helper  # noqa: E402
 
 log = vf.log
 from voxfox_ui.common import DEFAULT_VOICES, PIPER_RELEASE, PIPER_SHA256  # noqa: E402
-from voxfox_ui.shortcuts import _cinnamon_reload, _install_shortcuts  # noqa: E402
-from voxfox_ui.widgets import _hide_progress_bar, _set_progress_bar  # noqa: E402
+from voxfox_ui.shortcuts import cinnamon_reload, install_desktop_shortcuts  # noqa: E402
+from voxfox_ui.widgets import hide_progress_bar, set_progress_bar  # noqa: E402
 
 
 def _piper_asset():
@@ -185,7 +185,7 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
     return True, "ok"
 
 
-def _pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
+def pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
     progress(f"{_('Installing')}: {', '.join(pkgs)}...")
     base = [sys.executable, "-m", "pip", "install", "--user"]
     for cmd in (base + ["--break-system-packages", *pkgs], base + [*pkgs]):
@@ -202,10 +202,10 @@ def _pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
     return False
 
 
-def _have_pip():
+def have_pip():
     """Whether `python3 -m pip` actually works. A fresh, minimal install --
     increasingly the default on newer Ubuntu/Debian -- may not have
-    python3-pip installed at all, which _pip_install() would otherwise just
+    python3-pip installed at all, which pip_install() would otherwise just
     fail at silently, leaving dictation/OCR quietly broken with no clue why.
     """
     try:
@@ -234,7 +234,7 @@ def install_python_extras(progress=lambda m: None, pulse=lambda: None):
     if not have("PIL"):
         ocr_pkgs.append("pillow")
 
-    if (need_whisper or ocr_pkgs) and not _have_pip():
+    if (need_whisper or ocr_pkgs) and not have_pip():
         progress(_("Python's own package installer (pip) isn't installed "
                   "on this system; install it with: sudo apt install "
                   "python3-pip, then run Set up VoxFox again."))
@@ -248,12 +248,12 @@ def install_python_extras(progress=lambda m: None, pulse=lambda: None):
     problems = []
     if need_whisper:
         # "av<19": faster-whisper only asks for av>=11, and PyAV 19 removed an
-        # argument it still passes (see stt._wav_as_float32).
-        if not _pip_install(["faster-whisper", "av<19"], progress, pulse):
+        # argument it still passes (see stt.wav_as_float32).
+        if not pip_install(["faster-whisper", "av<19"], progress, pulse):
             progress(_("faster-whisper install failed (dictation disabled)"))
             problems.append("faster-whisper")
     # Pillow usually comes from apt (python3-pil); pip-install only if missing.
-    if ocr_pkgs and not _pip_install(ocr_pkgs, progress, pulse):
+    if ocr_pkgs and not pip_install(ocr_pkgs, progress, pulse):
         progress(_("OCR Python packages failed to install"))
         problems.append("OCR (" + ", ".join(ocr_pkgs) + ")")
     if problems:
@@ -303,7 +303,7 @@ def enable_accessibility():
     user, so hover mode can read text from any AT-SPI-aware app (GTK, Qt,
     Firefox, LibreOffice...). This is the canonical 'accessibility everywhere'
     switch. Returns (ok, message)."""
-    if not vf._have("gsettings"):
+    if not vf.have_command("gsettings"):
         return False, _("gsettings not found (not a GNOME session?)")
     try:
         subprocess.run(
@@ -340,7 +340,7 @@ def accessibility_enabled():
     _enable_accessibility() writes (GNOME, Cinnamon, MATE), so the status is
     accurate on each of them. Best-effort: returns False if gsettings isn't
     available."""
-    if not vf._have("gsettings"):
+    if not vf.have_command("gsettings"):
         return False
     for schema in ("org.gnome.desktop.interface",
                    "org.cinnamon.desktop.interface",
@@ -503,10 +503,10 @@ class SetupDialog(Gtk.Window):
             self._result.set_text(msg)
 
         def on_frac(fr, label=None):
-            _set_progress_bar(self._progress, fr, label)
+            set_progress_bar(self._progress, fr, label)
 
         def on_done(ok, msg):
-            _hide_progress_bar(self._progress)
+            hide_progress_bar(self._progress)
             self._comp_btn.set_sensitive(True)
             self._result.set_text(
                 _("Setup complete") if ok
@@ -535,14 +535,14 @@ class SetupDialog(Gtk.Window):
 
     def _on_install_shortcuts(self, _btn):
         try:
-            ok = _install_shortcuts(self.parent.state)
+            ok = install_desktop_shortcuts(self.parent.state)
         except Exception as e:
             log.debug(f"setup-dialog shortcut install failed: {e}")
             ok = False
         if ok:
             self.parent.state["shortcuts_installed"] = True
         vf.save_state(self.parent.state)
-        if ok and _cinnamon_reload():
+        if ok and cinnamon_reload():
             self._result.set_text(
                 _("Shortcuts installed. The desktop was reloaded to "
                   "activate them."))

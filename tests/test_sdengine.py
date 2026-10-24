@@ -15,6 +15,7 @@ import pytest
 
 import voxfox_core.sdengine as sd
 import voxfox_core.tts as tts
+import voxfox_core.textprep as textprep
 
 
 # ── a fake python3-speechd ────────────────────────────────────────────────
@@ -228,7 +229,7 @@ def test_without_the_bindings_nothing_is_offered(monkeypatch):
 
 def test_a_document_is_read_to_the_end_with_the_slots_settings(server):
     _run(TEXT, _cfg(speed=2.0, pitch=-6))
-    assert len(server.said) == len(tts.chunk_text(TEXT)) > 1
+    assert len(server.said) == len(textprep.chunk_text(TEXT)) > 1
     spoken = " ".join(t for t, _s in server.said)
     assert spoken.split() == TEXT.split()
     settings = server.said[0][1]
@@ -291,7 +292,7 @@ def test_pause_cuts_off_the_chunk_and_resume_says_it_again(server):
     assert _wait_until(lambda: not tts.is_speaking(), 30)
     texts = [t for t, _s in server.said]
     assert texts[0] == texts[1]             # the paused chunk, from its start
-    assert len(texts) == len(tts.chunk_text(TEXT)) + 1
+    assert len(texts) == len(textprep.chunk_text(TEXT)) + 1
 
 
 def test_a_chunk_cut_off_by_another_program_is_said_again(server, monkeypatch):

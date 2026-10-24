@@ -57,13 +57,13 @@ def test_cached_hub_for_finds_a_preinstalled_model(tmp_path, monkeypatch):
     snap.mkdir(parents=True)
     (snap / "model.bin").write_text("x")
 
-    assert stt._whisper_model_is_cached("tiny") is True
+    assert stt.whisper_model_is_cached("tiny") is True
     assert stt._cached_hub_for("tiny") == str(system_dir / "hub")
 
 
 def test_whisper_model_not_cached_when_absent(tmp_path, monkeypatch):
     monkeypatch.setenv("HF_HOME", str(tmp_path))
-    assert stt._whisper_model_is_cached("does-not-exist") is False
+    assert stt.whisper_model_is_cached("does-not-exist") is False
 
 
 # ── audio handed to Whisper as an array, not a path ───────────────────────
@@ -91,7 +91,7 @@ def test_wav_as_float32_reads_a_16k_mono_wav(tmp_path):
     np = pytest.importorskip("numpy")
     # silence, +half scale, -full scale, +almost full scale
     frames = np.array([0, 16384, -32768, 32767], dtype="<i2").tobytes()
-    arr = stt._wav_as_float32(_write_wav(tmp_path / "a.wav", frames))
+    arr = stt.wav_as_float32(_write_wav(tmp_path / "a.wav", frames))
     assert arr.dtype == np.float32
     assert arr.tolist() == pytest.approx([0.0, 0.5, -1.0, 32767 / 32768])
 
@@ -105,21 +105,21 @@ def test_wav_as_float32_declines_other_formats(tmp_path, channels, width, rate):
     pytest.importorskip("numpy")
     frames = b"\x00" * (channels * width * 4)
     path = _write_wav(tmp_path / "b.wav", frames, channels, width, rate)
-    assert stt._wav_as_float32(path) is None
+    assert stt.wav_as_float32(path) is None
 
 
 def test_wav_as_float32_declines_a_file_that_is_not_a_wav(tmp_path):
     pytest.importorskip("numpy")
     junk = tmp_path / "c.wav"
     junk.write_bytes(b"this is not a wav file")
-    assert stt._wav_as_float32(str(junk)) is None
-    assert stt._wav_as_float32(str(tmp_path / "missing.wav")) is None
+    assert stt.wav_as_float32(str(junk)) is None
+    assert stt.wav_as_float32(str(tmp_path / "missing.wav")) is None
 
 
 def test_wav_as_float32_without_numpy_falls_back(tmp_path, monkeypatch):
     path = _write_wav(tmp_path / "d.wav")
     monkeypatch.setitem(sys.modules, "numpy", None)   # `import numpy` now fails
-    assert stt._wav_as_float32(path) is None
+    assert stt.wav_as_float32(path) is None
 
 
 class _FakeModel:

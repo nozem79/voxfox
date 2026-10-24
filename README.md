@@ -518,7 +518,7 @@ character). Hover-to-read and switching on the accessibility bus (via the
 
 Installed by the package:
 
-- `python3-gi`, `gir1.2-gtk-4.0` — the GTK4 interface
+- `python3-gi`, `gir1.2-gtk-4.0` (4.10 or newer) — the GTK4 interface
 - `python3-pyatspi`, `at-spi2-core` — hover-to-read
 
 Recommended (enable specific features): `tesseract-ocr` + language packs and
@@ -555,6 +555,10 @@ start VoxFox after upgrading from an older version.
 
 ## Supported systems
 
+VoxFox needs GTK 4.10 or newer (since 6.1): Ubuntu 24.04, Linux Mint 22,
+Debian 13, Fedora 38 or newer. Older releases (Ubuntu 22.04, Mint 21,
+Debian 12) have an older GTK; VoxFox then says so and does not start.
+
 Debian, Ubuntu, Linux Mint and derivatives with GTK4 (via the `.deb`), and
 Fedora (via the `.rpm`, tested on Fedora Workstation; other RPM-based
 distributions such as openSUSE may need different dependency names and are
@@ -565,13 +569,11 @@ parts of hover depend on the compositor and may be limited.
 
 ## For developers
 
-The code is split into a UI-agnostic backend (the `voxfox_core/` package —
-`tts.py`, `stt.py`, `ocr.py`, `docreader.py`, `documents.py`, `ipc.py`,
-`state.py`, `a11y.py`, `common.py`) and
-a GTK4 front-end (the `voxfox_ui/` package — since 4.0 split into
-`common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
-`history.py`, `preferences.py`, `live.py`, `main_window.py` and `app.py`,
-with `voxfox_gtk.py` as a thin launcher). Translations are
+The code is split into a UI-agnostic backend (the `voxfox_core/` package:
+speech, dictation, OCR, settings) and a GTK4 front-end (the `voxfox_ui/`
+package, with the main window and the Settings window as sub-packages),
+with `voxfox_gtk.py` as a thin launcher. `docs/STRUCTURE.md` describes
+every module and how they fit together. Translations are
 plain JSON files under `locales/`, key-aligned across all languages. See
 `CHANGELOG.md` for the version history.
 

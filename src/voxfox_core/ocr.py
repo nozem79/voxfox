@@ -18,7 +18,7 @@
 """voxfox_core.ocr — OCR for images and PDFs, plus wrapped-line/paragraph merging."""
 
 import os, re, subprocess, tempfile
-from .common import _, _have, app, log, ram_tmpdir
+from .common import _, have_command, app, log, ram_tmpdir
 
 
 
@@ -69,7 +69,7 @@ _TESS_LANG_MAP = {
 }
 
 
-def _tess_lang(piper_lang_name):
+def tesseract_lang_code(piper_lang_name):
     """Geeft de Tesseract-taalcode voor een Piper-taalnaam.
     Valt terug op 'eng' als de taal niet in de tabel staat.
     Voegt altijd 'eng' als tweede code toe zodat Engelse termen
@@ -83,17 +83,17 @@ def _tess_lang(piper_lang_name):
 
 def _have_tesseract():
     """True als tesseract op het systeem staat."""
-    return _have("tesseract")
+    return have_command("tesseract")
 
 
 def _have_pdftotext():
     """True als pdftotext (poppler-utils) beschikbaar is."""
-    return _have("pdftotext")
+    return have_command("pdftotext")
 
 
 def _have_pdftoppm():
     """True als pdftoppm (poppler-utils) beschikbaar is."""
-    return _have("pdftoppm")
+    return have_command("pdftoppm")
 
 
 def _tesseract_cli(image_path, tess_lang="eng"):
@@ -119,7 +119,7 @@ def _pdf_has_text_layer(pdf_path):
     Gebruik pdffonts (poppler-utils): een lege fonttabel betekent scan/raster.
     Als pdffonts niet aanwezig is, probeer pdftotext en kijk of er output is.
     """
-    if _have("pdffonts"):
+    if have_command("pdffonts"):
         try:
             r = subprocess.run(["pdffonts", pdf_path],
                                capture_output=True, text=True, timeout=10)
@@ -485,7 +485,7 @@ __all__ = [
     "OCR_SUPPORTED_IMAGES",
     "OCR_SUPPORTED_EXTS",
     "_TESS_LANG_MAP",
-    "_tess_lang",
+    "tesseract_lang_code",
     "_have_tesseract",
     "_have_pdftotext",
     "_have_pdftoppm",

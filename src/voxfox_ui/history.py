@@ -29,7 +29,7 @@ import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
 
 log = vf.log
-from voxfox_ui.widgets import _a11y  # noqa: E402
+from voxfox_ui.widgets import set_accessible_label  # noqa: E402
 
 
 class HistoryWindow(Gtk.Window):
@@ -114,13 +114,13 @@ class HistoryWindow(Gtk.Window):
 
         read_btn = Gtk.Button(icon_name="media-playback-start-symbolic")
         read_btn.set_tooltip_text(_("Read"))
-        _a11y(read_btn, _("Read"))
+        set_accessible_label(read_btn, _("Read"))
         read_btn.connect("clicked", lambda *_a, t=text: self._read(t))
         box.append(read_btn)
 
         copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
         copy_btn.set_tooltip_text(_("Copy"))
-        _a11y(copy_btn, _("Copy"))
+        set_accessible_label(copy_btn, _("Copy"))
         copy_btn.connect("clicked", lambda *_a, t=text: self._copy(t))
         box.append(copy_btn)
 
@@ -133,7 +133,7 @@ class HistoryWindow(Gtk.Window):
         self.win.set_status(_("Re-reading from history"))
 
     def _copy(self, text):
-        ok = vf._clipboard_set(text)
+        ok = vf.clipboard_set(text)
         self.win.set_status(_("Copied to clipboard") if ok else _("Copy failed"))
 
     def _on_clear(self, _btn):

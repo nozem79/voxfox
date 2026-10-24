@@ -71,7 +71,7 @@ def _grab_via_xdg_portal(dest_png):
             # without "target", the portal defaults to "Full screen" mode
             # on KDE. Neither controls step count -- some
             # xdg-desktop-portal-kde versions have no live drag-select
-            # mode regardless (see _grab_region_to_file's docstring for
+            # mode regardless (see grab_region_to_file's docstring for
             # why spectacle is tried directly instead). Both have been
             # tried removed; each made things worse -- don't retry
             # without new evidence.
@@ -153,7 +153,7 @@ def _grab_via_xdg_portal(dest_png):
         return False, str(e)
 
 
-def _grab_region_to_file(dest_png):
+def grab_region_to_file(dest_png):
     """Capture a user-drawn rectangle into dest_png using the desktop's
     native region-screenshot mechanism -- works on X11 and Wayland. Every
     tool is launched with gui_child_env(), so a VoxFox running through
@@ -189,7 +189,7 @@ def _grab_region_to_file(dest_png):
     the WM's own pointer grab on the hotkey; retried briefly, and
     distinguished from a genuine user cancel (Escape) via "grab" in
     stderr."""
-    if vf.IS_WAYLAND and vf._have("voxfox-quickshot"):
+    if vf.IS_WAYLAND and vf.have_command("voxfox-quickshot"):
         log.debug("OCR-select: trying quickshot")
         try:
             r = subprocess.run(["voxfox-quickshot", dest_png], timeout=120,
@@ -215,10 +215,10 @@ def _grab_region_to_file(dest_png):
     if vf.IS_WAYLAND:
         considered = ["spectacle", "xdg-portal"] + [b for b, _a in fallbacks] + ["grim", "slurp"]
         log.debug(f"OCR-select: Wayland, tools present: "
-                 f"{[b for b in considered if b == 'xdg-portal' or vf._have(b)]} "
+                 f"{[b for b in considered if b == 'xdg-portal' or vf.have_command(b)]} "
                  f"(of {considered} considered)")
 
-        if vf._have("spectacle"):
+        if vf.have_command("spectacle"):
             log.debug("OCR-select: trying spectacle directly (bypassing the portal)")
             try:
                 if os.path.exists(dest_png):
@@ -257,7 +257,7 @@ def _grab_region_to_file(dest_png):
         fallbacks = fallbacks + [("voxfox-quickshot", [dest_png])]
         considered = [b for b, _a in grabbers + fallbacks]
         log.debug(f"OCR-select: X11, tools present: "
-                 f"{[b for b in considered if vf._have(b)]} (of {considered} "
+                 f"{[b for b in considered if vf.have_command(b)]} (of {considered} "
                  f"considered)")
 
     def _run_grabber(binary, args, attempts=10, delay=0.12):
@@ -292,7 +292,7 @@ def _grab_region_to_file(dest_png):
         return False, last_err or _("Could not grab the screen for selection")
 
     for binary, args in grabbers:
-        if not vf._have(binary):
+        if not vf.have_command(binary):
             continue
         log.debug(f"OCR-select: trying grabber {binary}")
         ok, err = _run_grabber(binary, args)
@@ -305,7 +305,7 @@ def _grab_region_to_file(dest_png):
         return False, err
 
     for binary, args in fallbacks:
-        if not vf._have(binary):
+        if not vf.have_command(binary):
             log.debug(f"OCR-select: {binary} not found, skipping")
             continue
         log.debug(f"OCR-select: trying fallback {binary}")
@@ -332,7 +332,7 @@ def _grab_region_to_file(dest_png):
             log.debug(f"OCR-select: {binary} raised: {e}")
             return False, str(e)
 
-    if vf.IS_WAYLAND and vf._have("grim") and vf._have("slurp"):
+    if vf.IS_WAYLAND and vf.have_command("grim") and vf.have_command("slurp"):
         log.debug("OCR-select: trying grim+slurp")
         try:
             geom = subprocess.run(["slurp"], capture_output=True, text=True,

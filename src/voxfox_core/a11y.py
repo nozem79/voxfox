@@ -15,13 +15,18 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 
-"""voxfox_core.a11y — Desktop integration: AT-SPI hover-to-read, selection, typing/paste."""
+"""voxfox_core.a11y — Hover reading through AT-SPI: what is under the
+mouse, focus, selection and caret events, and the hover loop.
+
+Reading the selection and typing text live in textio.py; the mouse
+position and the window under it in pointer.py.
+"""
 
 import subprocess, threading, time, os, socket
-from .common import HOVER_DELAY, HOVER_POLL, IS_WAYLAND, MIN_MOVE_PX, _have, log
+from .common import HOVER_DELAY, HOVER_POLL, MIN_MOVE_PX, have_command, log
 from .common import _ as tr
-from .stt import WHISPER_TYPE_LIMIT
 from .tts import speak, stop_speaking
+from .pointer import get_active_pid, get_mouse_pos, get_pid_for_window, get_window_at
 
 
 # Background daemons — skip entirely in AT-SPI traversal
@@ -40,11 +45,22 @@ _DAEMON_NAMES = {
     "kwin_x11", "kwin_wayland",
 }
 
-# Populated once after first successful pyatspi import
-_CONTAINER_ROLES = None
-# Interactive roles -> English control word (run through tr()). Used as a
-# last-resort label for nameless icon-only controls so hover never goes silent.
-_INTERACTIVE_ROLES = None
+class _RoleSets:
+    """AT-SPI role sets, filled once after the first successful pyatspi
+    import (see _init_roles).
+
+    container    roles that only hold other things (windows, panels)
+    interactive  role -> English control word (run through tr()), the
+                 last-resort label for nameless icon-only controls so
+                 hover never goes silent
+    """
+
+    def __init__(self):
+        self.container = None
+        self.interactive = None
+
+
+_roles = _RoleSets()
 
 
 def _a11y_bus_address():
@@ -55,7 +71,7 @@ def _a11y_bus_address():
     addr = os.environ.get("AT_SPI_BUS_ADDRESS")
     if addr:
         return addr
-    if not _have("gdbus"):
+    if not have_command("gdbus"):
         return None
     try:
         r = subprocess.run(
@@ -111,12 +127,11 @@ def a11y_bus_reachable():
 
 
 def _init_roles():
-    global _CONTAINER_ROLES, _INTERACTIVE_ROLES
-    if _CONTAINER_ROLES is not None:
+    if _roles.container is not None:
         return
     try:
         import pyatspi
-        _CONTAINER_ROLES = {
+        _roles.container = {
             pyatspi.ROLE_APPLICATION,
             pyatspi.ROLE_DESKTOP_FRAME,
             pyatspi.ROLE_FRAME,
@@ -137,7 +152,7 @@ def _init_roles():
             pyatspi.ROLE_INTERNAL_FRAME,
             pyatspi.ROLE_GROUPING,
         }
-        _INTERACTIVE_ROLES = {}
+        _roles.interactive = {}
         for const, word in (
             ("ROLE_PUSH_BUTTON",     "button"),
             ("ROLE_TOGGLE_BUTTON",   "button"),
@@ -154,152 +169,11 @@ def _init_roles():
         ):
             r = getattr(pyatspi, const, None)
             if r is not None:
-                _INTERACTIVE_ROLES[r] = word
+                _roles.interactive[r] = word
     except Exception:
-        _CONTAINER_ROLES = set()
-        _INTERACTIVE_ROLES = {}
+        _roles.container = set()
+        _roles.interactive = {}
 
-
-# ── Text selection (primary clipboard on X11, regular clipboard on Wayland) ──
-def get_selection():
-    """Read the currently selected text. Tries primary first (X11 + some Wayland
-    compositors), then regular clipboard. Empty string when nothing usable."""
-    # X11 / XWayland: primary selection is set automatically when you select text.
-    if _have("xclip"):
-        try:
-            r = subprocess.run(["xclip", "-selection", "primary", "-out"],
-                               capture_output=True, text=True, timeout=1.0)
-            if r.returncode == 0 and r.stdout.strip():
-                return r.stdout.strip()
-        except Exception:
-            pass
-    # Wayland: many compositors support primary via wl-paste --primary.
-    if _have("wl-paste"):
-        for args in (["wl-paste", "--primary", "--no-newline"],
-                     ["wl-paste", "--no-newline"]):
-            try:
-                r = subprocess.run(args, capture_output=True, text=True, timeout=1.0)
-                if r.returncode == 0 and r.stdout.strip():
-                    return r.stdout.strip()
-            except Exception:
-                continue
-    return ""
-
-
-# Optional: python-xlib avoids spawning a subprocess for the pointer-position
-# query that hover mode makes every HOVER_POLL seconds -- by far the hottest
-# of the xdotool calls in this file. Recommended, not required: everything
-# here falls back to the xdotool subprocess this always used, so a system
-# without python3-xlib installed behaves exactly as before.
-try:
-    from Xlib import display as _xlib_display
-    from Xlib.error import DisplayConnectionError as _XlibDisplayError
-    _HAVE_XLIB = True
-except Exception:
-    _HAVE_XLIB = False
-
-_xlib_conn = None  # lazily connected; a plain X11 socket, reused across calls
-_xlib_unavailable = False  # set once there is definitively no X server to
-                           # try (DISPLAY unset) -- distinct from a
-                           # connection that merely broke, which is worth
-                           # retrying since the server could come back.
-
-# _xlib_conn/_xlib_unavailable are plain module globals with no lock, and a
-# python-xlib connection is not safe to share across threads. Only
-# hover_loop's single background thread calls get_mouse_pos() today; if a
-# second caller is ever added, it needs its own connection, not this one.
-
-
-def _get_xlib_display():
-    """The cached Xlib connection, (re)connecting if it isn't open yet.
-    None when python-xlib isn't installed, or there's definitively no X
-    server to reach (DISPLAY unset -- a pure Wayland session with no
-    XWayland), or the connection attempt itself failed for some other,
-    possibly transient reason. Callers fall back to xdotool in every case."""
-    global _xlib_conn
-    if not _HAVE_XLIB or _xlib_unavailable:
-        return None
-    if _xlib_conn is None:
-        try:
-            _xlib_conn = _xlib_display.Display()
-        except Exception:
-            return None
-    return _xlib_conn
-
-
-def _get_mouse_pos_xlib():
-    """Pointer position via a live Xlib connection: one small round-trip
-    over an already-open socket, versus xdotool's fork+exec+argv-parse for
-    the same QueryPointer request. Raises on any failure so the caller can
-    fall back; also drops the cached connection on a connection-level
-    error, so a later call reconnects instead of repeating a dead one --
-    unless there is clearly no X server at all to reconnect to, which is
-    remembered so we stop trying for the rest of this process."""
-    global _xlib_conn, _xlib_unavailable
-    if not os.environ.get("DISPLAY"):
-        # Xlib.display.Display() with no argument reads $DISPLAY once, at
-        # connect time; with it unset there is nothing to retry, ever, for
-        # the life of this process. This is what actually happens on a
-        # pure Wayland session with no XWayland.
-        _xlib_unavailable = True
-        raise RuntimeError("no DISPLAY set")
-    d = _get_xlib_display()
-    if d is None:
-        raise RuntimeError("no Xlib connection available")
-    try:
-        p = d.screen().root.query_pointer()
-        return p.root_x, p.root_y
-    except _XlibDisplayError:
-        _xlib_conn = None
-        raise
-    except Exception:
-        # Anything else (a stale connection after the X server restarted,
-        # for instance) -- drop it too, so the next call tries fresh.
-        _xlib_conn = None
-        raise
-
-
-def _get_mouse_pos_xdotool():
-    """The original implementation, kept as-is as the fallback path."""
-    try:
-        r = subprocess.run(["xdotool", "getmouselocation", "--shell"],
-                           capture_output=True, text=True, timeout=1.0)
-        pos = {}
-        for line in r.stdout.splitlines():
-            if "=" in line:
-                k, v = line.split("=", 1)
-                pos[k] = v.strip()
-        x, y = int(pos.get("X", 0)), int(pos.get("Y", 0))
-        if (x, y) != (0, 0):
-            return x, y
-    except Exception:
-        pass
-    # Wayland fallback: AT-SPI sometimes reports pointer position via the
-    # event controller, but there's no portable subprocess for it. Returning
-    # (0,0) means hover-mode is effectively disabled, which the GUI surfaces.
-    return (0, 0)
-
-
-# ── Mouse + window helpers ────────────────────────────────────────────────────
-def get_mouse_pos():
-    # xdotool (or, when available, the faster Xlib path below) works on X11
-    # and on XWayland; on pure Wayland it returns 0,0.
-    try:
-        return _get_mouse_pos_xlib()
-    except Exception:
-        pass
-    return _get_mouse_pos_xdotool()
-
-
-def get_active_pid():
-    try:
-        r = subprocess.run(["xdotool", "getactivewindow", "getwindowpid"],
-                           capture_output=True, text=True, timeout=1.0)
-        if r.returncode == 0:
-            return int(r.stdout.strip())
-    except Exception:
-        pass
-    return None
 
 
 # ── AT-SPI hover text ──────────────────────────────────────────────────────────
@@ -311,7 +185,7 @@ def _is_daemon(name: str) -> bool:
             or name in _DAEMON_NAMES)
 
 
-def _trim_text(t: str, max_chars=300) -> str:
+def trim_text(t: str, max_chars=300) -> str:
     """Return at most the first sentence, capped at max_chars."""
     t = t.strip()
     if len(t) <= max_chars:
@@ -334,7 +208,7 @@ def _label_for_role(node) -> str:
         role = node.getRole()
     except Exception:
         return ""
-    word = (_INTERACTIVE_ROLES or {}).get(role)
+    word = (_roles.interactive or {}).get(role)
     if not word:
         return ""
     label = tr(word)
@@ -364,7 +238,7 @@ def _node_text(node) -> str:
         # Strip object-replacement characters (inline images/links in Firefox)
         t = t.replace("\uFFFC", "").strip()
         if t and len(t) > 1:
-            return _trim_text(t)
+            return trim_text(t)
     except Exception:
         pass
 
@@ -389,7 +263,7 @@ def _node_text(node) -> str:
     try:
         desc = (node.description or "").strip()
         if desc and len(desc) > 1:
-            return _trim_text(desc)
+            return trim_text(desc)
     except Exception:
         pass
 
@@ -474,7 +348,7 @@ def _find_at_pos(node, x, y, depth=0) -> str:
     if is_zero_size and not is_zero_menu_passthrough:
         return ""
 
-    is_container = role in _CONTAINER_ROLES if role is not None else False
+    is_container = role in _roles.container if role is not None else False
 
     # Depth-first: deepest matching child wins
     for i in range(node.childCount):
@@ -496,53 +370,45 @@ def _find_at_pos(node, x, y, depth=0) -> str:
     return _node_text(node)
 
 
-def get_window_at(x, y):
-    """Return the X11 window ID at (x, y) using xdotool."""
-    try:
-        r = subprocess.run(
-            ["xdotool", "getmouselocation", "--shell"],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            text=True, timeout=1.0)
-        for line in r.stdout.splitlines():
-            if line.startswith("WINDOW="):
-                val = line.split("=", 1)[1].strip()
-                return int(val) if val and val != "0" else None
-    except Exception:
-        pass
-    return None
+class _HoverState:
+    """Everything hover reading keeps between calls. One instance, `_hover`.
+
+    own_window_reader  set by the front-end (voxfox_ui.selfread): reads
+                       VoxFox's own windows, returns None off them
+    running            hover reading is switched on
+    thread             the hover loop's thread
+    slot_config        callback returning the active slot's voice config
+    last_spoken        the last text said, so it is not repeated
+    last_spoken_lock   guards last_spoken
+    last_event_time    when an AT-SPI event last made us speak
+    event_listener     the AT-SPI event listener, while it runs
+    last_selection_ts  when a selection event was last answered
+    """
+
+    def __init__(self):
+        self.own_window_reader = None
+        self.running = False
+        self.thread = None
+        self.slot_config = None
+        self.last_spoken = None
+        self.last_spoken_lock = threading.Lock()
+        self.last_event_time = 0.0
+        self.event_listener = None
+        self.last_selection_ts = 0.0
 
 
-def get_pid_for_window(win_id):
-    """Return the PID owning a given X11 window ID."""
-    try:
-        r = subprocess.run(
-            ["xdotool", "getwindowpid", str(win_id)],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-            text=True, timeout=1.0)
-        if r.returncode == 0:
-            return int(r.stdout.strip())
-    except Exception:
-        pass
-    return None
-
-
-# VoxFox's own windows are read without AT-SPI (see voxfox_ui.selfread):
-# GTK 4 reports positions relative to its windows, so hit-testing VoxFox
-# by screen position through AT-SPI found nothing. The front-end registers
-# a reader that returns None when (x, y) is not on a VoxFox window.
-_own_window_reader = None
+_hover = _HoverState()
 
 
 def set_own_window_reader(fn):
-    global _own_window_reader
-    _own_window_reader = fn
+    _hover.own_window_reader = fn
 
 
 def get_text_at(x, y) -> str:
     """Return readable text of the UI element under (x, y) via AT-SPI."""
-    if _own_window_reader is not None:
+    if _hover.own_window_reader is not None:
         try:
-            own = _own_window_reader(x, y)
+            own = _hover.own_window_reader(x, y)
             if own is not None:
                 return own        # on a VoxFox window: never ask AT-SPI
         except Exception as e:
@@ -635,7 +501,7 @@ def _best_text(node) -> str:
     # (otherwise we'd return the window title instead of the hovered element)
     try:
         parent = node.parent
-        if parent and parent.getRole() not in _CONTAINER_ROLES:
+        if parent and parent.getRole() not in _roles.container:
             t = _node_text(parent)
             if t:
                 return t
@@ -644,201 +510,37 @@ def _best_text(node) -> str:
     return ""
 
 
-def _clipboard_get():
-    """Return current clipboard contents (best effort, empty string on failure)."""
-    if IS_WAYLAND and _have("wl-paste"):
-        try:
-            r = subprocess.run(["wl-paste", "--no-newline"],
-                               capture_output=True, text=True, timeout=1.0)
-            if r.returncode == 0:
-                return r.stdout
-        except Exception:
-            pass
-    if _have("xclip"):
-        try:
-            r = subprocess.run(["xclip", "-selection", "clipboard", "-out"],
-                               capture_output=True, text=True, timeout=1.0)
-            if r.returncode == 0:
-                return r.stdout
-        except Exception:
-            pass
-    return ""
-
-
-def _clipboard_set(text):
-    """Set clipboard. Returns True on success."""
-    data = text.encode("utf-8")
-    if IS_WAYLAND and _have("wl-copy"):
-        try:
-            p = subprocess.Popen(["wl-copy"], stdin=subprocess.PIPE)
-            p.communicate(data, timeout=3.0)
-            return p.returncode == 0
-        except Exception:
-            pass
-    if _have("xclip"):
-        try:
-            p = subprocess.Popen(["xclip", "-selection", "clipboard", "-in"],
-                                 stdin=subprocess.PIPE)
-            p.communicate(data, timeout=3.0)
-            return p.returncode == 0
-        except Exception:
-            pass
-    return False
-
-
-def _type_text(text):
-    """Type characters one by one at the keyboard focus. Returns True on success."""
-    # X11 / XWayland: xdotool works everywhere xdotool is installed.
-    if _have("xdotool"):
-        try:
-            r = subprocess.run(
-                ["xdotool", "type", "--clearmodifiers", "--delay", "1", "--", text],
-                check=False, timeout=15.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    # Pure Wayland: wtype is the native equivalent of `xdotool type`.
-    if _have("wtype"):
-        try:
-            r = subprocess.run(["wtype", "--", text], check=False, timeout=15.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    # Last resort: ydotool. Requires the ydotoold service to be running.
-    if _have("ydotool"):
-        try:
-            r = subprocess.run(["ydotool", "type", "--", text],
-                               check=False, timeout=15.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    return False
-
-
-def _send_paste_shortcut():
-    """Send Ctrl+V to the focused window. Returns True on success."""
-    if _have("xdotool"):
-        try:
-            r = subprocess.run(["xdotool", "key", "--clearmodifiers", "ctrl+v"],
-                               check=False, timeout=3.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    if _have("wtype"):
-        try:
-            r = subprocess.run(["wtype", "-M", "ctrl", "v", "-m", "ctrl"],
-                               check=False, timeout=3.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    if _have("ydotool"):
-        try:
-            # ydotool key codes: 29=Left Ctrl, 47=V. ":1" = down, ":0" = up.
-            r = subprocess.run(["ydotool", "key", "29:1", "47:1", "47:0", "29:0"],
-                               check=False, timeout=3.0)
-            if r.returncode == 0:
-                return True
-        except Exception:
-            pass
-    return False
-
-
-def type_or_paste_text(text):
-    """Type short text directly; paste longer text via clipboard for speed.
-
-    Returns (ok, message). On Wayland-without-typer setups falls back to
-    'clipboard only' so the user can paste manually.
-
-    Clipboard discipline: we only touch the clipboard when paste mode is
-    actually needed (long text, or typing failed). The previous clipboard
-    is restored 100 ms after the paste — long enough for the target app
-    to process Ctrl+V, short enough to avoid the bug where the user
-    pastes the transcription somewhere by accident a moment later.
-    """
-    if not text:
-        return False, "Empty"
-    try:
-        # Short text: prefer direct keystroke injection.
-        if len(text) <= WHISPER_TYPE_LIMIT:
-            if _type_text(text):
-                return True, "ok"
-            # Typing failed (likely pure Wayland without wtype/ydotool).
-            # Fall through to clipboard mode.
-            log.warning("type failed, falling back to clipboard")
-
-        # Long text — or short text on a system without a typer — uses
-        # the clipboard and sends Ctrl+V.
-        old = _clipboard_get()
-        if not _clipboard_set(text):
-            return False, "Could not set clipboard"
-        pasted = _send_paste_shortcut()
-
-        if pasted:
-            # Restore the previous clipboard shortly after the paste so the
-            # transcription doesn't linger and get pasted elsewhere later.
-            def _restore():
-                time.sleep(0.1)
-                try:
-                    _clipboard_set(old)
-                except Exception:
-                    pass
-            threading.Thread(target=_restore, daemon=True).start()
-            return True, "ok"
-        # Couldn't trigger the paste — leave the transcription on the
-        # clipboard so the user can paste it manually. Deliberately do NOT
-        # restore the old clipboard here; that would wipe the text the user
-        # still needs.
-        return True, "in clipboard (press Ctrl+V)"
-    except Exception as e:
-        return False, str(e)
-
-
 # ── Hover loop ─────────────────────────────────────────────────────────────────
-_hover_running    = False
 
 
 def set_hover_running(running):
     """Turn the hover-to-read loop on/off from the front-end."""
-    global _hover_running
-    _hover_running = bool(running)
+    _hover.running = bool(running)
 
 
 def hover_running():
-    return _hover_running
-_hover_thread     = None
-_get_slot_config  = None
+    return _hover.running
 
 
 def set_slot_config_provider(fn):
     """Register a callback returning the active slot's voice-config dict.
     Used by hover-to-read and slot-aware speech."""
-    global _get_slot_config
-    _get_slot_config = fn
-_last_spoken      = None
-_last_spoken_lock = threading.Lock()
-_last_event_time  = 0.0  # timestamp of last event-based speak
+    _hover.slot_config = fn
 
 # ── Event-based hover (Orca-style) ────────────────────────────────────────────
-_event_listener = None
 
 
 def _speak_if_new(text):
     """Speak text only if it differs from what we last announced, and record
     the time so the polling hover can stay quiet for a moment afterwards."""
-    global _last_spoken, _last_event_time
     if not text:
         return
-    with _last_spoken_lock:
-        if text == _last_spoken:
+    with _hover.last_spoken_lock:
+        if text == _hover.last_spoken:
             return
-        _last_spoken     = text
-        _last_event_time = time.monotonic()
-    cfg = _get_slot_config() if _get_slot_config else {}
+        _hover.last_spoken     = text
+        _hover.last_event_time = time.monotonic()
+    cfg = _hover.slot_config() if _hover.slot_config else {}
     speak(text, cfg)
 
 
@@ -864,7 +566,7 @@ def _event_from_daemon(event) -> bool:
         return False
 
 
-def _event_from_self(event) -> bool:
+def event_from_self(event) -> bool:
     """True for AT-SPI events about VoxFox's own windows.
 
     AT-SPI delivers events on VoxFox's main thread. Answering one from our
@@ -884,7 +586,7 @@ def _event_from_self(event) -> bool:
 
 def _on_focus_event(event):
     """Called by AT-SPI when an element gains focus (or its item is selected)."""
-    if not _hover_running or _event_from_self(event) or _event_from_daemon(event):
+    if not _hover.running or event_from_self(event) or _event_from_daemon(event):
         return
     try:
         node = event.source
@@ -896,7 +598,7 @@ def _on_focus_event(event):
         if not text:
             try:
                 parent = node.parent
-                if parent and parent.getRole() not in (_CONTAINER_ROLES or set()):
+                if parent and parent.getRole() not in (_roles.container or set()):
                     text = _node_text(parent)
             except Exception:
                 pass
@@ -907,7 +609,6 @@ def _on_focus_event(event):
         log.debug(f"Focus event error: {e}")
 
 
-_last_selection_ts = 0.0
 
 
 def _on_selection_event(event):
@@ -918,13 +619,12 @@ def _on_selection_event(event):
     handler is rate-limited: selection-changed can fire in rapid bursts
     (e.g. select-all), and answering every one with synchronous AT-SPI
     queries stresses the emitting app."""
-    global _last_selection_ts
-    if not _hover_running or _event_from_self(event) or _event_from_daemon(event):
+    if not _hover.running or event_from_self(event) or _event_from_daemon(event):
         return
     now = time.monotonic()
-    if now - _last_selection_ts < 0.15:
+    if now - _hover.last_selection_ts < 0.15:
         return
-    _last_selection_ts = now
+    _hover.last_selection_ts = now
     try:
         node = event.source
         if node is None:
@@ -943,7 +643,7 @@ def _on_caret_event(event):
     """The text caret moved (typing, arrow keys, clicking into text). Read the
     line at the new caret position. Deduplicated, so resting on a line is
     silent; moving to a new line reads it."""
-    if not _hover_running or _event_from_self(event):
+    if not _hover.running or event_from_self(event):
         return
     try:
         import pyatspi
@@ -958,13 +658,12 @@ def _on_caret_event(event):
         line = (seg[0] if isinstance(seg, (tuple, list)) else seg.content)
         line = line.replace("\uFFFC", "").strip()
         if line and len(line) > 1:
-            _speak_if_new(_trim_text(line))
+            _speak_if_new(trim_text(line))
     except Exception as e:
         log.debug(f"Caret event error: {e}")
 
 
-def _start_event_listener():
-    global _event_listener
+def start_event_listener():
     try:
         import pyatspi
 
@@ -983,11 +682,11 @@ def _start_event_listener():
             def onCaret(self, event):
                 _on_caret_event(event)
 
-        _event_listener = Listener()
-        pyatspi.Registry.registerEventListener(_event_listener.onFocus, "focus")
-        pyatspi.Registry.registerEventListener(_event_listener.onStateChanged,
+        _hover.event_listener = Listener()
+        pyatspi.Registry.registerEventListener(_hover.event_listener.onFocus, "focus")
+        pyatspi.Registry.registerEventListener(_hover.event_listener.onStateChanged,
                                                "object:state-changed:focused")
-        pyatspi.Registry.registerEventListener(_event_listener.onSelection,
+        pyatspi.Registry.registerEventListener(_hover.event_listener.onSelection,
                                                "object:selection-changed")
         # Caret-following (onCaret) is intentionally NOT registered by default:
         # while dictating, VoxFox types into a field and the caret moves, which
@@ -999,22 +698,21 @@ def _start_event_listener():
         log.error(f"Event listener error: {e}")
 
 
-def _stop_event_listener():
-    global _event_listener
+def stop_event_listener():
     try:
         import pyatspi
-        if _event_listener:
+        if _hover.event_listener:
             pyatspi.Registry.deregisterEventListener(
-                _event_listener.onFocus, "focus")
+                _hover.event_listener.onFocus, "focus")
             pyatspi.Registry.deregisterEventListener(
-                _event_listener.onStateChanged, "object:state-changed:focused")
+                _hover.event_listener.onStateChanged, "object:state-changed:focused")
             pyatspi.Registry.deregisterEventListener(
-                _event_listener.onSelection, "object:selection-changed")
+                _hover.event_listener.onSelection, "object:selection-changed")
         pyatspi.Registry.stop()
         log.info("AT-SPI event listener stopped")
     except Exception as e:
         log.debug(f"Stop event listener: {e}")
-    _event_listener = None
+    _hover.event_listener = None
 
 
 # ── Polling hover (fallback) ───────────────────────────────────────────────────
@@ -1023,13 +721,12 @@ _EVENT_SILENCE = 0.8  # seconds: suppress polling after an event-based speak
 
 
 def hover_loop():
-    global _last_spoken
     last_pos    = (-999, -999)
     hover_start = None
     spoken_text = None
     spoken_pos  = None
 
-    while _hover_running:
+    while _hover.running:
         time.sleep(HOVER_POLL)
         pos = get_mouse_pos()
         dx  = abs(pos[0] - last_pos[0])
@@ -1047,16 +744,16 @@ def hover_loop():
             if time.monotonic() - hover_start >= HOVER_DELAY:
                 if pos != spoken_pos:
                     # Skip if event listener spoke very recently
-                    if time.monotonic() - _last_event_time < _EVENT_SILENCE:
+                    if time.monotonic() - _hover.last_event_time < _EVENT_SILENCE:
                         spoken_pos = pos
                         continue
                     text = get_text_at(pos[0], pos[1])
-                    if not _hover_running:
+                    if not _hover.running:
                         return
                     if text and text != spoken_text:
-                        with _last_spoken_lock:
-                            _last_spoken = text
-                        cfg = _get_slot_config() if _get_slot_config else {}
+                        with _hover.last_spoken_lock:
+                            _hover.last_spoken = text
+                        cfg = _hover.slot_config() if _hover.slot_config else {}
                         speak(text, cfg)
                         spoken_text = text
                     spoken_pos = pos
@@ -1065,41 +762,23 @@ def hover_loop():
 __all__ = [
     "_DAEMON_PREFIXES",
     "_DAEMON_NAMES",
-    "_CONTAINER_ROLES",
     "_init_roles",
-    "get_selection",
-    "get_mouse_pos",
-    "get_active_pid",
     "_is_daemon",
-    "_trim_text",
+    "trim_text",
     "_node_text",
     "_find_at_pos",
-    "get_window_at",
-    "get_pid_for_window",
     "get_text_at",
     "set_own_window_reader",
     "_query_app",
     "_best_text",
-    "_clipboard_get",
-    "_clipboard_set",
-    "_type_text",
-    "_send_paste_shortcut",
-    "type_or_paste_text",
-    "_hover_running",
     "set_hover_running",
     "hover_running",
-    "_hover_thread",
-    "_get_slot_config",
     "set_slot_config_provider",
-    "_last_spoken",
-    "_last_spoken_lock",
-    "_last_event_time",
-    "_event_listener",
     "_on_focus_event",
-    "_event_from_self",
+    "event_from_self",
     "speak_if_new",
-    "_start_event_listener",
-    "_stop_event_listener",
+    "start_event_listener",
+    "stop_event_listener",
     "_EVENT_SILENCE",
     "hover_loop",
     "_a11y_bus_address",

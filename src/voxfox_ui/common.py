@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-"""voxfox_ui.common — Shared constants, icon path registration and the _RootShim.
+"""voxfox_ui.common — Shared constants, icon path registration and the RootShim.
 
 Split out of voxfox_gtk.py in VoxFox 4.0.
 """
@@ -51,7 +51,7 @@ PIPER_SHA256 = {
 
 
 DEFAULT_VOICES = ["en_GB-alba-medium", "nl_NL-pim-medium"]
-APP_VERSION = "6.0.1"
+APP_VERSION = "6.1.0"
 MANUAL_URL  = "https://voxfox.nl/manual"
 
 # Logo orange, used for accent buttons instead of the theme's accent colour.
@@ -109,22 +109,26 @@ TOOLBAR_BUTTONS = [
     ("ocr",     "ocr_btn",     "File",
      "Open a document, PDF or picture and have it read aloud",
      "Open a document, PDF, or image to read aloud", "do_ocr_file", None),
+    ("type",    "type_btn",    "Type",
+     "Opens a window where you type a text and VoxFox says it",
+     "Type a text and have it said aloud", "do_type_speak", None),
     ("translate", "translate_btn", "Translate",
      "Translates the selected text and reads it aloud",
      "Translate selection and read aloud", "do_translate", None),
 ]
 # Toolbar button -> keyboard shortcut action, for the tooltips.
 TOOLBAR_SHORTCUTS = {"read": "read", "stop": "stop", "dictate": "whisper",
-                     "select": "ocr", "translate": "translate", "switch": "voice"}
+                     "select": "ocr", "translate": "translate", "switch": "voice",
+                     "type": "type"}
 TOOLBAR_IDS = [b[0] for b in TOOLBAR_BUTTONS] + ["switch"]
 # Buttons that ship hidden; the user enables them under Settings -> Interface.
-TOOLBAR_DEFAULT_HIDDEN = {"translate", "pause"}
+TOOLBAR_DEFAULT_HIDDEN = {"translate", "pause", "type"}
 
 # Button view modes (Settings -> Interface -> Button display).
 UI_VIEWS = ["icons", "both", "text"]
 UI_ORIENTS = ["horizontal", "vertical"]
 
-def _register_icon_path():
+def register_icon_path():
     """Make the bundled voxfox-*-symbolic icons findable. Installed packages
     ship them under /usr/share/voxfox/icons; a git checkout has them in
     ./icons next to src/. Symbolic SVGs are recoloured by GTK to match the
@@ -147,7 +151,7 @@ def _register_icon_path():
                 log.debug(f"add_search_path {base}: {e}")
 
 
-class _RootShim:
+class RootShim:
     """IPCServer and worker threads call ``app.root.after(ms, fn)`` to bounce a
     callback onto the UI thread — the Tk idiom. We map it onto GLib's loop:
     idle_add for ms<=0, timeout_add otherwise. Each callback fires once."""

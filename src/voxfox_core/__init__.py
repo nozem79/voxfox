@@ -23,14 +23,20 @@ re-exported here so ``import voxfox_core as vf`` keeps working.
 
 from .common import *  # noqa: F401,F403
 from .state import *  # noqa: F401,F403
+from .voices import *  # noqa: F401,F403
+from .textprep import *  # noqa: F401,F403
+from .piper import *  # noqa: F401,F403
 from .tts import *  # noqa: F401,F403
 from .sdengine import *  # noqa: F401,F403
 from .stt import *  # noqa: F401,F403
 from .ocr import *  # noqa: F401,F403
+from .textio import *  # noqa: F401,F403
+from .pointer import *  # noqa: F401,F403
 from .a11y import *  # noqa: F401,F403
 from .webread import *  # noqa: F401,F403
 from .translate import *  # noqa: F401,F403
 from .ipc import *  # noqa: F401,F403
+from .typespeak import *  # noqa: F401,F403
 
 # Short, generic names (add, delete, progress), so this one is reached as
 # vf.documents.* instead of being pulled into the top-level namespace.

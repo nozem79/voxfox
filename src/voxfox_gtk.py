@@ -115,7 +115,52 @@ def _restart_on_xwayland():
         pass
 
 
+# VoxFox uses dialogs that GTK has had since 4.10 (Gtk.AlertDialog,
+# Gtk.FileDialog). Older versions (Ubuntu 22.04 / Linux Mint 21: 4.6,
+# Debian 12: 4.8) would crash the moment one of them is opened, so refuse
+# to start there with a message instead.
+MIN_GTK = (4, 10)
+
+
+def _check_gtk_version():
+    try:
+        import gi
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk, GLib
+    except (ImportError, ValueError) as e:
+        print(f"VoxFox needs GTK 4 (PyGObject): {e}", file=sys.stderr)
+        sys.exit(1)
+    have = (Gtk.get_major_version(), Gtk.get_minor_version())
+    if have >= MIN_GTK:
+        return
+    msg = (f"VoxFox needs GTK {MIN_GTK[0]}.{MIN_GTK[1]} or newer; this "
+           f"system has GTK {have[0]}.{have[1]}. Ubuntu 24.04, Linux Mint 22, "
+           f"Debian 13 and Fedora 38 or newer have it.")
+    print(msg, file=sys.stderr)
+    # Started from a menu there is no terminal: show the message too.
+    try:
+        loop = GLib.MainLoop()
+        win = Gtk.Window(title="VoxFox")
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        for m in ("top", "bottom", "start", "end"):
+            getattr(box, f"set_margin_{m}")(18)
+        label = Gtk.Label(label=msg, wrap=True, max_width_chars=50)
+        ok = Gtk.Button(label="OK")
+        ok.connect("clicked", lambda *_a: win.close())
+        box.append(label)
+        box.append(ok)
+        win.set_child(box)
+        win.connect("close-request", lambda *_a: (loop.quit(), False)[1])
+        win.present()
+        loop.run()
+    except Exception:
+        pass
+    sys.exit(1)
+
+
 _restart_on_xwayland()
+if not os.environ.get("VOXFOX_SKIP_GTK_CHECK"):
+    _check_gtk_version()
 
 from voxfox_ui.app import main  # noqa: E402
 

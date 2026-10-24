@@ -40,8 +40,15 @@ from voxfox_core import log  # noqa: E402
 from voxfox_core.colorscheme import (  # noqa: E402
     COLOR_SCHEMES as MODES, choose_theme, gtk4_theme_exists)
 
-# What the desktop gave us, captured before VoxFox changes anything.
-_original = None
+class _Desktop:
+    """What the desktop gave us, captured before VoxFox changes anything:
+    (theme name, prefer dark), or None until apply() first runs."""
+
+    def __init__(self):
+        self.original = None
+
+
+_desktop = _Desktop()
 
 
 def builtin_theme():
@@ -55,16 +62,15 @@ def builtin_theme():
 def apply(mode):
     """Switch VoxFox to `mode` ("system", "light" or "dark"). Safe to call
     repeatedly; returns the (theme, prefer_dark) that was set."""
-    global _original
     settings = Gtk.Settings.get_default()
     if settings is None:
         return None
-    if _original is None:
-        _original = (settings.props.gtk_theme_name,
+    if _desktop.original is None:
+        _desktop.original = (settings.props.gtk_theme_name,
                      bool(settings.props.gtk_application_prefer_dark_theme))
     if mode not in MODES:
         mode = "system"
-    theme, dark = choose_theme(mode, _original[0], _original[1],
+    theme, dark = choose_theme(mode, _desktop.original[0], _desktop.original[1],
                                gtk4_theme_exists, builtin_theme())
     try:
         if settings.props.gtk_theme_name != theme:

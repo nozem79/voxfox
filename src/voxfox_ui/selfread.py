@@ -120,8 +120,8 @@ def _frame_of(xid):
     manager's frame around it (or `xid` itself without a window manager).
     None when python-xlib is not available."""
     try:
-        from voxfox_core import a11y
-        disp = a11y._get_xlib_display()
+        from voxfox_core import pointer
+        disp = pointer.get_xlib_display()
         if disp is None:
             return None
         win = disp.create_resource_object("window", xid)
@@ -147,8 +147,8 @@ def _geometry(xid):
     window draws its own), which put every pointer position one row too
     high: hovering over a settings section read the one above it."""
     try:
-        from voxfox_core import a11y
-        disp = a11y._get_xlib_display()
+        from voxfox_core import pointer
+        disp = pointer.get_xlib_display()
         if disp is not None:
             win = disp.create_resource_object("window", xid)
             root = disp.screen().root
@@ -281,7 +281,7 @@ def text_at(x, y):
         gx, gy, gw, gh = geo
         if gx <= x < gx + gw and gy <= y < gy + gh:
             text = _on_main(_pick, native, x - gx, y - gy)
-            return vf._trim_text(text or "")
+            return vf.trim_text(text or "")
     return None
 
 
@@ -292,13 +292,13 @@ def _on_focus_widget(win, _pspec):
     """Keyboard focus moved inside a VoxFox window (Tab, arrow keys in a
     menu or list, or a click): say the new control while hover reading is
     on. AT-SPI focus events from our own windows are ignored on purpose
-    (see voxfox_core.a11y._event_from_self), so this takes their place."""
+    (see voxfox_core.a11y.event_from_self), so this takes their place."""
     if not vf.hover_running():
         return
     w = win.get_focus()
     if w is None:
         return
-    text = vf._trim_text(widget_text(w) or "")
+    text = vf.trim_text(widget_text(w) or "")
     if text:
         # speak() may wait for earlier speech to stop: not on this thread.
         threading.Thread(target=vf.speak_if_new, args=(text,), daemon=True).start()

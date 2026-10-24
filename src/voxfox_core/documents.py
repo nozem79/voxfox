@@ -26,7 +26,7 @@ so that moving or backing up the folder takes the reading positions along
 with the text.
 
 Positions are character offsets into the document text, produced by
-tts.chunk_offsets(). They survive re-chunking, so a future change to how
+textprep.chunk_offsets(). They survive re-chunking, so a future change to how
 text is split for speech will not send anyone back to the wrong paragraph.
 """
 
@@ -37,7 +37,7 @@ import shutil
 import time
 
 from .common import log
-from .state import _atomic_write_json
+from .state import atomic_write_json
 
 INDEX_NAME = ".voxfox-index.json"
 
@@ -110,7 +110,7 @@ def load_index(folder):
 def save_index(folder, items):
     try:
         os.makedirs(folder, exist_ok=True)
-        _atomic_write_json(_index_path(folder), items, mode=0o600)
+        atomic_write_json(_index_path(folder), items, mode=0o600)
         return True
     except OSError as e:
         log.warning(f"documents: could not write the index: {e}")

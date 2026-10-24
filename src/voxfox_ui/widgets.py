@@ -30,7 +30,7 @@ import voxfox_core as vf  # noqa: E402
 log = vf.log
 
 
-def _btn_make_content(btn, icon_id, text):
+def btn_make_content(btn, icon_id, text):
     """Give a toolbar button an icon+label child. The parts are kept on the
     button (btn._icon / btn._lbl) so the view mode can toggle visibility and
     dynamic labels can be updated without Gtk.Button.set_label (which would
@@ -56,15 +56,15 @@ def _btn_make_content(btn, icon_id, text):
     btn._icon, btn._lbl = img, lbl
 
 
-def _btn_set_text(btn, text):
-    """Update the label of a toolbar button built by _btn_make_content."""
+def btn_set_text(btn, text):
+    """Update the label of a toolbar button built by btn_make_content."""
     if getattr(btn, "_lbl", None) is not None:
         btn._lbl.set_text(text)
     else:
         btn.set_label(text)
 
 
-def _scale_css(scale):
+def scale_css(scale):
     """CSS that scales the main window. .voxfox-root sets the root font-size;
     plain inheritance alone doesn't reliably reach the header bar's built-in
     title label, since the GTK theme's own .title rule can carry an explicit
@@ -89,14 +89,14 @@ def _scale_css(scale):
 
 
 # ── GLib adapter so voxfox_core.IPCServer can schedule work on the UI thread ──
-def _dropdown(items, selected_value=None):
+def make_dropdown(items, selected_value=None):
     dd = Gtk.DropDown.new_from_strings(items or [""])
     if selected_value and selected_value in (items or []):
         dd.set_selected(items.index(selected_value))
     return dd
 
 
-def _set_dropdown_items(dd, items, selected_value=None):
+def set_dropdown_items(dd, items, selected_value=None):
     dd.set_model(Gtk.StringList.new(items or [""]))
     if selected_value and items and selected_value in items:
         dd.set_selected(items.index(selected_value))
@@ -104,12 +104,12 @@ def _set_dropdown_items(dd, items, selected_value=None):
         dd.set_selected(0)
 
 
-def _dropdown_value(dd):
+def dropdown_value(dd):
     item = dd.get_selected_item()
     return item.get_string() if item is not None else ""
 
 
-def _a11y(widget, label):
+def set_accessible_label(widget, label):
     """Give a widget an explicit accessible name for screen readers. Essential
     for icon-only / emoji buttons, whose visible glyph is not a usable label.
     An accessibility tool should itself be accessible."""
@@ -119,7 +119,7 @@ def _a11y(widget, label):
         log.debug(f"a11y label failed: {e}")
 
 
-def _set_progress_bar(bar, fraction, label=None):
+def set_progress_bar(bar, fraction, label=None):
     """Show/update a Gtk.ProgressBar (call on the GUI thread). Returns the
     clamped fraction so callers can decide whether to auto-hide."""
     try:
@@ -133,7 +133,7 @@ def _set_progress_bar(bar, fraction, label=None):
     return fr
 
 
-def _hide_progress_bar(bar):
+def hide_progress_bar(bar):
     bar.set_visible(False)
     bar.set_fraction(0.0)
     return False

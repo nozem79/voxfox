@@ -1,3 +1,135 @@
+## 6.1.0
+
+First release of the 6.1 series: everything from 6.1.0~dev1 to ~dev4
+below, with two changes:
+
+- The Type button is hidden by default (also after an update). Type and
+  speak is always in the menu; the button can be switched on under
+  Settings, Appearance, Buttons.
+- Choosing a picture for a tile opens in the folder the previous picture
+  came from (also after restarting VoxFox), instead of always starting
+  in Pictures.
+
+In short, since 6.0.1:
+
+- Type and speak: a window where you type a text and VoxFox says it
+  (Enter), with recently said sentences, word-by-word echo and a large,
+  adjustable text size. Also `voxfox --type-speak` and an optional
+  keyboard shortcut.
+- Tiles: a board of word and sentence tiles to build a sentence
+  ("Ik" + "heb" + "dorst"), with colours per kind of word, ready-made
+  boards for Dutch, English, German, French and Spanish, and tiles you
+  can change, move, remove and add. Each language has its own board.
+- Pictures on tiles (icon or photo, left, right or above the text), at
+  most 50 kB each and scaled down automatically, kept in a folder you
+  choose.
+- Full screen (F11). While Type and speak fills the screen the main
+  VoxFox window is minimised.
+- VoxFox needs GTK 4.10 or newer.
+- The code is split into smaller modules, internal functions have
+  ordinary names and there are no global variables any more; see
+  docs/STRUCTURE.md.
+
+## 6.1.0~dev4
+
+Under the hood; nothing changes in how VoxFox works.
+
+- VoxFox now needs GTK 4.10 or newer (Ubuntu 24.04, Linux Mint 22,
+  Debian 13, Fedora 38 or newer). Older versions crashed as soon as a
+  dialog that uses Gtk.FileDialog or Gtk.AlertDialog opened; now VoxFox
+  says which GTK it found and does not start. The .deb asks for
+  gir1.2-gtk-4.0 (>= 4.10), the .rpm for gtk4 >= 4.10.
+- The code is split into smaller modules (see docs/STRUCTURE.md):
+  - Settings: voxfox_ui/preferences/, one module per section (was one
+    file of 2264 lines).
+  - Main window: voxfox_ui/main_window/, one module per kind of action
+    (was 1435 lines).
+  - Speech: voxfox_core/tts.py split into voices.py (catalogue and
+    downloads), textprep.py (pronunciation and chunks), piper.py (the
+    Piper process) and tts.py (speaking).
+  - Hover: voxfox_core/a11y.py split into textio.py (selection,
+    clipboard, typing), pointer.py (mouse and windows) and a11y.py.
+  - The tile dialog moved from typespeak.py to tiledialog.py.
+- Functions one module used from another now have ordinary names instead
+  of "internal" ones with a leading underscore (vf._have became
+  vf.have_command, vf._clipboard_set vf.clipboard_set, widgets._a11y
+  widgets.set_accessible_label, and so on).
+- No more global variables: state that lives between calls is kept in one
+  small object per module (tts._speech, stt._whisper, a11y._hover, ...).
+- Packaging copies sub-packages (.deb, .rpm and Nix).
+- 234 tests.
+
+## 6.1.0~dev3
+
+Type and speak, tiles:
+
+- Tiles can have a picture: an icon or a photo (PNG, JPEG, SVG, WebP,
+  GIF). Choose it under Change tiles; the picture goes left of the text
+  (standard), right of it, or in the middle above it. The text on a tile
+  with a picture is a little smaller so both fit.
+- Pictures are at most 50 kB. A bigger one is scaled down when it is
+  added: icons with transparency stay PNG as long as possible, photos
+  become JPEG. Files that only look like pictures are refused.
+- The pictures live in a folder of their own. The first time, VoxFox
+  asks where that folder should go (standard: the VoxFox documents
+  folder) and makes it ("Tegelafbeeldingen" in Dutch). It can be changed
+  later under Settings, General; the pictures are copied along.
+- A tile only stores the picture's file name; the name comes from the
+  picture's contents, so the same picture used on several tiles is
+  stored once.
+- 234 tests (9 more).
+
+## 6.1.0~dev2
+
+Type and speak:
+
+- Tiles (button Tiles at the top of the window, on or off). The text box
+  shrinks to about two lines and the rest of the window is a board of
+  tiles. Pressing "Ik", "heb", "dorst" builds "Ik heb dorst"; Speak or
+  Enter says it. Each tile is said when pressed (can be switched off).
+  - Ready-made boards for Dutch, English, German, French and Spanish
+    (other languages get the English one), with example sentences at the
+    top and colours per kind of word, as on many communication boards:
+    people yellow, actions green, describing words blue, things and
+    feelings orange, social words pink, questions purple.
+  - Change tiles: click a tile to change its text or kind, move it
+    earlier or later, or remove it; New tile adds one; Standard tiles
+    puts the ready-made board back (after asking). Each language keeps
+    its own board, so switching language switches the board.
+  - Remove word takes the last word off the sentence. After speaking,
+    the next tile starts a new sentence.
+  - A-/A+ change the tiles too.
+- Full screen (button at the top right, or F11). While the window is in
+  full screen or maximised, the main VoxFox window is minimised, so it
+  does not sit on top; it comes back when the window leaves full screen,
+  is made smaller again or is closed.
+- The window's buttons moved from the title bar into the window, so they
+  stay reachable in full screen.
+- 225 tests (7 more).
+
+## 6.1.0~dev1
+
+- New window: Type and speak (button Type, or in the menu). Type a text
+  and press Enter: VoxFox says it with the voice of the current language.
+  Shift+Enter starts a new line, Escape stops. For people who cannot
+  speak (or not right now), and to hear how a text sounds.
+  - After speaking, the text stays selected: typing starts a new text,
+    Enter says the same one again. Optionally the box is emptied instead.
+  - Select part of the text to say only that part.
+  - "Say each word while typing" (off by default) says every word as it
+    is finished, once, also when a comma or full stop follows it.
+  - Said earlier: the last 10 sentences, newest first. Click one to say
+    it again, or the pencil to put it back in the box. Kept between
+    sessions; Clear list empties it.
+  - A-/A+ (or Ctrl+plus/minus) for the text size, and a language button
+    in the title bar.
+  - Also `voxfox --type-speak`, and a shortcut you can set under
+    Settings, Shortcuts (none by default).
+- The Type button is shown by default, also after an update; it can be
+  hidden under Settings, Appearance, Buttons.
+- Translated into all 23 languages. Dutch "Speak" is now "Uitspreken".
+- 218 tests (11 more).
+
 ## 6.0.1
 
 First release of the 6.0 series; it contains everything from 6.0.0~dev1

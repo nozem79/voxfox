@@ -38,7 +38,7 @@ log = vf.log
 # How far the skip buttons jump. Thirty seconds is roughly a paragraph:
 # enough to be worth pressing, short enough to land near what you missed.
 SKIP_SECONDS = 30
-from voxfox_ui.widgets import _a11y  # noqa: E402
+from voxfox_ui.widgets import set_accessible_label  # noqa: E402
 
 
 class LibraryWindow(Gtk.Window):
@@ -143,26 +143,26 @@ class LibraryWindow(Gtk.Window):
         back = Gtk.Button(icon_name="media-seek-backward-symbolic")
         back.set_tooltip_text(_("Back {seconds} seconds").format(
             seconds=SKIP_SECONDS))
-        _a11y(back, _("Back {seconds} seconds").format(seconds=SKIP_SECONDS))
+        set_accessible_label(back, _("Back {seconds} seconds").format(seconds=SKIP_SECONDS))
         back.connect("clicked", lambda *_a, e=entry: self._skip(e, -SKIP_SECONDS))
         box.append(back)
 
         fwd = Gtk.Button(icon_name="media-seek-forward-symbolic")
         fwd.set_tooltip_text(_("Forward {seconds} seconds").format(
             seconds=SKIP_SECONDS))
-        _a11y(fwd, _("Forward {seconds} seconds").format(seconds=SKIP_SECONDS))
+        set_accessible_label(fwd, _("Forward {seconds} seconds").format(seconds=SKIP_SECONDS))
         fwd.connect("clicked", lambda *_a, e=entry: self._skip(e, SKIP_SECONDS))
         box.append(fwd)
 
         restart = Gtk.Button(icon_name="media-skip-backward-symbolic")
         restart.set_tooltip_text(_("Start over"))
-        _a11y(restart, _("Start over"))
+        set_accessible_label(restart, _("Start over"))
         restart.connect("clicked", lambda *_a, e=entry: self._read(e, resume=False))
         box.append(restart)
 
         rm = Gtk.Button(icon_name="user-trash-symbolic")
         rm.set_tooltip_text(_("Delete"))
-        _a11y(rm, _("Delete"))
+        set_accessible_label(rm, _("Delete"))
         rm.connect("clicked", lambda *_a, e=entry: self._confirm_delete(e))
         box.append(rm)
 
@@ -201,7 +201,7 @@ class LibraryWindow(Gtk.Window):
             play.set_icon_name("media-playback-start-symbolic")
             label = _("Read")
         play.set_tooltip_text(label)
-        _a11y(play, label)
+        set_accessible_label(play, label)
 
         # While this document is playing, follow the speech rather than the
         # saved bookmark, which only moves on pause or stop.

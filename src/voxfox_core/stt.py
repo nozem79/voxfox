@@ -18,7 +18,7 @@
 """voxfox_core.stt — Speech-to-text: Whisper model loading, recording, transcription."""
 
 import json, os, subprocess, threading, time, urllib.error, urllib.parse, urllib.request
-from .common import _, log, _have
+from .common import _, log, have_command
 
 
 # Whisper config
@@ -30,7 +30,7 @@ WHISPER_MAX_SECONDS = 120          # safety cap on recording length
 
 # ── Whisper (speech-to-text) ──────────────────────────────────────────────────
 # Maps Piper-style language names to Whisper ISO codes. Fallback: auto-detect.
-_WHISPER_LANG_MAP = {
+WHISPER_LANG_MAP = {
     "Dutch": "nl", "Flemish": "nl", "Nederlands": "nl",
     "English": "en", "German": "de", "French": "fr", "Spanish": "es",
     "Italian": "it", "Portuguese": "pt", "Portuguese (Portugal)": "pt",
@@ -42,13 +42,29 @@ _WHISPER_LANG_MAP = {
     "Romanian": "ro", "Slovak": "sk", "Swedish": "sv", "Ukrainian": "uk",
 }
 
-_whisper_model      = None
-_whisper_model_name = None
-_whisper_model_device = None
-_whisper_lock       = threading.Lock()
+class _WhisperState:
+    """The loaded speech-recognition model and the running recording.
+    One instance, `_whisper`.
+
+    model        the loaded faster-whisper model, or None
+    model_name   which model that is ("small", ...)
+    device       where it runs ("cpu"/"cuda") and with which compute type
+    lock         held while the model is loaded or used
+    record_proc  the running recorder process, while dictating
+    """
+
+    def __init__(self):
+        self.model = None
+        self.model_name = None
+        self.device = None
+        self.lock = threading.Lock()
+        self.record_proc = None
 
 
-def _cuda_available():
+_whisper = _WhisperState()
+
+
+def cuda_available():
     """True if an NVIDIA GPU with a usable CUDA runtime is available to
     ctranslate2 (the engine under faster-whisper). Returns False quietly when
     ctranslate2 was built without CUDA or no GPU/driver is present."""
@@ -81,14 +97,13 @@ def _cuda_compute_candidates():
     if cap is not None and cap < 7.0:
         return ["int8", "float32"]          # Pascal and older
     return ["float16", "int8", "float32"]   # Volta+ (or unknown → try fp16)
-_record_proc        = None
 
 
-def _whisper_lang_code(piper_lang_name):
+def whisper_lang_code(piper_lang_name):
     """Translate a Piper language name to a Whisper ISO code, or None."""
     if not piper_lang_name:
         return None
-    return _WHISPER_LANG_MAP.get(piper_lang_name)
+    return WHISPER_LANG_MAP.get(piper_lang_name)
 
 
 # Approximate on-disk sizes of the faster-whisper models (MB), used to turn the
@@ -194,7 +209,7 @@ def faster_whisper_available():
         return False
 
 
-def _whisper_model_is_cached(name):
+def whisper_model_is_cached(name):
     """True when a complete copy of the model exists in any hub cache."""
     return _cached_hub_for(name) is not None
 
@@ -206,15 +221,14 @@ def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
     "cuda"/"cpu" force a choice. CUDA init that fails (e.g. missing cuDNN)
     falls back to CPU rather than erroring out.
     frac_cb(fraction, label): optional download-progress callback (0.0-1.0)."""
-    global _whisper_model, _whisper_model_name, _whisper_model_device
-    with _whisper_lock:
+    with _whisper.lock:
         if device == "auto":
-            device = "cuda" if _cuda_available() else "cpu"
+            device = "cuda" if cuda_available() else "cpu"
 
-        if (_whisper_model is not None and _whisper_model_name == name
-                and _whisper_model_device == device):
-            return _whisper_model, None
-        cached = _whisper_model_is_cached(name)
+        if (_whisper.model is not None and _whisper.model_name == name
+                and _whisper.device == device):
+            return _whisper.model, None
+        cached = whisper_model_is_cached(name)
         if progress_cb:
             where = "GPU" if device == "cuda" else "CPU"
             if cached:
@@ -287,9 +301,9 @@ def load_whisper_model(name, progress_cb=None, device="auto", frac_cb=None):
                                          local_files_only=bool(cached))
                     if dev != device and progress_cb:
                         progress_cb("GPU unavailable — using CPU...")
-                    _whisper_model        = model
-                    _whisper_model_name   = name
-                    _whisper_model_device = dev
+                    _whisper.model        = model
+                    _whisper.model_name   = name
+                    _whisper.device = dev
                     if frac_cb and not cached:
                         frac_cb(1.0, name)
                     return model, None
@@ -379,7 +393,6 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
     system default. This covers the case where the saved mic_id is stale
     after a USB unplug or a PipeWire reshuffle.
     """
-    global _record_proc
 
     def _try_record(use_mic_id, cap_seconds):
         # Build commands. Both parecord (--device) and arecord (-D) take mic IDs.
@@ -407,7 +420,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
         # guarantee an end, independent of whether our own process is
         # even still alive. -k sends SIGKILL a few seconds later if the
         # recorder ignores the initial SIGTERM.
-        if _have("timeout"):
+        if have_command("timeout"):
             wrap = ["timeout", "-k", "5", str(int(cap_seconds))]
             parecord_cmd = wrap + parecord_cmd
             arecord_cmd = wrap + arecord_cmd
@@ -428,7 +441,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
     proc, used_cmd = _try_record(mic_id, max_seconds + 10)
     if proc is None:
         return False, "No recorder found (parecord or arecord)"
-    _record_proc = proc
+    _whisper.record_proc = proc
     log.debug(f"Recording with: {used_cmd}")
 
     start = time.monotonic()
@@ -452,7 +465,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
                 proc.kill()
             except Exception:
                 pass
-        _record_proc = None
+        _whisper.record_proc = None
 
     # Capture any stderr the recorder produced — vital for debugging
     # "why is my mic_id silently producing empty WAVs" issues.
@@ -481,7 +494,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
         proc, used_cmd = _try_record("", 5)
         if proc is None:
             return False, "No recorder found (parecord or arecord)"
-        _record_proc = proc
+        _whisper.record_proc = proc
         # Do a short fixed-length capture as a sanity check — the user has
         # already stopped, so we can't ask them to talk again. We give it
         # 1 second to catch any tail audio still buffered.
@@ -494,7 +507,7 @@ def record_audio(wav_path, mic_id="", max_seconds=WHISPER_MAX_SECONDS, stop_evt=
                 proc.kill()
             except Exception:
                 pass
-        _record_proc = None
+        _whisper.record_proc = None
         file_ok = os.path.isfile(wav_path) and os.path.getsize(wav_path) >= 1000
 
     if not file_ok:
@@ -860,7 +873,7 @@ def transcribe(wav_path, model_name, language_hint=None, progress_cb=None,
                              frac_cb=frac_cb)
 
 
-def _wav_as_float32(wav_path):
+def wav_as_float32(wav_path):
     """The samples of a 16 kHz mono 16-bit WAV as the float32 array Whisper
     wants, or None when the file is anything else (or numpy is missing).
 
@@ -897,7 +910,7 @@ def _transcribe_local(wav_path, model_name, language_hint=None,
                                     frac_cb=frac_cb)
     if model is None:
         return "", err
-    audio = _wav_as_float32(wav_path)
+    audio = wav_as_float32(wav_path)
     try:
         segments, _info = model.transcribe(
             audio if audio is not None else wav_path,
@@ -923,20 +936,15 @@ __all__ = [
     "WHISPER_SAMPLE_RATE",
     "WHISPER_TYPE_LIMIT",
     "WHISPER_MAX_SECONDS",
-    "_WHISPER_LANG_MAP",
-    "_whisper_model",
-    "_whisper_model_name",
-    "_whisper_model_device",
-    "_whisper_lock",
-    "_cuda_available",
+    "WHISPER_LANG_MAP",
+    "cuda_available",
     "_gpu_compute_cap",
     "_cuda_compute_candidates",
-    "_record_proc",
-    "_whisper_lang_code",
+    "whisper_lang_code",
     "WHISPER_SIZES_MB",
     "_hf_model_dir",
     "_dir_size",
-    "_whisper_model_is_cached",
+    "whisper_model_is_cached",
     "load_whisper_model",
     "faster_whisper_available",
     "list_microphones",

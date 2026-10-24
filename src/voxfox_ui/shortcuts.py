@@ -32,7 +32,7 @@ import voxfox_core as vf  # noqa: E402
 log = vf.log
 
 
-_SHORTCUT_ACTIONS = [
+SHORTCUT_ACTIONS = [
     ("read",    "VoxFox: read",         "voxfox --read",           "<Super>z"),
     ("stop",    "VoxFox: stop",         "voxfox --stop",           "<Super>x"),
     ("voice",   "VoxFox: switch voice", "voxfox --toggle-slot",    "<Super>c"),
@@ -43,11 +43,12 @@ _SHORTCUT_ACTIONS = [
     ("page",    "VoxFox: read web page", "voxfox --read-page",     "<Super>v"),
     ("live",    "VoxFox: live transcription", "voxfox --live-toggle", ""),
     ("translate", "VoxFox: translate & read", "voxfox --translate", ""),
+    ("type",    "VoxFox: type and speak", "voxfox --type-speak",  ""),
 ]
 
 # Short, translatable names for the actions, shown in the settings
-# Shortcuts tab. Keyed by the action id from _SHORTCUT_ACTIONS.
-_SHORTCUT_LABELS = {
+# Shortcuts tab. Keyed by the action id from SHORTCUT_ACTIONS.
+SHORTCUT_LABELS = {
     "read":    "Read",
     "stop":    "Stop",
     "voice":   "Switch language",
@@ -57,17 +58,18 @@ _SHORTCUT_LABELS = {
     "page":    "Read web page",
     "live":    "Live transcription",
     "translate": "Translate & read",
+    "type":    "Type and speak",
 }
 
 
-def _binding_for(state, key, default):
+def binding_for(state, key, default):
     """The effective binding for an action: the user's chosen key from
     state["shortcut_bindings"], or the built-in default when unset."""
     chosen = (state.get("shortcut_bindings") or {}).get(key) if state else None
     return chosen or default
 
 
-def _binding_display(binding):
+def binding_display(binding):
     """Human-readable label for an accelerator string ('<Super>z' -> 'Super+Z').
     Falls back to the raw string if it can't be parsed."""
     if not binding:
@@ -184,17 +186,17 @@ def _install_cinnamon_shortcuts(src, state):
 
     # 2.5 Allocate fresh numeric slots for the six actions.
     name_set = set(names)
-    keys = [a[0] for a in _SHORTCUT_ACTIONS]
+    keys = [a[0] for a in SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(name_set, len(keys))
     assigned = dict(zip(keys, fresh))
 
     # 3. Write each slot and ensure it is listed; keep the list numeric & sorted.
-    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+    for key, label, cmd, binding in SHORTCUT_ACTIONS:
         slot = assigned[key]
         s = Gio.Settings.new_with_path(SCHEMA, path_for(slot))
         s.set_string("name", label)
         s.set_string("command", cmd)
-        s.set_strv("binding", [_binding_for(state, key, binding)])
+        s.set_strv("binding", [binding_for(state, key, binding)])
         if slot not in name_set:
             names.append(slot)
             name_set.add(slot)
@@ -221,7 +223,7 @@ def _cinnamon_shortcuts_intact(state):
     opens Cinnamon's own keyboard settings and rebinds the *key* for an
     existing VoxFox shortcut leaves the slot's name/command alone and
     only changes its binding, so that case reads as "intact" here and is
-    left alone, matching the reasoning in _install_shortcuts' docstring
+    left alone, matching the reasoning in install_desktop_shortcuts' docstring
     for not auto-installing in the first place. What this does catch is
     the slot itself disappearing from custom-list, or its command being
     cleared/reset -- Cinnamon reverting a shortcut to its own built-in
@@ -267,7 +269,7 @@ def reconcile_cinnamon_shortcuts(state):
     installed on this machine, Cinnamon isn't the desktop in use, or
     everything is already as VoxFox left it. Returns True only when it
     actually had to reinstall something, so the caller knows whether a
-    _cinnamon_reload() is worth doing.
+    cinnamon_reload() is worth doing.
     """
     if not state.get("shortcuts_installed") or not state.get("cinnamon_shortcut_slots"):
         return False
@@ -331,18 +333,18 @@ def _install_gnome_shortcuts(src, state):
 
     # 2.5 Allocate fresh numeric slots for the six actions.
     slot_set = {slot_of(p) for p in paths}
-    keys = [a[0] for a in _SHORTCUT_ACTIONS]
+    keys = [a[0] for a in SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(slot_set, len(keys))
     assigned = dict(zip(keys, fresh))
 
     # 3. Write and list.
-    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+    for key, label, cmd, binding in SHORTCUT_ACTIONS:
         slot = assigned[key]
         p = f"{PREFIX}{slot}/"
         s = Gio.Settings.new_with_path(SCHEMA, p)
         s.set_string("name", label)
         s.set_string("command", cmd)
-        s.set_string("binding", _binding_for(state, key, binding))
+        s.set_string("binding", binding_for(state, key, binding))
         if p not in paths:
             paths.append(p)
     Gio.Settings.sync()   # flush slot data before changing the list (see Cinnamon)
@@ -435,7 +437,7 @@ def _install_lxqt_shortcuts(src, state):
     cp = configparser.ConfigParser(interpolation=None)
     cp.optionxform = str  # Qt keys are case-sensitive (Comment, Exec, path)
 
-    our_cmds = {cmd for _k, _l, cmd, _b in _SHORTCUT_ACTIONS}
+    our_cmds = {cmd for _k, _l, cmd, _b in SHORTCUT_ACTIONS}
     max_idx = 0
     if os.path.exists(conf):
         try:
@@ -461,8 +463,8 @@ def _install_lxqt_shortcuts(src, state):
         cp["General"]["MultipleActionsBehaviour"] = "first"
 
     idx = max_idx
-    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
-        combo = _binding_to_lxqt(_binding_for(state, key, binding))
+    for key, label, cmd, binding in SHORTCUT_ACTIONS:
+        combo = _binding_to_lxqt(binding_for(state, key, binding))
         if not combo:
             log.debug(f"LXQt: cannot convert binding for {key}, skipping")
             continue
@@ -588,7 +590,7 @@ def _install_kde_shortcuts(state, conflicts=None):
 
     kwriteconfig = None
     for tool in ("kwriteconfig6", "kwriteconfig5"):
-        if vf._have(tool):
+        if vf.have_command(tool):
             kwriteconfig = tool
             break
     if not kwriteconfig:
@@ -601,8 +603,8 @@ def _install_kde_shortcuts(state, conflicts=None):
     existing = _kde_parse_bindings(cfg)
 
     written = 0
-    for key, label, cmd, binding in _SHORTCUT_ACTIONS:
-        eff = _binding_for(state, key, binding)
+    for key, label, cmd, binding in SHORTCUT_ACTIONS:
+        eff = binding_for(state, key, binding)
         combo = _binding_to_kde(eff)
         if not combo:
             continue
@@ -647,7 +649,7 @@ def _install_kde_shortcuts(state, conflicts=None):
         "applications")
     try:
         os.makedirs(appdir, exist_ok=True)
-        for key, label, cmd, binding in _SHORTCUT_ACTIONS:
+        for key, label, cmd, binding in SHORTCUT_ACTIONS:
             path = os.path.join(appdir, f"voxfox-{key}.desktop")
             with open(path, "w", encoding="utf-8") as f:
                 f.write("[Desktop Entry]\n"
@@ -667,7 +669,7 @@ def _install_kde_shortcuts(state, conflicts=None):
     # explicit rebuild, or the binding is registered with no command behind
     # it and the key silently does nothing.
     for tool in ("kbuildsycoca6", "kbuildsycoca5"):
-        if vf._have(tool):
+        if vf.have_command(tool):
             try:
                 subprocess.run([tool, "--noincremental"],
                                capture_output=True, timeout=15)
@@ -678,7 +680,7 @@ def _install_kde_shortcuts(state, conflicts=None):
     # Ask kglobalaccel to reload so the new/changed bindings take effect
     # without a full re-login where possible.
     for tool in ("kquitapp6", "kquitapp5"):
-        if vf._have(tool):
+        if vf.have_command(tool):
             try:
                 subprocess.run([tool, "kglobalaccel"],
                                capture_output=True, timeout=10)
@@ -687,7 +689,7 @@ def _install_kde_shortcuts(state, conflicts=None):
                 pass
             break
     for tool in ("kglobalaccel6", "kglobalaccel5"):
-        if vf._have(tool):
+        if vf.have_command(tool):
             try:
                 subprocess.Popen([tool],
                                  stdout=subprocess.DEVNULL,
@@ -741,12 +743,12 @@ def _install_xfce_shortcuts(state):
                + os.environ.get("XDG_SESSION_DESKTOP", "")).lower()
     if "xfce" not in desktop:
         return False
-    if not vf._have("xfconf-query"):
+    if not vf.have_command("xfconf-query"):
         log.debug("xfconf-query not found; skipping XFCE shortcut install")
         return False
 
     CHANNEL = "xfce4-keyboard-shortcuts"
-    our_cmds = {cmd for _k, _l, cmd, _b in _SHORTCUT_ACTIONS}
+    our_cmds = {cmd for _k, _l, cmd, _b in SHORTCUT_ACTIONS}
     # List existing custom command properties.
     try:
         out = subprocess.run(
@@ -774,9 +776,9 @@ def _install_xfce_shortcuts(state):
 
     # Write the current six.
     written = 0
-    for key, _label, cmd, binding in _SHORTCUT_ACTIONS:
+    for key, _label, cmd, binding in SHORTCUT_ACTIONS:
         # XFCE uses the same accelerator format as the stored binding.
-        prop = f"/commands/custom/{_binding_for(state, key, binding)}"
+        prop = f"/commands/custom/{binding_for(state, key, binding)}"
         try:
             subprocess.run(
                 ["xfconf-query", "-c", CHANNEL, "-p", prop,
@@ -790,7 +792,7 @@ def _install_xfce_shortcuts(state):
     return True
 
 
-def _cinnamon_reload():
+def cinnamon_reload():
     """Soft-restart the Cinnamon shell (windows are preserved) so it re-grabs
     freshly-installed custom keybindings. Cinnamon rebuilds its keybindings only
     on certain triggers that a plain settings write doesn't hit, so without this
@@ -812,7 +814,7 @@ def _cinnamon_reload():
         return False
 
 
-def _install_shortcuts(state, conflicts=None):
+def install_desktop_shortcuts(state, conflicts=None):
     """Register VoxFox's global keyboard shortcuts with the desktop:
 
         Super+Z  read          (voxfox --read)

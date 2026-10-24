@@ -57,14 +57,27 @@ from gi.repository import Gtk, Gdk, GdkPixbuf, GLib, Gio
 
 VERSION = "1.0.9"
 
-DEBUG = os.environ.get("QUICKSHOT_DEBUG") == "1"
-TARGET = None
-PORTAL = False
-MUTE = os.environ.get("QUICKSHOT_MUTE") != "0"
+class Options:
+    """Command-line options (see parse_args). One instance, `opts`.
+
+    debug   print what happens (QUICKSHOT_DEBUG=1 or -v)
+    target  where to save the picture, or None for the default
+    portal  capture through the desktop portal on Wayland
+    mute    no camera sound (QUICKSHOT_MUTE=0 or --sound turns it on)
+    """
+
+    def __init__(self):
+        self.debug = os.environ.get("QUICKSHOT_DEBUG") == "1"
+        self.target = None
+        self.portal = False
+        self.mute = os.environ.get("QUICKSHOT_MUTE") != "0"
+
+
+opts = Options()
 
 
 def log(message):
-    if DEBUG:
+    if opts.debug:
         sys.stderr.write("[quickshot] %s\n" % message)
         sys.stderr.flush()
 
@@ -88,16 +101,15 @@ Een andere map kies je met de omgevingsvariabele QUICKSHOT_DIR.
 
 
 def parse_args():
-    global DEBUG, TARGET, PORTAL, MUTE
     for arg in sys.argv[1:]:
         if arg == "--sound":
-            MUTE = False
+            opts.mute = False
         elif arg == "--portal":
-            PORTAL = True
+            opts.portal = True
         elif arg == "--overlay":
-            PORTAL = False
+            opts.portal = False
         elif arg in ("-v", "--verbose"):
-            DEBUG = True
+            opts.debug = True
         elif arg in ("-h", "--help"):
             sys.stdout.write(HELP)
             sys.exit(0)
@@ -109,7 +121,7 @@ def parse_args():
             sys.stderr.write("Gebruik voxfox-quickshot --help voor uitleg.\n")
             sys.exit(2)
         else:
-            TARGET = os.path.abspath(arg)
+            opts.target = os.path.abspath(arg)
 
 
 # ---------------------------------------------------------------- hulpfuncties
@@ -142,8 +154,8 @@ def total_geometry():
 
 
 def output_path():
-    if TARGET:
-        return TARGET
+    if opts.target:
+        return opts.target
     folder = os.environ.get("QUICKSHOT_DIR")
     if not folder:
         base = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)
@@ -240,7 +252,7 @@ class QuietMoment(object):
         self.was_on = None
 
     def __enter__(self):
-        if not MUTE:
+        if not opts.mute:
             return self
         try:
             source = Gio.SettingsSchemaSource.get_default()
@@ -626,7 +638,7 @@ def main():
         % (VERSION, "wayland" if wayland else "x11",
            type(Gdk.Display.get_default()).__name__))
 
-    if wayland and PORTAL:
+    if wayland and opts.portal:
         # Op verzoek: GNOME of KDE kiest zelf het gebied.
         saved = portal_select_and_save()
         if not saved:

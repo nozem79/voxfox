@@ -13,7 +13,7 @@ LOCALES = os.path.join(os.path.dirname(__file__), os.pardir, "locales")
 
 @pytest.fixture
 def translations(monkeypatch):
-    monkeypatch.setattr(common, "LOCALES_DIR", os.path.abspath(LOCALES))
+    monkeypatch.setattr(common._locales, "dir", os.path.abspath(LOCALES))
     common.app.load_translations()
     yield
     common.app.translations = {}

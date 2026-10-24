@@ -29,7 +29,7 @@ import voxfox_core as vf  # noqa: E402
 from voxfox_core import _  # translation helper  # noqa: E402
 
 log = vf.log
-from voxfox_ui.widgets import _a11y  # noqa: E402
+from voxfox_ui.widgets import set_accessible_label  # noqa: E402
 
 
 class LiveTranscribeWindow(Gtk.Window):
@@ -49,11 +49,11 @@ class LiveTranscribeWindow(Gtk.Window):
         header = Gtk.HeaderBar()
         smaller = Gtk.Button(label="A\u2212")
         smaller.set_tooltip_text(_("Smaller text"))
-        _a11y(smaller, _("Smaller text"))
+        set_accessible_label(smaller, _("Smaller text"))
         smaller.connect("clicked", lambda *_a: self._change_font(-2))
         larger = Gtk.Button(label="A+")
         larger.set_tooltip_text(_("Larger text"))
-        _a11y(larger, _("Larger text"))
+        set_accessible_label(larger, _("Larger text"))
         larger.connect("clicked", lambda *_a: self._change_font(+2))
         header.pack_end(larger)
         header.pack_end(smaller)
@@ -131,7 +131,7 @@ class LiveTranscribeWindow(Gtk.Window):
     # ── worker ──
     def _worker(self):
         w = self.state.get("whisper", {})
-        lang_hint = vf._whisper_lang_code(
+        lang_hint = vf.whisper_lang_code(
             self.state.get(self.state.get("active_slot", "slot1"), {})
             .get("lang", ""))
         try:
@@ -184,7 +184,7 @@ class LiveTranscribeWindow(Gtk.Window):
         buf = self.tv.get_buffer()
         text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), False)
         if text.strip():
-            vf._clipboard_set(text)
+            vf.clipboard_set(text)
 
     # ── lifecycle ──
     def _on_close(self, *_a):

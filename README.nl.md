@@ -537,7 +537,7 @@ teken voorlezen). Hover-voorlezen en het aanzetten van de toegankelijkheidsbus
 
 Door het pakket geïnstalleerd:
 
-- `python3-gi`, `gir1.2-gtk-4.0` — de GTK4-interface
+- `python3-gi`, `gir1.2-gtk-4.0` (4.10 of nieuwer) — de GTK4-interface
 - `python3-pyatspi`, `at-spi2-core` — hover-voorlezen
 
 Aanbevolen (schakelen specifieke functies in): `tesseract-ocr` + taalpakketten
@@ -574,6 +574,10 @@ dat je VoxFox start na een update vanaf een oudere versie.
 
 ## Ondersteunde systemen
 
+VoxFox heeft GTK 4.10 of nieuwer nodig (sinds 6.1): Ubuntu 24.04, Linux Mint
+22, Debian 13, Fedora 38 of nieuwer. Oudere versies (Ubuntu 22.04, Mint 21,
+Debian 12) hebben een oudere GTK; VoxFox meldt dat dan en start niet.
+
 Debian, Ubuntu, Linux Mint en afgeleiden met GTK4 (via de `.deb`), en Fedora
 (via de `.rpm`, getest op Fedora Workstation; andere RPM-distributies zoals
 openSUSE kunnen andere pakketnamen nodig hebben en zijn niet getest). X11 geeft
@@ -584,13 +588,11 @@ kunnen beperkt zijn.
 
 ## Voor ontwikkelaars
 
-De code is gesplitst in een UI-onafhankelijke backend (het `voxfox_core/`-pakket
-— `tts.py`, `stt.py`, `ocr.py`, `docreader.py`, `documents.py`, `ipc.py`,
-`state.py`, `a11y.py`, `common.py`) en
-een GTK4-frontend (het pakket `voxfox_ui/` — sinds 4.0 opgesplitst in
-`common.py`, `widgets.py`, `setup.py`, `screenshot.py`, `shortcuts.py`,
-`history.py`, `preferences.py`, `live.py`, `main_window.py` en `app.py`,
-met `voxfox_gtk.py` als dunne launcher). Vertalingen zijn
+De code is gesplitst in een UI-onafhankelijke backend (het pakket
+`voxfox_core/`: spraak, dicteren, OCR, instellingen) en een GTK4-frontend (het
+pakket `voxfox_ui/`, met het hoofdvenster en het venster Instellingen als
+subpakketten), met `voxfox_gtk.py` als dunne launcher. `docs/STRUCTURE.md`
+beschrijft elke module en hoe ze samenhangen (in het Engels). Vertalingen zijn
 gewone JSON-bestanden onder `locales/`, met uitgelijnde sleutels over alle talen.
 Zie `CHANGELOG.md` voor de versiegeschiedenis.
 

@@ -37,7 +37,7 @@ import urllib.error
 import urllib.parse
 
 from .common import _, log, app
-from .webread import _split_paragraph_chunks
+from .webread import split_paragraph_chunks
 
 DEFAULT_TRANSLATE = {
     "url":     "http://localhost:11434/v1",   # local Ollama; or any /v1 API
@@ -169,7 +169,7 @@ def translate_text(text, cfg=None, target_code=None, progress=None):
     bad = _bad_url_scheme(c.get("url"))
     if bad:
         return None, bad
-    chunks = _split_paragraph_chunks(text, _CHUNK_CHARS) or [text]
+    chunks = split_paragraph_chunks(text, _CHUNK_CHARS) or [text]
     out = []
     try:
         for i, chunk in enumerate(chunks, 1):

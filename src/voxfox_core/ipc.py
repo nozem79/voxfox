@@ -19,15 +19,15 @@
 
 
 import fcntl, os, socket, stat, sys, threading
-from .a11y import _clipboard_set
+from .textio import clipboard_set
 from .common import APP_NAME, LOCK_FILE, PID_FILE, RUNTIME_DIR, SOCKET_PATH, _, load_translations, log
-from .ocr import OCR_SUPPORTED_EXTS, _tess_lang, ocr_file
+from .ocr import OCR_SUPPORTED_EXTS, tesseract_lang_code, ocr_file
 from .state import load_state
 
 
 
 # ── IPC ────────────────────────────────────────────────────────────────────────
-def _ensure_runtime_dir():
+def ensure_runtime_dir():
     """Prepare RUNTIME_DIR for the socket/lock/pid files. Returns True when
     it is safe to use, False when it should not be touched at all -- the
     caller must not go on to bind a socket or take a lock there."""
@@ -70,21 +70,27 @@ def is_instance_running():
 # Singleton lock: held for the lifetime of the running instance.
 # Two simultaneous voxfox starts can't both acquire LOCK_EX, so the loser
 # can safely conclude that the winner is the active instance.
-_singleton_lock_fd = None
+class _Singleton:
+    """The open, locked lock file while this is the running instance."""
+
+    def __init__(self):
+        self.lock_fd = None
+
+
+_singleton = _Singleton()
 
 
 def acquire_singleton_lock():
     """Try to acquire the singleton lock. Returns True on success.
     The lock is released automatically when the process exits."""
-    global _singleton_lock_fd
-    if not _ensure_runtime_dir():
+    if not ensure_runtime_dir():
         return False
     try:
         fd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR, 0o600)
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         os.ftruncate(fd, 0)
         os.write(fd, f"{os.getpid()}\n".encode())
-        _singleton_lock_fd = fd  # keep open
+        _singleton.lock_fd = fd  # keep open
         return True
     except (OSError, BlockingIOError):
         return False
@@ -98,7 +104,7 @@ class IPCServer:
         self.running = False
 
     def start(self):
-        if not _ensure_runtime_dir():
+        if not ensure_runtime_dir():
             return False
         if os.path.exists(SOCKET_PATH):
             try:
@@ -196,6 +202,9 @@ class IPCServer:
         if cmd == "translate":
             self.app.root.after(0, self.app.do_translate)
             return "ok"
+        if cmd in ("type-speak", "type"):
+            self.app.root.after(0, self.app.do_type_speak)
+            return "ok"
         if cmd in ("pause-toggle", "pause", "resume"):
             self.app.root.after(0, self.app.do_pause)
             return "ok"
@@ -222,7 +231,7 @@ def run_cli(args):
         # Laad actieve taalinstellingen voor de Tesseract-taalcode
         state = load_state()
         active_cfg = state[state.get("active_slot", "slot1")]
-        tess_lang  = _tess_lang(active_cfg.get("lang", "English"))
+        tess_lang  = tesseract_lang_code(active_cfg.get("lang", "English"))
         print(f"{_('OCR')}: {file_path} ({_('language')}: {tess_lang})")
         text, err = ocr_file(
             file_path,
@@ -239,7 +248,7 @@ def run_cli(args):
         # anders gewoon printen naar stdout (bruikbaar in scripts).
         if is_instance_running():
             # Zet tekst op klembord en stuur read-commando
-            if _clipboard_set(text):
+            if clipboard_set(text):
                 reply = send_command("read")
                 if reply == "ok":
                     print(_("Read aloud via the running VoxFox instance."))
@@ -259,6 +268,7 @@ def run_cli(args):
         "read_page":      "read-page",
         "live_toggle":    "live-toggle",
         "translate":      "translate",
+        "type_speak":     "type-speak",
         "pause":          "pause-toggle",
         "status":         "ping",
         "quit":           "quit",
@@ -288,10 +298,9 @@ def run_cli(args):
 
 
 __all__ = [
-    "_ensure_runtime_dir",
+    "ensure_runtime_dir",
     "send_command",
     "is_instance_running",
-    "_singleton_lock_fd",
     "acquire_singleton_lock",
     "IPCServer",
     "run_cli",

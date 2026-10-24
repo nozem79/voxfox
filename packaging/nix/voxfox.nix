@@ -79,7 +79,7 @@ let
   # multi-line file needs, and a wrong guess there would fail the whole
   # build rather than just this one string, so a plain hardcoded value
   # is the safer choice until someone can verify that on a real system.)
-  version = "6.0.1";
+  version = "6.1.0";
 
   pythonEnv = python3.withPackages (ps: with ps; [
     pygobject3
@@ -136,7 +136,7 @@ stdenvNoCC.mkDerivation {
 
   # voxfox_ui/common.py hardcodes SYSTEM_DATA_DIR = "/usr/share/voxfox"
   # (used to find locales and the icons/ directory when no per-user copy
-  # exists yet -- see voxfox_ui/app.py and _register_icon_path()). That
+  # exists yet -- see voxfox_ui/app.py and register_icon_path()). That
   # is exactly right for the .deb/.rpm, which really do install there,
   # and exactly wrong for a Nix store path. Patched here, at Nix-build
   # time, on a copy of the source -- the tracked repository is
@@ -161,8 +161,16 @@ stdenvNoCC.mkDerivation {
     cp src/voxfox_gtk.py src/quickshot.py "$out/lib/voxfox/"
     cp src/voxfox_core/*.py "$out/lib/voxfox/voxfox_core/"
     cp src/voxfox_ui/*.py   "$out/lib/voxfox/voxfox_ui/"
+    # Sub-packages (voxfox_ui/preferences/, ...): every folder with an __init__.py.
+    for pkg in voxfox_core voxfox_ui; do
+      for d in src/$pkg/*/; do
+        [ -f "$d/__init__.py" ] || continue
+        mkdir -p "$out/lib/voxfox/$pkg/$(basename "$d")"
+        cp "$d"*.py "$out/lib/voxfox/$pkg/$(basename "$d")/"
+      done
+    done
 
-    # icons/ as a *sibling* of voxfox_ui/, so _register_icon_path()'s own
+    # icons/ as a *sibling* of voxfox_ui/, so register_icon_path()'s own
     # relative fallback (os.path.join(here, "..", "icons"), meant for a
     # plain git checkout) finds them with no patch needed.
     cp -r icons "$out/lib/voxfox/icons"
