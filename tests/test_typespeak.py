@@ -329,3 +329,24 @@ def test_boards_are_kept_per_language():
     assert ts.load_board(state, "de")[0] == ts.default_tiles("de")
     ts.save_board(state, "nl", [])
     assert ts.load_board(state, "nl")[0] == []           # all removed on purpose
+
+
+# ── button icons must also work with GTK 4.22+ (6.2.1) ─────────────────────
+# GTK 4.22 and newer read symbolic icons with their own parser, which
+# ignores fill="none" and stroke="...": without these classes every outline
+# became a filled blob (seen on Fedora). Each shape needs a class.
+
+def test_symbolic_icons_have_gtk_classes():
+    import re
+    folder = _os.path.join(_os.path.dirname(__file__), "..", "icons",
+                           "hicolor", "scalable", "actions")
+    files = [f for f in _os.listdir(folder) if f.endswith("-symbolic.svg")]
+    assert files
+    for f in files:
+        svg = open(_os.path.join(folder, f), encoding="utf-8").read()
+        assert "<g" not in svg, f            # classes on <g> are not inherited
+        for shape in re.findall(r"<(?:path|rect|circle)\b[^>]*>", svg):
+            if 'stroke="' in shape:
+                assert 'class="transparent-fill foreground-stroke"' in shape, f
+            else:
+                assert 'class="foreground-fill"' in shape, f

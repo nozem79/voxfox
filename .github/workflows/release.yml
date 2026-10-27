@@ -1,9 +1,19 @@
 name: Release
 
+# A tag v* builds the .deb and the .rpm and puts both on the GitHub release
+# of that tag, with the CHANGELOG section of that version as release notes.
+# "Run workflow" (Actions tab) does the same for a tag that already exists,
+# for example to add the .rpm to a release made before this workflow built it.
+
 on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build, for example v6.2.1"
+        required: true
 
 permissions:
   contents: write
@@ -15,26 +25,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Set version from tag
+      # The tag comes in through env, not pasted into the script, so a
+      # strange tag name cannot run as shell code.
+      - name: Which tag
+        env:
+          TAG_IN: ${{ inputs.tag || github.ref_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          case "$TAG_IN" in
+            v[0-9]*) ;;
+            *) echo "not a version tag: $TAG_IN"; exit 1 ;;
+          esac
+          echo "TAG=$TAG_IN" >> "$GITHUB_ENV"
+          echo "VERSION=${TAG_IN#v}" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
 
       - name: Set APP_VERSION in source
         run: |
-          sed -i "s/APP_VERSION = \".*\"/APP_VERSION = \"$VERSION\"/" src/voxfox_gtk.py
+          sed -i "s/APP_VERSION = \".*\"/APP_VERSION = \"$VERSION\"/" src/voxfox_ui/common.py
 
-      - name: Install build dependencies
-        run: sudo apt-get install -y fakeroot dpkg-dev
+      # rpm provides rpmbuild on Ubuntu; python3-pil makes the app icon in
+      # every size (48-512) for both packages.
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg-dev rpm python3-pil
 
       - name: Build .deb
+        run: VERSION=$VERSION bash packaging/build-deb.sh
+
+      - name: Build .rpm
+        run: VERSION=$VERSION bash packaging/build-rpm.sh
+
+      - name: Check both packages
         run: |
-          VERSION=$VERSION \
-          SRC=$GITHUB_WORKSPACE/src \
-          LOCALES=$GITHUB_WORKSPACE/locales \
-          bash packaging/build-deb.sh
+          RPMVER="$(echo "$VERSION" | tr '-' '~')"
+          DEB="src/voxfox_${VERSION}_all.deb"
+          RPM="src/voxfox-${RPMVER}-1.noarch.rpm"
+          echo "DEB=$DEB" >> "$GITHUB_ENV"
+          echo "RPM=$RPM" >> "$GITHUB_ENV"
+          dpkg-deb -c "$DEB" > deb.txt
+          rpm -qlp "$RPM" > rpm.txt
+          for f in usr/share/voxfox/icons/tiles/ja.svg \
+                   usr/share/voxfox/icons/hicolor/scalable/actions/voxfox-type-symbolic.svg \
+                   usr/lib/voxfox/voxfox_ui/typespeak.py; do
+            grep -q "$f" deb.txt || { echo "missing in .deb: $f"; exit 1; }
+            grep -q "$f" rpm.txt || { echo "missing in .rpm: $f"; exit 1; }
+          done
 
       - name: Extract changelog section
         id: changelog
@@ -42,14 +81,17 @@ jobs:
           python3 - <<'PYEOF'
           import re, os
           ch = open("CHANGELOG.md").read()
-          m = re.search(r"## " + os.environ["VERSION"] + r"\n(.*?)(?=\n## |\Z)", ch, re.S)
+          m = re.search(r"## " + re.escape(os.environ["VERSION"]) + r"\n(.*?)(?=\n## |\Z)", ch, re.S)
           notes = m.group(1).strip() if m else ""
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"notes<<ENDOFNOTES\n{notes}\nENDOFNOTES\n")
           PYEOF
 
-      - name: Create GitHub Release
+      - name: Create or update the GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
           body: ${{ steps.changelog.outputs.notes }}
-          files: src/voxfox_${{ env.VERSION }}_all.deb
+          files: |
+            ${{ env.DEB }}
+            ${{ env.RPM }}

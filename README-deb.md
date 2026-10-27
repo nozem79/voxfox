@@ -5,10 +5,8 @@ aloud with Piper voices, transcribes speech to text with Whisper, and can OCR a
 file or a selected screen region and read the result. Every action is also a
 command-line call, so each button can be bound to a global keyboard shortcut.
 
-This document covers the **GTK4 build installed from the `.deb` package**. It is
-different from the standalone Tk version: it installs system-wide via `apt`,
-shares a UI-agnostic backend (`voxfox_core`), and adds GPU detection for
-Whisper, a tesseract CLI fallback for OCR, and proper screen-reader labels.
+This document covers VoxFox **installed from the `.deb` package**: it installs
+system-wide via `apt`.
 
 ## Installation
 
@@ -268,40 +266,36 @@ program runs through the Python interpreter, and the `.deb` ships the source as
 plain text in `/usr/lib/voxfox/`. Reviewing, improving and rebuilding it is
 therefore straightforward.
 
-**The source** is a backend package plus a front-end and assets:
+**The source** (under `src/`) is two packages plus a launcher and assets:
 
-- `voxfox_core/` — the UI-agnostic backend, a package of focused modules:
-  `tts.py` (Piper TTS), `stt.py` (Whisper STT — local, remote API, GPU
-  detection), `ocr.py` (Tesseract OCR with a CLI fallback), `ipc.py` (the IPC
-  server), `state.py` (settings/history storage and the language tables),
-  `a11y.py` (accessibility helpers) and `common.py`. It imports no GUI toolkit.
-- `voxfox_gtk.py` — the GTK4 front-end (window, settings, buttons) plus the
-  command-line interface; it imports `voxfox_core`.
-- Assets: `locales/*.json` (translations), `voxfox-logo.png`, `licence.txt`.
-- `packaging/build-deb.sh` — assembles the `.deb`.
+- `src/voxfox_core/` — everything that is not the window: speech, dictation,
+  OCR, settings. It imports no GUI toolkit, so the tests run without a display.
+- `src/voxfox_ui/` — the GTK 4 interface (main window, Settings, Type and
+  speak, Library, History, ...).
+- `src/voxfox_gtk.py` — the small launcher that starts `voxfox_ui`.
+- Assets: `locales/*.json` (translations), `icons/` (button icons and the tile
+  pictograms), `dicts/` (pronunciation dictionaries), `voxfox-logo.png`,
+  `LICENSE`.
+- `packaging/build-deb.sh` and `packaging/build-rpm.sh` — build the packages.
 
-(The standalone Tk version under `tk-original/` is a separate variant and is not
-needed for the GTK/`.deb` build.)
-
-**Review** by reading the two `.py` files. **Run from source** without packaging
-using `python3 voxfox_gtk.py` (GTK 4 and the dependencies must be present).
-**Improve** by editing those files.
+`docs/STRUCTURE.md` describes every module. **Run from source** without
+packaging with `python3 src/voxfox_gtk.py` (GTK 4.10 and the dependencies must
+be present). **Test** with `make check` (ruff, compile, pytest).
 
 **Build the package** (no compilation; Python byte-compiles itself at runtime):
 
 ```bash
-cd packaging
-./build-deb.sh                 # produces voxfox_<version>_all.deb
-VERSION=1.1.0 ./build-deb.sh   # build a specific version
+bash packaging/build-deb.sh                 # makes src/voxfox_<version>_all.deb
+VERSION=6.2.0 bash packaging/build-deb.sh   # build a specific version
 ```
 
-Building only needs `dpkg-deb`.
+Building needs `dpkg-deb` and `fakeroot`; `make deb` does the same.
 
 ## Supported systems
 
 - **Operating system:** Debian-based Linux (Debian, Ubuntu, Linux Mint, Pop!_OS,
   …) for the `.deb`. On other distributions (Fedora, Arch) the source runs
-  directly with `python3 voxfox_gtk.py`; only the prebuilt package is
+  directly with `python3 src/voxfox_gtk.py`; only the prebuilt package is
   Debian-specific. Not for Windows or macOS — it relies on Linux facilities
   (AT-SPI, xdotool, the Linux Piper binary, …).
 - **Desktop:** designed for GNOME. Some features are session-dependent:

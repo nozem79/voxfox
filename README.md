@@ -12,10 +12,14 @@ ears — reading long articles aloud while doing the dishes, dictating an email
 without touching the keyboard, or hearing a passage of code read back to spot a
 mistake.
 
-> The current release is the GTK4 build, packaged as a Debian `.deb`. The older
-> Tkinter version is no longer maintained.
+> The current release is the GTK4 build, packaged as a `.deb` and an `.rpm`.
+> The older Tkinter version is no longer maintained.
 
 ## Installation
+
+Download the package for your system from the
+[Releases page](https://github.com/nozem79/voxfox/releases): every version
+has a `.deb` (Debian, Ubuntu, Mint) and an `.rpm` (Fedora).
 
 **Debian, Ubuntu, Linux Mint** (and other Debian-based distributions):
 
@@ -790,4 +794,4 @@ rm -rf ~/.piper ~/.config/voxfox ~/.local/share/voxfox ~/.cache/voxfox
 ## License
 
 VoxFox is free software under the GNU General Public License v3 (or later).
-Copyright (C) 2025 Daniël Vos. See `licence.txt` for the full text.
+Copyright (C) 2025 Daniël Vos. See `LICENSE` for the full text.

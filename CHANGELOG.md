@@ -1,3 +1,22 @@
+## 6.2.1
+
+- The button icons are drawn correctly again with GTK 4.22 and newer
+  (Fedora 44 and later). That GTK reads symbolic icons with its own parser,
+  which ignores `fill="none"` and `stroke`: every outline became a filled
+  shape (a solid rectangle for Type, an arrow for Dictate) and plain lines
+  disappeared. Every shape in the icons now carries GTK's classes
+  (`transparent-fill foreground-stroke` or `foreground-fill`); older GTK
+  versions draw them exactly as before. Checked with GTK 4.14, 4.20, 4.22
+  and 4.24; a test guards the classes.
+- GitHub releases now carry the `.rpm` as well as the `.deb`. The release
+  workflow can also be started by hand for an existing tag (Actions, Release,
+  Run workflow) to add the packages to a release made earlier. CI builds and
+  checks both packages.
+- Repository clean-up: FILES.md, FILES-deb.md, licence.txt (same as
+  LICENSE) and the unused gear icon removed; the Makefile (`make check`,
+  `make deb`, `make rpm`) and the release workflow read the version from
+  `voxfox_ui/common.py`; README-deb describes the current code layout.
+
 ## 6.2.0
 
 First release of the 6.2 series: everything from 6.2.0~dev1 to ~dev3

@@ -6,11 +6,8 @@ Whisper, en kan een bestand of een geselecteerd schermgebied via OCR voorlezen.
 Elke actie is ook een opdrachtregelcommando, zodat je elke knop aan een globale
 sneltoets kunt koppelen.
 
-Dit document beschrijft de **GTK4-versie die je installeert via het
-`.deb`-pakket**. Die verschilt van de losse Tk-versie: hij installeert
-systeembreed met `apt`, deelt een UI-onafhankelijke kern (`voxfox_core`), en
-voegt GPU-detectie voor Whisper toe, een tesseract-CLI-terugval voor OCR, en
-nette labels voor schermlezers.
+Dit document beschrijft VoxFox **geïnstalleerd via het `.deb`-pakket**: het
+installeert systeembreed met `apt`.
 
 ## Installatie
 
@@ -282,43 +279,39 @@ programma draait via de Python-interpreter, en het `.deb` levert de broncode als
 platte tekst mee in `/usr/lib/voxfox/`. Reviewen, verbeteren en opnieuw bouwen is
 daardoor eenvoudig.
 
-**De broncode** bestaat uit een backend-pakket plus een frontend en assets:
+**De broncode** (in `src/`) bestaat uit twee pakketten plus een startbestand en assets:
 
-- `voxfox_core/` — de UI-onafhankelijke kern, een pakket met modules:
-  `tts.py` (Piper-TTS), `stt.py` (Whisper-STT — lokaal, externe API,
-  GPU-detectie), `ocr.py` (Tesseract-OCR met een CLI-terugval), `ipc.py` (de
-  IPC-server), `state.py` (opslaan van instellingen/geschiedenis en de
-  taaltabellen), `a11y.py` (toegankelijkheidshulp) en `common.py`. Het
-  importeert geen enkele GUI-toolkit.
-- `voxfox_gtk.py` — de GTK4-frontend (venster, instellingen, knoppen) plus de
-  opdrachtregel; dit importeert `voxfox_core`.
-- Assets: `locales/*.json` (vertalingen), `voxfox-logo.png`, `licence.txt`.
-- `packaging/build-deb.sh` — stelt het `.deb` samen.
+- `src/voxfox_core/` — alles behalve het venster: spraak, dicteren, OCR,
+  instellingen. Het gebruikt geen GUI-toolkit, dus de tests draaien zonder
+  scherm.
+- `src/voxfox_ui/` — de GTK 4-interface (hoofdvenster, Instellingen, Typen en
+  uitspreken, Bibliotheek, Geschiedenis, ...).
+- `src/voxfox_gtk.py` — het kleine startbestand dat `voxfox_ui` opstart.
+- Assets: `locales/*.json` (vertalingen), `icons/` (knopiconen en de
+  pictogrammen van de tegels), `dicts/` (uitspraakwoordenboeken),
+  `voxfox-logo.png`, `LICENSE`.
+- `packaging/build-deb.sh` en `packaging/build-rpm.sh` — bouwen de pakketten.
 
-(De losse Tk-versie onder `tk-original/` is een aparte variant en is niet nodig
-voor de GTK-/`.deb`-versie.)
-
-**Reviewen** doe je door de twee `.py`-bestanden te lezen. **Draaien vanuit de
-broncode** zonder pakket kan met `python3 voxfox_gtk.py` (GTK 4 en de
-afhankelijkheden moeten aanwezig zijn). **Verbeteren** doe je door die bestanden
-te bewerken.
+`docs/STRUCTURE.md` beschrijft elke module. **Draaien vanuit de broncode**
+zonder pakket kan met `python3 src/voxfox_gtk.py` (GTK 4.10 en de
+afhankelijkheden moeten aanwezig zijn). **Testen** doe je met `make check`
+(ruff, compileren, pytest).
 
 **Het pakket bouwen** (geen compilatie; Python byte-compileert zichzelf bij het
 draaien):
 
 ```bash
-cd packaging
-./build-deb.sh                 # maakt voxfox_<versie>_all.deb
-VERSION=1.1.0 ./build-deb.sh   # bouw een specifieke versie
+bash packaging/build-deb.sh                 # maakt src/voxfox_<versie>_all.deb
+VERSION=6.2.0 bash packaging/build-deb.sh   # bouw een specifieke versie
 ```
 
-Voor het bouwen heb je alleen `dpkg-deb` nodig.
+Voor het bouwen heb je `dpkg-deb` en `fakeroot` nodig; `make deb` doet hetzelfde.
 
 ## Ondersteunde systemen
 
 - **Besturingssysteem:** Debian-gebaseerde Linux (Debian, Ubuntu, Linux Mint,
   Pop!_OS, …) voor het `.deb`. Op andere distributies (Fedora, Arch) draait de
-  broncode rechtstreeks met `python3 voxfox_gtk.py`; alleen het kant-en-klare
+  broncode rechtstreeks met `python3 src/voxfox_gtk.py`; alleen het kant-en-klare
   pakket is Debian-specifiek. Niet voor Windows of macOS — het leunt op
   Linux-voorzieningen (AT-SPI, xdotool, de Linux-Piper-binary, …).
 - **Bureaublad:** ontworpen voor GNOME. Sommige functies zijn sessie-afhankelijk:

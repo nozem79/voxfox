@@ -10,10 +10,14 @@ lang artikel laten voorlezen tijdens de afwas, een e-mail dicteren zonder het
 toetsenbord aan te raken, of een stuk code laten terugvoorlezen om een fout te
 horen.
 
-> De huidige versie is de GTK4-build, verpakt als Debian-`.deb`. De oudere
+> De huidige versie is de GTK4-build, verpakt als `.deb` en `.rpm`. De oudere
 > Tkinter-versie wordt niet meer onderhouden.
 
 ## Installatie
+
+Download het pakket voor jouw systeem van de
+[Releases-pagina](https://github.com/nozem79/voxfox/releases): bij elke versie
+staan een `.deb` (Debian, Ubuntu, Mint) en een `.rpm` (Fedora).
 
 **Debian, Ubuntu, Linux Mint** (en andere Debian-gebaseerde distributies):
 
@@ -828,4 +832,4 @@ rm -rf ~/.piper ~/.config/voxfox ~/.local/share/voxfox ~/.cache/voxfox
 ## Licentie
 
 VoxFox is vrije software onder de GNU General Public License v3 (of later).
-Copyright (C) 2025 Daniël Vos. Zie `licence.txt` voor de volledige tekst.
+Copyright (C) 2025 Daniël Vos. Zie `LICENSE` voor de volledige tekst.

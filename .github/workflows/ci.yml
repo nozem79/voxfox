@@ -39,22 +39,30 @@ jobs:
       - name: Run the test suite
         run: python3 -m pytest tests/ -v
 
-  # Build the .deb and check that what every tile needs is really in it.
+  # Build the .deb and the .rpm and check that what every tile needs is in both.
   package:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build the .deb
-        run: bash packaging/build-deb.sh
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot dpkg-dev rpm
+
+      - name: Build the .deb and the .rpm
+        run: |
+          bash packaging/build-deb.sh
+          bash packaging/build-rpm.sh
 
       - name: Check the package contents
         run: |
-          deb=$(ls src/voxfox_*_all.deb)
-          dpkg-deb -c "$deb" > contents.txt
+          dpkg-deb -c src/voxfox_*_all.deb > deb.txt
+          rpm -qlp src/voxfox-*.noarch.rpm > rpm.txt
           for f in usr/share/voxfox/icons/tiles/ja.svg \
                    usr/share/voxfox/icons/tiles/ik-heb-dorst.svg \
                    usr/share/voxfox/locales/nl.json \
                    usr/lib/voxfox/voxfox_ui/typespeak.py; do
-            grep -q "$f" contents.txt || { echo "missing: $f"; exit 1; }
+            grep -q "$f" deb.txt || { echo "missing in .deb: $f"; exit 1; }
+            grep -q "$f" rpm.txt || { echo "missing in .rpm: $f"; exit 1; }
           done
