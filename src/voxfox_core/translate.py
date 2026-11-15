@@ -36,7 +36,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-from .common import _, log, app
+from .common import _, log, app, bearer_header
 from .webread import split_paragraph_chunks
 
 DEFAULT_TRANSLATE = {
@@ -117,8 +117,9 @@ def _bad_url_scheme(url):
 
 def _headers(api_key=""):
     h = {"Content-Type": "application/json"}
-    if api_key:
-        h["Authorization"] = f"Bearer {api_key}"
+    auth = bearer_header(api_key)
+    if auth:
+        h["Authorization"] = auth
     return h
 
 

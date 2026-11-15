@@ -40,10 +40,11 @@ from voxfox_ui.main_window.placement import PlacementMixin  # noqa: E402
 from voxfox_ui.main_window.reading import ReadingActions  # noqa: E402
 from voxfox_ui.main_window.dictation import DictationActions  # noqa: E402
 from voxfox_ui.main_window.ocr import OcrActions  # noqa: E402
+from voxfox_ui.main_window.touch import TouchMixin  # noqa: E402
 
 
 class VoxFoxWindow(LayoutMixin, StatusMixin, PlacementMixin, ReadingActions,
-                   DictationActions, OcrActions,
+                   DictationActions, OcrActions, TouchMixin,
                    Gtk.ApplicationWindow):
     """The main VoxFox window. Start-up, the live transcription and Type
     and speak windows, settings and quitting live here; everything else
@@ -81,6 +82,17 @@ class VoxFoxWindow(LayoutMixin, StatusMixin, PlacementMixin, ReadingActions,
             log.debug(f"own-window hover reading unavailable: {e}")
         self._build_ui()
         self._sync_pause_btn()
+        # Myna (Ubuntu's dictation) as an optional engine for Dictate.
+        self._start_myna_client()
+        # The document currently being spoken, so pause and stop know
+        # where to save the reading position. None for ordinary text.
+        # (Until 6.3 these two lines sat in _on_active_changed, so every
+        # focus change forgot the document and its position was not saved.)
+        self.current_document = None
+        self.current_document_dir = None
+        # The floating touch button, when it is switched on (6.3).
+        self.touch_btn = None
+        self._touch_hide_pending = False
         # Keep the window above others: re-assert "always on top" whenever it
         # stops being the active window (e.g. another app was opened). The
         # initial assert is done from do_activate once the window is mapped.
@@ -91,10 +103,8 @@ class VoxFoxWindow(LayoutMixin, StatusMixin, PlacementMixin, ReadingActions,
     def _on_active_changed(self, *_a):
         if not self.is_active():
             self.set_always_on_top()
-        # The document currently being spoken, so pause and stop know
-        # where to save the reading position. None for ordinary text.
-        self.current_document = None
-        self.current_document_dir = None
+            if getattr(self, "touch_btn", None) is not None:
+                self.touch_btn.keep_above()
 
     def rebuild_ui(self):
         """Rebuild the whole window UI in place. Used to re-render every label
@@ -146,6 +156,10 @@ class VoxFoxWindow(LayoutMixin, StatusMixin, PlacementMixin, ReadingActions,
 
     def open_preferences(self):
         self._prefs = PreferencesWindow(self)
+        # The touch button may hide this window; that waits until Settings
+        # is closed.
+        self._prefs.connect("unmap", lambda *_a: GLib.timeout_add(
+            200, lambda: (self.sync_main_window(), False)[1]))
         self._prefs.present()
 
     # ── setup ─────────────────────────────────────────────────────────────────
@@ -185,6 +199,7 @@ class VoxFoxWindow(LayoutMixin, StatusMixin, PlacementMixin, ReadingActions,
 
     def do_quit_cleanup(self):
         self.save_window_pos()
+        self.close_touch_button()
         vf.set_hover_running(False)
         try:
             vf.stop_speaking()

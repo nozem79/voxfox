@@ -18,11 +18,12 @@
 """voxfox_core.stt — Speech-to-text: Whisper model loading, recording, transcription."""
 
 import json, os, subprocess, threading, time, urllib.error, urllib.parse, urllib.request
-from .common import _, log, have_command
+from .common import _, log, have_command, bearer_header
 
 
-# Whisper config
-WHISPER_MODELS    = ["tiny", "base", "small", "medium", "large-v3"]
+# Whisper config. The last entry is not a Whisper model: NVIDIA Parakeet
+# (voxfox_core.parakeet), offered in the same list since 6.3.
+WHISPER_MODELS    = ["tiny", "base", "small", "medium", "large-v3", "parakeet-v3"]
 WHISPER_SAMPLE_RATE = 16000
 WHISPER_TYPE_LIMIT  = 200          # chars: <= type, > paste via clipboard
 WHISPER_MAX_SECONDS = 120          # safety cap on recording length
@@ -798,8 +799,9 @@ def transcribe_remote(wav_path, url, api_key, model_name, language_hint=None):
     headers = {
         "Content-Type": f"multipart/form-data; boundary={boundary}",
     }
-    if api_key:
-        headers["Authorization"] = f"Bearer {api_key}"
+    auth = bearer_header(api_key)
+    if auth:
+        headers["Authorization"] = auth
 
     req = urllib.request.Request(endpoint, data=payload, headers=headers,
                                  method="POST")
@@ -902,10 +904,33 @@ def wav_as_float32(wav_path):
     return np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
 
 
+def _release_whisper():
+    """Forget the loaded Whisper model, so its (GPU) memory is freed when
+    the other model takes over."""
+    with _whisper.lock:
+        _whisper.model = None
+        _whisper.model_name = None
+        _whisper.device = None
+
+
 def _transcribe_local(wav_path, model_name, language_hint=None,
                       progress_cb=None, device="auto", frac_cb=None):
-    """Local Whisper transcription. Extracted from the old transcribe()
-    so the routing wrapper above can call it as a fallback."""
+    """Local transcription with Whisper or Parakeet. Extracted from the
+    old transcribe() so the routing wrapper above can call it as a
+    fallback."""
+    from . import parakeet as pk
+    if pk.is_parakeet(model_name):
+        if pk.parakeet_supports(language_hint) or not faster_whisper_available():
+            _release_whisper()
+            audio = wav_as_float32(wav_path)
+            return pk.transcribe_parakeet(
+                audio if audio is not None else wav_path, progress_cb, frac_cb)
+        # A language Parakeet does not know: Whisper small instead.
+        log.info(f"Parakeet does not know '{language_hint}'; using Whisper small")
+        if progress_cb:
+            progress_cb("Parakeet does not know this language — using Whisper")
+        model_name = "small"
+    pk.release_parakeet()
     model, err = load_whisper_model(model_name, progress_cb, device=device,
                                     frac_cb=frac_cb)
     if model is None:

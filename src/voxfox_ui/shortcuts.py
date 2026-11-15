@@ -44,6 +44,7 @@ SHORTCUT_ACTIONS = [
     ("live",    "VoxFox: live transcription", "voxfox --live-toggle", ""),
     ("translate", "VoxFox: translate & read", "voxfox --translate", ""),
     ("type",    "VoxFox: type and speak", "voxfox --type-speak",  ""),
+    ("touch",   "VoxFox: touch button", "voxfox --touch-toggle",  "<Super>t"),
 ]
 
 # Short, translatable names for the actions, shown in the settings
@@ -59,6 +60,7 @@ SHORTCUT_LABELS = {
     "live":    "Live transcription",
     "translate": "Translate & read",
     "type":    "Type and speak",
+    "touch":   "Touch button on/off",
 }
 
 
@@ -184,7 +186,7 @@ def _install_cinnamon_shortcuts(src, state):
                 log.debug(f"clear voxfox slot {slot}: {e}")
             names.remove(slot)
 
-    # 2.5 Allocate fresh numeric slots for the six actions.
+    # 2.5 Allocate fresh numeric slots for the actions.
     name_set = set(names)
     keys = [a[0] for a in SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(name_set, len(keys))
@@ -331,7 +333,7 @@ def _install_gnome_shortcuts(src, state):
                 log.debug(f"clear voxfox slot {slot_of(p)}: {e}")
             paths.remove(p)
 
-    # 2.5 Allocate fresh numeric slots for the six actions.
+    # 2.5 Allocate fresh numeric slots for the actions.
     slot_set = {slot_of(p) for p in paths}
     keys = [a[0] for a in SHORTCUT_ACTIONS]
     fresh = _next_custom_slots(slot_set, len(keys))
@@ -416,7 +418,7 @@ def _install_lxqt_shortcuts(src, state):
     named '<KeySeq>.<N>', with '+' encoded as %2B and N a unique index, holding
     Comment / Enabled / Exec — where Exec is comma-separated ('voxfox, --read')
     and the Super key is spelled 'Meta'. On each install we drop our own old
-    sections (matched by Exec) and write the current six, preserving any
+    sections (matched by Exec) and write the current ones, preserving any
     sections the user added themselves, then let the daemon's file-watcher
     reload. This makes changing a shortcut replace its old key. No-op outside
     LXQt. `src` is unused (LXQt doesn't use GSettings); kept for a uniform

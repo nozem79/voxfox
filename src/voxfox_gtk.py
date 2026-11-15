@@ -49,7 +49,8 @@ os.environ.setdefault("GSK_RENDERER", "cairo")
 
 
 def _stay_on_top_wanted():
-    """Read the always_on_top setting straight from the state file.
+    """Read the always_on_top and touch-button settings straight from the
+    state file.
 
     Deliberately not via voxfox_core: this runs before anything else
     is imported, and importing the package here would set up logging
@@ -59,7 +60,11 @@ def _stay_on_top_wanted():
     try:
         with open(os.path.join(base, "voxfox", "state.json"),
                   encoding="utf-8") as fh:
-            return bool(json.load(fh).get("always_on_top", True))
+            st = json.load(fh)
+        # The floating touch button (6.3) has to stay on top too.
+        tb = st.get("touch_button")
+        return bool(st.get("always_on_top", True)) or bool(
+            isinstance(tb, dict) and tb.get("enabled"))
     except Exception:
         return True
 

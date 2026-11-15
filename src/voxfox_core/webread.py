@@ -52,7 +52,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 
-from .common import log
+from .common import log, bearer_header
 
 DEFAULT_OLLAMA_URL   = "http://localhost:11434"
 DEFAULT_OLLAMA_MODEL = "llama3.2"
@@ -629,11 +629,12 @@ def split_paragraph_chunks(text, limit):
 
 def _ollama_headers(api_key=None):
     h = {"Content-Type": "application/json"}
-    if api_key:
-        # Ollama itself is unauthenticated; instances exposed on another
-        # machine usually sit behind a reverse proxy that expects a Bearer
-        # token (Open WebUI, ollama-proxy, nginx auth_request, ...).
-        h["Authorization"] = f"Bearer {api_key}"
+    # Ollama itself is unauthenticated; instances exposed on another
+    # machine usually sit behind a reverse proxy that expects a Bearer
+    # token (Open WebUI, ollama-proxy, nginx auth_request, ...).
+    auth = bearer_header(api_key)
+    if auth:
+        h["Authorization"] = auth
     return h
 
 

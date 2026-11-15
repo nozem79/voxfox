@@ -1,3 +1,100 @@
+## 6.3.0
+
+New ways to dictate, a floating touch button, and fixes for Ubuntu 26.10.
+
+### Dictation
+
+- **Parakeet model.** `parakeet-v3` (NVIDIA Parakeet-TDT 0.6B v3) is a new
+  choice in the model list on the Dictation tab. For Dutch it makes a few
+  more mistakes than Whisper `large-v3` (word error rate about 7.5 % against
+  5.5 % on FLEURS) but far fewer than `small` (18.5 %), and it is fast on a
+  normal processor, so it suits computers without an NVIDIA graphics card.
+  25 European languages; for other languages VoxFox uses Whisper `small`.
+  It runs through `onnx-asr` (int8, about 670 MB), which the Install button
+  installs. The model is stored in `~/.local/share/voxfox/models/` (or
+  `/usr/share/voxfox/models/` when a distribution ships it), downloaded into
+  a `.part` folder first so an interrupted download is never used. Whisper
+  and Parakeet are not kept in memory at the same time.
+- **Myna.** When Ubuntu's own dictation, Myna, is running, the Dictation tab
+  shows **Speech recognition: VoxFox (own model) / Myna**. With Myna, the
+  Dictate button and `Super+W` start and stop Myna over D-Bus
+  (`com.canonical.Myna.Dictation`, `Toggle`); Myna records, recognises and
+  types the text itself. The button turns red while Myna works, also when
+  Myna was started with its own shortcut, and the status line follows
+  Myna's state. These dictations are not in History, because VoxFox never
+  sees the text. If Myna is not running, Dictate uses VoxFox's own model and
+  says so. VoxFox never starts Myna itself, and shares no code with it.
+- The Dictation tab's section is called "Speech recognition
+  (speech-to-text)".
+- **API key with a newline.** A key pasted with a line ending (or spaces)
+  made every request fail with "Invalid header value", and dictation fell
+  back to the local model. Whitespace is now removed from keys before they
+  are sent (remote dictation, translation, web-page reading), and the
+  dictation key is trimmed when saved.
+- Errors from xdotool while typing dictated text go to the log, with the
+  reason, instead of the terminal, where an "X Error of failed request:
+  BadWindow" looked like VoxFox itself had crashed.
+- Installing speech recognition (or anything else through pip) no longer
+  hangs when pip prints a lot: its output goes to a temporary file instead
+  of a pipe nobody read. Packages installed into a brand-new `~/.local` are
+  found straight away instead of after a restart. A failed install writes
+  pip's last lines to the log.
+
+### Touch button
+
+- A round orange button that floats above all windows, for touchscreens.
+  Switch it on under Settings → Touch button, or with **Super+T**
+  (`voxfox --touch-toggle`). Standard actions:
+
+  | Gesture         | Action                                   |
+  |-----------------|------------------------------------------|
+  | Tap once        | Choose a screen area and read it (OCR)   |
+  | Tap twice       | Pause / resume                           |
+  | Tap three times | Read web page                            |
+  | Tap four times  | Show or hide the VoxFox window           |
+  | Tap five times  | Switch the touch button off              |
+  | Press and hold  | Stop, and clear the selection            |
+
+  Every gesture can be set to any VoxFox action, or to nothing; three
+  sizes. Drag the button to move it; VoxFox remembers where.
+- It shows what it does: it lights up once for each tap it understood,
+  pulses softly while VoxFox reads aloud and stays light while reading is
+  paused. Screen readers hear what each gesture does.
+- Tapping it does not take the keyboard focus from the program you are
+  reading in (X11: input hint off, without WM_TAKE_FOCUS; set again every
+  time the button is shown).
+- It steps aside while a window is full screen on its monitor (a video, a
+  game, a presentation) and comes back in the same place afterwards.
+- New setting *Hide the VoxFox window while the touch button is on*: only
+  the button stays on screen. Starting VoxFox again shows the window (IPC
+  command `show`; before, it only said it was running).
+- "Clear the selection" empties the primary selection (`xclip`, or
+  `wl-copy --primary --clear`); the ordinary clipboard is left alone.
+- Like *Always on top* it needs an X server; on Wayland VoxFox also
+  restarts through XWayland when the touch button is on.
+- Super+T is in Settings → Shortcuts like the others. If you installed the
+  shortcuts before, choose Install shortcuts once more to add it.
+
+### Appearance and other fixes
+
+- **No window background on Ubuntu 26.10.** The GTK 4 part of the Yaru theme
+  there only imports a resource that does not exist, so GTK loaded no
+  styling and VoxFox's windows were see-through. VoxFox now checks that the
+  desktop's theme really gives CSS and otherwise uses GTK's own theme
+  (light or dark as chosen). Applies to every theme with this problem.
+- GTK 4.20 and newer: light/dark is set through `gtk-interface-color-scheme`
+  instead of the old prefer-dark setting, so GTK no longer warns about it.
+- **Library reading positions are saved again.** Since 6.1 the main window
+  forgot which document was being read every time the focus changed (for
+  instance when the Library window closed), so pausing or stopping a book
+  usually did not save where you were.
+- The setup assistant no longer counts the shortcuts ("the six VoxFox
+  shortcuts"), which no longer matched.
+- The log starts with the VoxFox and GTK version.
+- New texts are translated into all 22 languages; the READMEs, README-deb
+  and docs/STRUCTURE.md are updated, and README-deb names the right
+  settings file (`~/.config/voxfox/state.json`).
+
 ## 6.2.1
 
 - The button icons are drawn correctly again with GTK 4.22 and newer

@@ -18,6 +18,7 @@
 """voxfox_core.state — Persistent state and history (load/save, atomic writes, migration)."""
 
 import copy, json, os, tempfile, threading, time
+from .touchbutton import DEFAULT_TOUCH_BUTTON, normalize_touch_button
 from .common import HISTORY_FILE, HISTORY_SIZE, LEGACY_HISTORY_FILE, LEGACY_STATE_FILE, LEGACY_TK_STATE_FILE, STATE_FILE, log, set_language, ui_code_for_piper_lang, detect_system_piper_lang, DEFAULT_VOICE_FOR_LANG, DEFAULT_SPEED_FOR_LANG, DEFAULT_PITCH_FOR_LANG, PIPER_LANG_TO_CODE, app
 
 
@@ -46,7 +47,8 @@ DEFAULT_STATE = {
     "type_last_picture_dir": None,  # where the last tile picture was chosen from
     "type_icons_added": [],      # boards that got the 6.2 pictograms (once per language)
     "whisper": {
-        "model": "small",          # tiny / base / small / medium / large-v3
+        "model": "small",          # tiny / base / small / medium / large-v3 / parakeet-v3
+        "engine": "voxfox",        # "voxfox" (own model) | "myna" (Ubuntu's Myna, 6.3)
         "mic_id": "",              # PulseAudio source name; "" = system default
         "confirm_before_typing": False,  # ask before typing transcription
         # Safety cap (seconds): recording auto-stops after this long even
@@ -117,6 +119,8 @@ DEFAULT_STATE = {
         "model": "llama3.2",
         "api_key": "",
     },
+    # 6.3: the floating touch button (see touchbutton.py). Off by default.
+    "touch_button": copy.deepcopy(DEFAULT_TOUCH_BUTTON),
     # 4.0 translate & read: translate the selection into the UI language
     # via any OpenAI-compatible endpoint (local Ollama or a remote API),
     # then speak it with the Slot 1 voice.
@@ -225,6 +229,7 @@ def load_state():
                          copy.deepcopy(DEFAULT_STATE["webread"]))
             for k, v in DEFAULT_STATE["webread"].items():
                 s["webread"].setdefault(k, v)
+            s["touch_button"] = normalize_touch_button(s.get("touch_button"))
             s.setdefault("translate",
                          copy.deepcopy(DEFAULT_STATE["translate"]))
             for k, v in DEFAULT_STATE["translate"].items():

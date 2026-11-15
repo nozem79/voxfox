@@ -38,7 +38,59 @@ class DictationActions:
     """Dictation: recording, transcribing, confirming and typing the text.
     """
 
+    # ── Myna (Ubuntu's own dictation), 6.3 ──
+    def _start_myna_client(self):
+        """Follow Myna on the session bus. Called once at start-up."""
+        try:
+            from voxfox_ui.myna import MynaClient
+            self.myna = MynaClient(on_change=self._on_myna_state)
+        except Exception as e:
+            log.debug(f"myna client unavailable: {e}")
+            self.myna = None
+
+    def _myna_running(self):
+        m = getattr(self, "myna", None)
+        return bool(m and m.running)
+
+    def _on_myna_state(self, state):
+        """Myna's State changed (also when it was started with Myna's own
+        shortcut). Mirror it on the Dictate button while Myna is the chosen
+        engine; VoxFox's own recording is never touched."""
+        if self.whisper_on or self.state["whisper"].get("engine") != "myna":
+            return
+        if vf.myna_is_busy(state):
+            self._myna_active = True
+            btn_set_text(self.whisper_btn, _("Stop"))
+            self.whisper_btn.add_css_class("destructive-action")
+            self.whisper_btn.add_css_class("voxfox-recording")
+            self.set_status(vf.myna_status_text(state), duration=0)
+            return
+        if getattr(self, "_myna_active", False):
+            self._myna_active = False
+            self._whisper_reset_btn()
+            msg = vf.myna_status_text(state)
+            if msg:
+                self.set_status(msg)
+            elif state == "idle":
+                # Myna typed the text itself; VoxFox never sees it, so
+                # there is nothing to put in History.
+                self.set_status(_("Myna: done"))
+
     def do_whisper(self):
+        w = self.state["whisper"]
+        recording_msg = _("Recording...")
+        if not self.whisper_on and w.get("engine") == "myna":
+            if self._myna_running():
+                def done(ok, msg):
+                    if not ok:
+                        self.set_status(f"Myna: {msg}")
+                self.myna.toggle(done)
+                return
+            # Chosen, but not running (removed, or not started yet): use
+            # VoxFox's own model rather than doing nothing, and say so in
+            # the status line while recording.
+            recording_msg = _("Myna is not running — using VoxFox's own "
+                              "speech recognition")
         if self.whisper_on:
             if self._record_stop_event:
                 self._record_stop_event.set()
@@ -48,7 +100,7 @@ class DictationActions:
         btn_set_text(self.whisper_btn, _("Stop"))
         self.whisper_btn.add_css_class("destructive-action")
         self.whisper_btn.add_css_class("voxfox-recording")
-        self.set_status(_("Recording..."), duration=0)
+        self.set_status(recording_msg, duration=0)
         self._record_stop_event = threading.Event()
         threading.Thread(target=self._whisper_worker, daemon=True).start()
 

@@ -49,6 +49,36 @@ def get_selection():
     return ""
 
 
+def clear_selection():
+    """Empty the primary selection (the text that is highlighted), so the
+    next "read selection" does not read it again. The ordinary clipboard
+    (Ctrl+C) is left alone: emptying it would throw away something the
+    user may still want to paste. Programs usually remove the highlight
+    when they lose the selection, but that is up to them.
+    Returns True when one of the tools ran."""
+    if IS_WAYLAND and have_command("wl-copy"):
+        try:
+            r = subprocess.run(["wl-copy", "--primary", "--clear"],
+                               capture_output=True, timeout=2.0)
+            if r.returncode == 0:
+                return True
+        except Exception:
+            pass
+    if have_command("xclip"):
+        try:
+            # xclip owns the selection afterwards, holding nothing: the
+            # program that had it hears that it lost it.
+            p = subprocess.Popen(["xclip", "-selection", "primary", "-in"],
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+            p.communicate(b"", timeout=2.0)
+            return True
+        except Exception as e:
+            log.debug(f"clear selection failed: {e}")
+    return False
+
+
 def _clipboard_get():
     """Return current clipboard contents (best effort, empty string on failure)."""
     if IS_WAYLAND and have_command("wl-paste"):
@@ -91,6 +121,17 @@ def clipboard_set(text):
     return False
 
 
+def _tool_failed(name, r):
+    """Log why a typing tool failed. Its error output goes to the log, not
+    to the terminal: an "X Error of failed request: BadWindow" from xdotool
+    there looked like VoxFox itself had crashed. It usually means the
+    window that had the keyboard focus had just closed."""
+    err = (r.stderr or b"").decode("utf-8", "replace").strip()
+    first = err.splitlines()[0] if err else ""
+    log.warning(f"{name} failed (exit {r.returncode})"
+                + (f": {first}" if first else ""))
+
+
 def _type_text(text):
     """Type characters one by one at the keyboard focus. Returns True on success."""
     # X11 / XWayland: xdotool works everywhere xdotool is installed.
@@ -98,9 +139,10 @@ def _type_text(text):
         try:
             r = subprocess.run(
                 ["xdotool", "type", "--clearmodifiers", "--delay", "1", "--", text],
-                check=False, timeout=15.0)
+                check=False, timeout=15.0, capture_output=True)
             if r.returncode == 0:
                 return True
+            _tool_failed("xdotool type", r)
         except Exception:
             pass
     # Pure Wayland: wtype is the native equivalent of `xdotool type`.
@@ -128,9 +170,10 @@ def _send_paste_shortcut():
     if have_command("xdotool"):
         try:
             r = subprocess.run(["xdotool", "key", "--clearmodifiers", "ctrl+v"],
-                               check=False, timeout=3.0)
+                               check=False, timeout=3.0, capture_output=True)
             if r.returncode == 0:
                 return True
+            _tool_failed("xdotool key", r)
         except Exception:
             pass
     if have_command("wtype"):
@@ -205,6 +248,7 @@ def type_or_paste_text(text):
 
 __all__ = [
     "get_selection",
+    "clear_selection",
     "_clipboard_get",
     "clipboard_set",
     "_type_text",

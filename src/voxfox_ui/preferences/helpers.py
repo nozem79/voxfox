@@ -51,5 +51,9 @@ def _whisper_model_hint(name):
                     "About 1.5 GB."),
         "large-v3": _("Most accurate, but slow without a graphics card (GPU). "
                       "About 3 GB."),
+        "parakeet-v3": _("NVIDIA Parakeet: almost as accurate as large-v3, "
+                         "and fast without a graphics card. 25 European "
+                         "languages; for others VoxFox uses Whisper small. "
+                         "About 670 MB."),
     }
     return hints.get(name, "")

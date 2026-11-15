@@ -37,11 +37,13 @@ from voxfox_ui.preferences.ai import AiSection  # noqa: E402
 from voxfox_ui.preferences.shortcuts import ShortcutsSection  # noqa: E402
 from voxfox_ui.preferences.appearance import AppearanceSection  # noqa: E402
 from voxfox_ui.preferences.general import GeneralSection  # noqa: E402
+from voxfox_ui.preferences.touchbutton import TouchButtonSection  # noqa: E402
 
 
 class PreferencesWindow(LanguagesSection, PronunciationSection,
                         DictationSection, AiSection, ShortcutsSection,
-                        AppearanceSection, GeneralSection, Gtk.Window):
+                        AppearanceSection, GeneralSection, TouchButtonSection,
+                        Gtk.Window):
     """the settings window: the list of sections on the left and the shared
     save logic.
     """
@@ -111,6 +113,7 @@ class PreferencesWindow(LanguagesSection, PronunciationSection,
              _page(self._translate_group(), self._webread_group())),
             ("shortcuts", _("Shortcuts"), _page(self._shortcuts_group())),
             ("look", _("Appearance"), _page(self._interface_group())),
+            ("touch", _("Touch button"), _page(self._touch_group())),
             ("general", _("General"),
              _page(self._misc_group(), self._documents_group())),
         ]

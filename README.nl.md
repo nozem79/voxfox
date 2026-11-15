@@ -312,6 +312,13 @@ De instellingen staan op het tabblad *Dicteren*:
   - `small` — aanbevolen standaard; goed meertalig
   - `medium` — beter, ~1,5 GB
   - `large-v3` — best, ~3 GB en traag op de CPU
+  - `parakeet-v3` — NVIDIA Parakeet (sinds 6.3): bijna zo nauwkeurig als
+    `large-v3` en snel op een gewone processor, zonder videokaart. 25
+    Europese talen (Nederlands, Engels, Duits, Frans, Spaans en meer); voor
+    andere talen gebruikt VoxFox Whisper `small`. Ongeveer 670 MB. De knop
+    **Spraakherkenning installeren** installeert hiervoor `onnx-asr`.
+- **Spraakherkenning** — alleen zichtbaar als Myna geïnstalleerd is: *VoxFox
+  (eigen model)* of *Myna* (zie onder)
 - **Compute** — *Auto* gebruikt een NVIDIA-GPU als die wordt gevonden (CUDA +
   cuDNN), anders de CPU, en valt terug op de CPU als de GPU niet start
 - **Microfoon** — kies een specifiek invoerapparaat of laat op *Standaard*
@@ -323,7 +330,19 @@ De taal van het actieve slot wordt als hint aan Whisper meegegeven, wat veel
 betrouwbaarder is dan automatisch detecteren. Modellen worden bij het eerste
 gebruik gedownload en gecachet onder `~/.cache/huggingface/`; gebruik de
 downloadknop naast de modellijst om er vooraf één op te halen (met
-voortgangsbalk).
+voortgangsbalk). Het Parakeet-model staat in plaats daarvan in
+`~/.local/share/voxfox/models/`, zodat je het makkelijk vindt en weghaalt.
+
+### Myna (het dicteren van Ubuntu zelf)
+
+Ubuntu 26.10 heeft [Myna](https://github.com/canonical/myna), een offline
+dicteerprogramma. Als Myna draait, kun je op het tabblad *Dicteren* bij
+**Spraakherkenning** kiezen. Met *Myna* start en stopt de knop Dicteren (en
+`Super+W`) Myna: Myna neemt op, herkent en typt de tekst zelf, en de knop
+wordt rood zolang Myna luistert. De taal en het model van Myna kies je in de
+instellingen van Myna. Omdat VoxFox de tekst niet ziet, komen deze dictaten
+niet in Geschiedenis. Draait Myna niet, dan gebruikt Dicteren het eigen model
+van VoxFox en meldt dat. Live transcriptie gebruikt altijd het eigen model.
 
 ### GPU-notities
 
@@ -519,6 +538,50 @@ het niet worden afgedwongen. VoxFox dwingt de "boven"-status kort na de start af
 en opnieuw zodra het de focus verliest, zodat een ander programma openen het niet
 naar achteren duwt.
 
+## Aanraakknop
+
+Voor touchscreens (en voor wie liever één grote knop heeft dan sneltoetsen)
+zet je onder Instellingen → Aanraakknop een ronde oranje knop aan die boven
+alle vensters zweeft. Sleep hem waar je wilt; VoxFox onthoudt de plek. Wat hij
+doet:
+
+| Gebaar            | Standaardactie                                 |
+|-------------------|------------------------------------------------|
+| 1x tikken         | Een schermgebied kiezen en voorlezen (OCR)     |
+| 2x tikken         | Pauzeren / hervatten                           |
+| 3x tikken         | Webpagina voorlezen                            |
+| 4x tikken         | VoxFox-venster tonen of verbergen              |
+| 5x tikken         | Aanraakknop uitzetten                          |
+| Ingedrukt houden  | Stoppen en de selectie wissen                  |
+
+Elk gebaar kun je op elke VoxFox-actie zetten, of op niets. Zet je de knop
+uit (5x tikken), dan komt het VoxFox-venster met de gewone knoppen terug; aan
+zet je hem weer in Instellingen of met `Super+T` (`voxfox --touch-toggle`),
+waarmee je hem ook uitzet. Bij 1x tikken
+reageert de knop na ongeveer een derde seconde, omdat VoxFox eerst wacht of er
+een tweede tik komt. "Selectie wissen" maakt de gemarkeerde tekst (de primaire
+selectie) leeg, zodat die niet nog eens wordt voorgelezen; het gewone klembord
+blijft staan. Tikken op de knop neemt de toetsenbordfocus niet weg uit het
+programma waarin je leest.
+
+De knop laat zien wat hij doet: hij licht één keer op voor elke tik die hij
+heeft herkend (twee keer bij 2x tikken, één langere keer bij ingedrukt
+houden), pulseert zacht zolang VoxFox voorleest, en blijft licht als het
+voorlezen gepauzeerd is. Staan animaties uit in je bureaubladinstellingen, dan
+laat GTK het vervagen weg.
+
+De knop gaat even weg zolang een venster op zijn beeldscherm schermvullend is
+(een video, een spel, een presentatie), en komt terug als dat venster niet
+meer schermvullend is. Vink *VoxFox-venster verbergen als de aanraakknop aan
+staat* aan als je alleen de knop wilt zien; het venster verdwijnt als je
+Instellingen sluit. Start VoxFox opnieuw vanuit het menu om het venster te
+zien, of geef een gebaar de actie *VoxFox-venster tonen of verbergen*.
+
+Net als *Altijd op de voorgrond* heeft dit een X-server nodig: X11, of Wayland
+met VoxFox via XWayland (dat doet VoxFox zelf als de knop aan staat; start
+VoxFox opnieuw nadat je hem hebt aangezet). Op Wayland zonder XWayland is de
+knop een gewoon klein venster dat door andere vensters bedekt kan worden.
+
 ## Opdrachtregel
 
 VoxFox draait als één instantie via een lokale Unix-socket. Als de GUI draait,
@@ -559,7 +622,7 @@ Cinnamon wordt het bureaublad heel even herladen zodat de nieuwe toetsen meteen
 werken). **Terug naar standaard** herstelt de originelen, en je kunt ze altijd
 later wijzigen of verwijderen in de toetsenbordinstellingen van je bureaublad.
 
-De tien installeerbare acties en hun standaardtoetsen:
+De elf installeerbare acties en hun standaardtoetsen:
 
 | Actie           | Opdracht                  | Standaard |
 |-----------------|---------------------------|-----------|
@@ -569,6 +632,7 @@ De tien installeerbare acties en hun standaardtoetsen:
 | Dicteren        | `voxfox --whisper-toggle` | `Super+W` |
 | OCR-selectie    | `voxfox --ocr-select`     | `Super+A` |
 | Webpagina voorlezen | `voxfox --read-page`  | `Super+V` |
+| Aanraakknop aan/uit | `voxfox --touch-toggle` | `Super+T` |
 | OCR-selectie & vertaling | `voxfox --ocr-select-translate` | *(geen)* |
 | Live transcriptie | `voxfox --live-toggle` | *(geen)*  |
 | Vertaal & lees voor | `voxfox --translate`  | *(geen)*  |
@@ -677,6 +741,7 @@ Per gebruiker bij het eerste gebruik gedownload: de Piper-engine en -stemmen, en
 | `~/Documenten/VoxFox/Tegelafbeeldingen/` | Afbeeldingen op tegels (de map die je koos) |
 | `~/.cache/voxfox/voxfox.log`        | Logbestand                                        |
 | `~/.cache/huggingface/`             | Gecachete Whisper-modellen (respecteert `$HF_HOME`) |
+| `~/.local/share/voxfox/models/`     | Het Parakeet-model, als het gedownload is          |
 | `~/.piper/`                         | Piper-engine, en eventuele nog niet gemigreerde stemmen |
 | `/usr/share/voxfox/voices/`         | Systeembrede stemmen (bijv. meegeleverd door FoxOS), alleen-lezen |
 | `/usr/share/voxfox/locales/`        | Meegeleverde vertalingen                          |

@@ -157,9 +157,19 @@ getypt wordt.
 - **Lokaal** draait Whisper op je eigen machine via `faster-whisper`. Kies een
   model (`tiny` → `large-v3`) en gebruik de downloadknop om het vooraf op te
   halen; grotere modellen zijn nauwkeuriger maar trager en groter.
+  `parakeet-v3` (NVIDIA Parakeet, sinds 6.3) is bijna zo nauwkeurig als
+  `large-v3` en snel zonder videokaart; 25 Europese talen, ongeveer 670 MB.
+  Het heeft `onnx-asr` nodig, dat **Spraakherkenning installeren** installeert.
 - **Externe API** stuurt de audio naar een OpenAI-compatibel transcriptie-eindpunt.
   Vul de URL, het model en (optioneel) de API-sleutel in en gebruik
   **Verbinding testen**.
+
+### Myna
+
+Op Ubuntu met [Myna](https://github.com/canonical/myna) kies je onder
+Instellingen → Dicteren **Spraakherkenning: Myna**. Dicteren start en stopt
+dan Myna, die zelf opneemt, herkent en de tekst typt. Draait Myna niet, dan
+gebruikt VoxFox zijn eigen model.
 
 ### GPU-versnelling
 
@@ -217,11 +227,11 @@ daar kan het zonder effect blijven.
 
 ## Sneltoetsen
 
-VoxFox kan tot tien globale sneltoetsen voor je installeren — open
+VoxFox kan tot elf globale sneltoetsen voor je installeren — open
 **Instellingen → Sneltoetsen**, wijzig eventueel een combinatie door erop te
 klikken en de toetsen in te drukken, en kies dan **Sneltoetsen installeren**.
 Dit werkt op Cinnamon, GNOME, LXQt, XFCE en KDE Plasma; er wordt niets
-automatisch geïnstalleerd. Zes hebben een standaardtoets:
+automatisch geïnstalleerd. Zeven hebben een standaardtoets:
 
 | Commando                   | Actie                        | Standaard |
 |----------------------------|------------------------------|-----------|
@@ -231,6 +241,7 @@ automatisch geïnstalleerd. Zes hebben een standaardtoets:
 | `voxfox --whisper-toggle`  | Dicteren (spraak naar tekst) | `Super+W` |
 | `voxfox --ocr-select`      | Schermgebied voorlezen (OCR) | `Super+A` |
 | `voxfox --read-page`       | Webpagina voorlezen (experimenteel) | `Super+V` |
+| `voxfox --touch-toggle`    | Aanraakknop aan/uit          | `Super+T` |
 
 De andere vier hebben geen standaardtoets; geef ze eerst een toets als je ze
 wilt gebruiken: OCR-selectie & vertaling (`voxfox --ocr-select-translate`),
@@ -270,7 +281,8 @@ Optioneel, voor Whisper op GPU: de NVIDIA-driver, de CUDA-runtime en cuDNN.
 - Programma: `/usr/lib/voxfox/` (starter `/usr/bin/voxfox`)
 - Piper-engine + stemmen: `~/.piper/`
 - Whisper-modelcache: `~/.cache/huggingface/`
-- Instellingen: `~/.config/voxfox_state.json`
+- Parakeet-model: `~/.local/share/voxfox/models/`
+- Instellingen: `~/.config/voxfox/state.json`
 
 ## Voor ontwikkelaars / broncode
 
@@ -302,7 +314,7 @@ draaien):
 
 ```bash
 bash packaging/build-deb.sh                 # maakt src/voxfox_<versie>_all.deb
-VERSION=6.2.0 bash packaging/build-deb.sh   # bouw een specifieke versie
+VERSION=6.3.0 bash packaging/build-deb.sh   # bouw een specifieke versie
 ```
 
 Voor het bouwen heb je `dpkg-deb` en `fakeroot` nodig; `make deb` doet hetzelfde.

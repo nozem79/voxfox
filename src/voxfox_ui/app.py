@@ -48,6 +48,8 @@ class VoxFoxApplication(Gtk.Application):
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
+        log.info(f"VoxFox {APP_VERSION}, GTK {Gtk.get_major_version()}."
+                 f"{Gtk.get_minor_version()}.{Gtk.get_micro_version()}")
         # GDK has opened its X display by now; make stray Xlib errors (e.g. a
         # window vanishing mid-query during hover) non-fatal so they can't crash us.
         _install_x_error_handler()
@@ -123,6 +125,14 @@ class VoxFoxApplication(Gtk.Application):
         for delay in (350, 1100):
             GLib.timeout_add(delay,
                              lambda: (self.win._fit_to_content(), False)[1])
+        # The floating touch button, if switched on, once the main window
+        # is up (it needs the window's actions).
+        # Only the first time: opening VoxFox again (app menu, launcher)
+        # must show its window even when the button hides it.
+        if not getattr(self, "_touch_started", False):
+            self._touch_started = True
+            GLib.timeout_add(600, lambda: (
+                self.win.apply_touch_button(startup=True), False)[1])
         # Warm up the Piper server in the background so the voice model is
         # already loaded by the time the user first speaks. This eliminates
         # the ~1 s startup delay on the very first utterance.
@@ -241,6 +251,7 @@ class VoxFoxApplication(Gtk.Application):
             ("voxfox --read-page",      _("Read web page (experimental)")),
             ("voxfox --live-toggle",    _("Toggle live transcription")),
             ("voxfox --type-speak",     _("Type and speak")),
+            ("voxfox --touch-toggle",   _("Touch button on/off")),
         ]
         shortcuts = [
             ("Super+Z", _("Read selected text")),
@@ -249,6 +260,7 @@ class VoxFoxApplication(Gtk.Application):
             ("Super+W", _("Dictation")),
             ("Super+A", _("OCR region select")),
             ("Super+V", _("Read web page (experimental)")),
+            ("Super+T", _("Touch button on/off")),
         ]
         cmd_block = "\n".join(f"{cmd}  —  {desc}" for cmd, desc in commands)
         sc_block  = "\n".join(f"{key}  —  {desc}" for key, desc in shortcuts)
@@ -309,6 +321,8 @@ def _build_arg_parser():
                    help="Read the focused browser page aloud (experimental)")
     g.add_argument("--type-speak",    dest="type_speak",    action="store_true",
                    help="Open the Type and speak window")
+    g.add_argument("--touch-toggle",  dest="touch_toggle",  action="store_true",
+                   help="Switch the floating touch button on or off")
     g.add_argument("--ocr",           dest="ocr",           metavar="FILE")
     g.add_argument("--status",        dest="status",        action="store_true")
     g.add_argument("--quit",          dest="quit",          action="store_true")
@@ -445,7 +459,7 @@ def main():
             args.hover_toggle, args.whisper_toggle, args.ocr_select,
             args.ocr_select_translate,
             args.read_page, args.live_toggle, args.translate,
-            args.type_speak, args.ocr, args.status,
+            args.type_speak, args.touch_toggle, args.ocr, args.status,
             args.quit]):
         vf.run_cli(args)
         return 0
@@ -456,7 +470,9 @@ def main():
               f"the \"already running\" case.")
         return 1
     if vf.is_instance_running():
-        vf.send_command("ping")
+        # Show the running VoxFox's window (an older VoxFox answers
+        # "unknown: show", which does no harm).
+        vf.send_command("show")
         print("VoxFox is already running.")
         return 0
     if not vf.acquire_singleton_lock():

@@ -42,19 +42,41 @@ class DictationSection:
     # ── Whisper: model + mic + confirm + backend + remote API ────────────────
     def _whisper_group(self):
         w = self.state["whisper"]
-        frame = Gtk.Frame(label=_("Whisper (speech-to-text)"))
+        frame = Gtk.Frame(label=_("Speech recognition (speech-to-text)"))
         grid = Gtk.Grid(row_spacing=8, column_spacing=8)
         for m in ("top", "bottom", "start", "end"):
             getattr(grid, f"set_margin_{m}")(10)
         frame.set_child(grid)
         r = 0
 
+        # Engine: VoxFox's own model, or Myna when it is installed and
+        # running (Ubuntu 26.10 and later ship it). Hidden otherwise.
+        myna = getattr(self.win, "myna", None)
+        myna_running = bool(myna and myna.running)
+        if myna_running or w.get("engine") == "myna":
+            grid.attach(Gtk.Label(label=_("Speech recognition:"), xalign=0),
+                        0, r, 1, 1)
+            self._engine_values = ["voxfox", "myna"]
+            labels = [_("VoxFox (own model)"), "Myna"]
+            cur = w.get("engine", "voxfox")
+            self.engine_dd = make_dropdown(
+                labels, labels[1] if cur == "myna" else labels[0])
+            self.engine_dd.set_hexpand(True)
+            set_accessible_label(self.engine_dd, _("Speech recognition"))
+            self.engine_dd.connect("notify::selected", self._on_engine_changed)
+            grid.attach(self.engine_dd, 1, r, 1, 1)
+            self.engine_hint = Gtk.Label(xalign=0.0, wrap=True)
+            self.engine_hint.add_css_class("dim-label")
+            grid.attach(self.engine_hint, 0, r + 1, 2, 1)
+            self._update_engine_hint(myna_running)
+            r += 2
+
         # Model + download
         grid.attach(Gtk.Label(label=_("Model:"), xalign=0), 0, r, 1, 1)
         model_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.model_dd = make_dropdown(vf.WHISPER_MODELS, w.get("model", "small"))
         self.model_dd.set_hexpand(True)
-        set_accessible_label(self.model_dd, _("Whisper model"))
+        set_accessible_label(self.model_dd, _("Speech recognition model"))
         self.model_dd.connect("notify::selected", self._on_model_changed)
         dl_btn = Gtk.Button(icon_name="document-save-symbolic")
         dl_btn.set_tooltip_text(_("Download the selected model now"))
@@ -224,7 +246,8 @@ class DictationSection:
         self.key_entry.set_visibility(False)
         self.key_entry.set_placeholder_text(_("optional"))
         self.key_entry.connect("changed",
-                               lambda e: self._save_w("remote_api_key", e.get_text()))
+                               lambda e: self._save_w("remote_api_key",
+                                                      e.get_text().strip()))
         test_btn = Gtk.Button(label=_("Test connection"))
         test_btn.connect("clicked", self._on_test_remote)
         self.test_result_lbl = Gtk.Label(xalign=0.0)
@@ -245,6 +268,31 @@ class DictationSection:
         main_grid.attach(adv, 0, r + 1, 2, 1)
         return frame
 
+    def _update_engine_hint(self, myna_running=None):
+        if myna_running is None:
+            myna = getattr(self.win, "myna", None)
+            myna_running = bool(myna and myna.running)
+        if self.state["whisper"].get("engine") != "myna":
+            self.engine_hint.set_text(_(
+                "VoxFox records and recognises speech itself, with the "
+                "model below."))
+        elif myna_running:
+            self.engine_hint.set_text(_(
+                "Dictate starts Myna. Myna records, recognises and types "
+                "the text itself; choose its language and model in Myna "
+                "Settings. The model below is still used for Live "
+                "transcription."))
+        else:
+            self.engine_hint.set_text(_(
+                "Myna is not running now; until it is, Dictate uses the "
+                "model below."))
+
+    def _on_engine_changed(self, dd, _p):
+        idx = dd.get_selected()
+        if 0 <= idx < len(self._engine_values):
+            self._save_w("engine", self._engine_values[idx])
+            self._update_engine_hint()
+
     def _save_w(self, key, value):
         self.state["whisper"][key] = value
         self._save_state_debounced()
@@ -254,7 +302,10 @@ class DictationSection:
 
     def _refresh_model_status(self):
         name = dropdown_value(self.model_dd)
-        if not vf.faster_whisper_available():
+        parakeet = vf.is_parakeet(name)
+        installed = (vf.parakeet_available() if parakeet
+                     else vf.faster_whisper_available())
+        if not installed:
             self.model_status.set_text(
                 f"\u2717 {_('Speech recognition is not installed yet')}")
             self.install_btn.set_visible(True)
@@ -265,7 +316,9 @@ class DictationSection:
                     f"({_('python3-pip is missing')})")
             return
         self.install_btn.set_visible(False)
-        if vf.whisper_model_is_cached(name):
+        cached = (vf.parakeet_is_cached() if parakeet
+                  else vf.whisper_model_is_cached(name))
+        if cached:
             self.model_status.set_text(f"✓ {_('model downloaded')}")
         else:
             self.model_status.set_text(_("model not downloaded yet"))
@@ -290,9 +343,16 @@ class DictationSection:
         self.dl_progress.set_visible(True)
         self.dl_progress.set_text(_("Installing..."))
 
+        # Parakeet needs onnx-asr (with ONNX Runtime and the Hugging Face
+        # downloader); the Whisper models need faster-whisper.
+        if vf.is_parakeet(dropdown_value(self.model_dd)):
+            pkgs = ["onnx-asr[cpu,hub]", "sounddevice", "soundfile"]
+        else:
+            pkgs = ["faster-whisper", "av<19", "sounddevice", "soundfile"]
+
         def worker():
             ok = pip_install(
-                ["faster-whisper", "av<19", "sounddevice", "soundfile"],
+                pkgs,
                 progress=lambda m: GLib.idle_add(self.model_status.set_text, m),
                 pulse=lambda: GLib.idle_add(self.dl_progress.pulse))
 
@@ -317,6 +377,18 @@ class DictationSection:
         self.model_status.set_text(f"⬇ {name}...")
 
         def worker():
+            if vf.is_parakeet(name):
+                try:
+                    _path, err = vf.download_parakeet(
+                        frac_cb=lambda fr, lbl=None: GLib.idle_add(
+                            self._set_dl_progress, fr, lbl))
+                    if err:
+                        GLib.idle_add(self.model_status.set_text, f"✗ {err}")
+                    else:
+                        GLib.idle_add(self._refresh_model_status)
+                finally:
+                    GLib.idle_add(self._hide_dl_progress)
+                return
             try:
                 _model, err = vf.load_whisper_model(
                     name,

@@ -149,8 +149,18 @@ microphone, and whether to confirm the text before it is typed.
 - **Local** runs Whisper on your machine via `faster-whisper`. Pick a model
   (`tiny` → `large-v3`) and use the download button to fetch it ahead of time;
   larger models are more accurate but slower and bigger.
+  `parakeet-v3` (NVIDIA Parakeet, since 6.3) is almost as accurate as
+  `large-v3` and fast without a graphics card; 25 European languages, about
+  670 MB. It needs `onnx-asr`, which **Install speech recognition** installs.
 - **Remote API** sends the audio to an OpenAI-compatible transcription endpoint.
   Fill in the URL, model and (optional) API key, then use **Test connection**.
+
+### Myna
+
+On Ubuntu with [Myna](https://github.com/canonical/myna) running, choose
+**Speech recognition: Myna** under Settings → Dictation. Dictate then starts
+and stops Myna, which records, recognises and types the text itself. When
+Myna is not running, VoxFox uses its own model.
 
 ### GPU acceleration
 
@@ -205,10 +215,10 @@ may not take effect.
 
 ## Keyboard shortcuts
 
-VoxFox can install up to ten global shortcuts for you — open
+VoxFox can install up to eleven global shortcuts for you — open
 **Settings → Shortcuts**, optionally change any combination by clicking it and
 pressing the keys, then choose **Install shortcuts**. This works on Cinnamon,
-GNOME, LXQt, XFCE and KDE Plasma; nothing is installed automatically. Six
+GNOME, LXQt, XFCE and KDE Plasma; nothing is installed automatically. Seven
 have a default key:
 
 | Command                    | Action                     | Default   |
@@ -219,6 +229,7 @@ have a default key:
 | `voxfox --whisper-toggle`  | Dictate (speech to text)   | `Super+W` |
 | `voxfox --ocr-select`      | Read a screen region (OCR) | `Super+A` |
 | `voxfox --read-page`       | Read web page (experimental) | `Super+V` |
+| `voxfox --touch-toggle`    | Touch button on/off        | `Super+T` |
 
 The other four have no default key; give them one first if you want them:
 OCR select & translate (`voxfox --ocr-select-translate`), Live transcription
@@ -257,7 +268,8 @@ Optional, for Whisper on GPU: the NVIDIA driver, CUDA runtime and cuDNN.
 - Program: `/usr/lib/voxfox/` (launcher `/usr/bin/voxfox`)
 - Piper engine + voices: `~/.piper/`
 - Whisper models cache: `~/.cache/huggingface/`
-- Settings: `~/.config/voxfox_state.json`
+- Parakeet model: `~/.local/share/voxfox/models/`
+- Settings: `~/.config/voxfox/state.json`
 
 ## For developers / source code
 
@@ -286,7 +298,7 @@ be present). **Test** with `make check` (ruff, compile, pytest).
 
 ```bash
 bash packaging/build-deb.sh                 # makes src/voxfox_<version>_all.deb
-VERSION=6.2.0 bash packaging/build-deb.sh   # build a specific version
+VERSION=6.3.0 bash packaging/build-deb.sh   # build a specific version
 ```
 
 Building needs `dpkg-deb` and `fakeroot`; `make deb` does the same.

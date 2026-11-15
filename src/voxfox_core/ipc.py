@@ -211,6 +211,14 @@ class IPCServer:
         if cmd == "quit":
             self.app.root.after(0, self.app.on_close)
             return "ok"
+        if cmd in ("touch-toggle", "touch"):
+            self.app.root.after(0, self.app.toggle_touch_button)
+            return "ok"
+        if cmd == "show":
+            # Starting VoxFox again while it runs: bring its window up
+            # (it may be hidden behind the touch button, 6.3).
+            self.app.root.after(0, self.app.show_main_window)
+            return "ok"
         return f"unknown: {cmd}"
 
 
@@ -269,6 +277,7 @@ def run_cli(args):
         "live_toggle":    "live-toggle",
         "translate":      "translate",
         "type_speak":     "type-speak",
+        "touch_toggle":   "touch-toggle",
         "pause":          "pause-toggle",
         "status":         "ping",
         "quit":           "quit",

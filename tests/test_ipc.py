@@ -52,3 +52,44 @@ def test_ipc_server_start_aborts_when_runtime_dir_is_unsafe(monkeypatch):
 def test_acquire_singleton_lock_aborts_when_runtime_dir_is_unsafe(monkeypatch):
     monkeypatch.setattr(ipc, "ensure_runtime_dir", lambda: False)
     assert ipc.acquire_singleton_lock() is False
+
+
+def test_show_command_brings_up_the_window():
+    """Starting VoxFox again sends "show" (6.3): the running VoxFox must
+    show its window, which the touch button may have hidden."""
+    calls = []
+
+    class Root:
+        def after(self, _ms, fn, *a):
+            calls.append(fn.__name__)
+
+    class App:
+        root = Root()
+
+        def show_main_window(self):
+            pass
+
+    server = ipc.IPCServer.__new__(ipc.IPCServer)
+    server.app = App()
+    assert server._handle("show") == "ok"
+    assert calls == ["show_main_window"]
+
+
+def test_touch_toggle_command():
+    """Super+T runs `voxfox --touch-toggle`, which sends "touch-toggle"."""
+    calls = []
+
+    class Root:
+        def after(self, _ms, fn, *a):
+            calls.append(fn.__name__)
+
+    class App:
+        root = Root()
+
+        def toggle_touch_button(self):
+            pass
+
+    server = ipc.IPCServer.__new__(ipc.IPCServer)
+    server.app = App()
+    assert server._handle("touch-toggle") == "ok"
+    assert calls == ["toggle_touch_button"]

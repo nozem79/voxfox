@@ -31,6 +31,9 @@ to their module; nothing outside a module uses them (tests excepted).
 | `tts.py` | Speaking: `speak()`, pause, stop, progress, and the workers for Piper and speech-dispatcher |
 | `sdengine.py` | speech-dispatcher as second engine (Voxin, espeak-ng, RHVoice ...) |
 | `stt.py` | Dictation: recording, the Whisper model, transcription (local or remote) |
+| `parakeet.py` | NVIDIA Parakeet as a second local model: download into `models/`, loading, transcription (onnx-asr) |
+| `myna.py` | Dictating through Ubuntu's Myna: D-Bus names, which states mean busy, status texts |
+| `touchbutton.py` | The floating touch button: gestures, action ids, defaults, cleaning up its settings |
 | `ocr.py` | Text from images and PDFs (Tesseract), joining wrapped lines |
 | `docreader.py` | Text from Word, LibreOffice, RTF and plain text files |
 | `documents.py` | The document library and reading positions |
@@ -54,6 +57,7 @@ can replace one attribute:
 | `_speech` | `tts` | the speaking thread, stop/pause events, progress, position |
 | `_voice_cache` | `voices` | the downloaded voice catalogue and when it was fetched |
 | `_whisper` | `stt` | the loaded model, its name and device, the recorder process |
+| `_parakeet` | `parakeet` | the loaded Parakeet model and its lock |
 | `_hover` | `a11y` | hover on/off, last thing said, the event listener, own-window reader |
 | `_roles` | `a11y` | AT-SPI role sets, filled on first use |
 | `_xlib` | `pointer` | the python-xlib connection |
@@ -80,6 +84,8 @@ test patches `tts.find_voice_dir`, not `voices.find_voice_dir`.
 | `screenshot.py` | Capturing a screen region for OCR |
 | `selfread.py` | Hover reading for VoxFox's own windows (without AT-SPI) |
 | `theme.py` | Applying light or dark |
+| `myna.py` | `MynaClient`: follows Myna on the session bus, toggles it, reports its state |
+| `touchbutton.py` | The floating touch button window: counting taps, hold, drag to move, staying on top |
 | `common.py`, `widgets.py` | Toolbar button list, icons, small widget helpers |
 
 ### main_window/ and preferences/
@@ -95,6 +101,7 @@ method in one mixin can call a method in another through `self`.
                 reading.py    read, translate, web page, stop, pause, hover
                 dictation.py  dictation
                 ocr.py        screen region and file OCR
+                touch.py      showing the touch button, running its actions
 
     preferences/window.py         PreferencesWindow: the list of sections, saving
                 languages.py      Taal 1 and Taal 2
@@ -103,6 +110,7 @@ method in one mixin can call a method in another through `self`.
                 ai.py             Vertalen en AI
                 shortcuts.py      Sneltoetsen
                 appearance.py     Weergave
+                touchbutton.py    Aanraakknop
                 general.py        Algemeen
                 helpers.py        small shared functions
 

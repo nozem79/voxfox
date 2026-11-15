@@ -194,18 +194,45 @@ def install_default_voices(progress=lambda m: None, frac=lambda *_a: None):
     return True, "ok"
 
 
+def _refresh_user_site():
+    """Make packages pip just put in ~/.local importable without a restart.
+
+    Python only adds the user's site-packages folder to sys.path at start-up
+    when that folder already exists. On a fresh system the first pip
+    install --user creates it, so until VoxFox restarted the new package
+    looked "not installed"."""
+    import importlib
+    import site
+    try:
+        user_site = site.getusersitepackages()
+        if os.path.isdir(user_site) and user_site not in sys.path:
+            site.addsitedir(user_site)
+    except Exception as e:
+        log.debug(f"user site refresh: {e}")
+    importlib.invalidate_caches()
+
+
 def pip_install(pkgs, progress=lambda m: None, pulse=lambda: None):
     progress(f"{_('Installing')}: {', '.join(pkgs)}...")
     base = [sys.executable, "-m", "pip", "install", "--user"]
     for cmd in (base + ["--break-system-packages", *pkgs], base + [*pkgs]):
+        # pip's output goes to a temporary file, not a pipe: nobody read the
+        # pipe while pip ran, and once it filled up (64 KB) pip waited for
+        # ever. The last lines go to the log when it fails.
         try:
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT, text=True)
-            while proc.poll() is None:
-                pulse()
-                time.sleep(0.4)
-            if proc.returncode == 0:
-                return True
+            with tempfile.TemporaryFile(mode="w+") as out:
+                proc = subprocess.Popen(cmd, stdout=out,
+                                        stderr=subprocess.STDOUT, text=True)
+                while proc.poll() is None:
+                    pulse()
+                    time.sleep(0.4)
+                if proc.returncode == 0:
+                    _refresh_user_site()
+                    return True
+                out.seek(0)
+                tail = out.read()[-1500:].strip()
+                log.warning(f"pip install {' '.join(pkgs)} failed "
+                            f"(exit {proc.returncode}): {tail}")
         except Exception as e:
             log.debug(f"pip attempt failed: {e}")
     return False
@@ -419,7 +446,7 @@ class SetupDialog(Gtk.Window):
         outer.append(self._make_step(
             "shortcuts",
             _("Keyboard shortcuts"),
-            _("Registers the six VoxFox shortcuts on your desktop. Change the "
+            _("Registers the VoxFox shortcuts on your desktop. Change the "
               "keys first under Settings → Shortcuts if you like."),
             self._sc_btn))
 

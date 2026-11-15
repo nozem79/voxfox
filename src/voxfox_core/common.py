@@ -626,7 +626,19 @@ def have_command(cmd):
     return shutil.which(cmd) is not None
 
 
+def bearer_header(api_key):
+    """The Authorization value for an API key, or None when there is none.
+
+    Keys are often pasted from a file or a web page and bring a newline or
+    spaces with them; Python's HTTP code then refuses the whole request
+    ("Invalid header value"). Whitespace never belongs in a token, so it is
+    removed everywhere, not only at the ends."""
+    key = "".join(str(api_key or "").split())
+    return f"Bearer {key}" if key else None
+
+
 __all__ = [
+    "bearer_header",
     "SAMPLE_TEXT",
     "tr_for",
     "sample_text_for_lang",

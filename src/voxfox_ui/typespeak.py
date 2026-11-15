@@ -397,7 +397,10 @@ class TypeSpeakWindow(Gtk.Window):
         if self._hid_main:
             self._hid_main = False
             try:
-                self.win.present()
+                # Not when the touch button keeps VoxFox's window hidden.
+                if not (hasattr(self.win, "touch_hides_main")
+                        and self.win.touch_hides_main()):
+                    self.win.present()
             except Exception as e:
                 log.debug(f"type and speak: could not restore: {e}")
 

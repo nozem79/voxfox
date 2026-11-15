@@ -297,6 +297,13 @@ Settings live on the *Dictation* tab:
   - `small` — recommended default; good multilingual
   - `medium` — better, ~1.5 GB
   - `large-v3` — best, ~3 GB and slow on CPU
+  - `parakeet-v3` — NVIDIA Parakeet (since 6.3): almost as accurate as
+    `large-v3` and fast on a normal processor, no graphics card needed.
+    25 European languages (Dutch, English, German, French, Spanish and
+    more); for other languages VoxFox uses Whisper `small`. About 670 MB.
+    The **Install speech recognition** button installs `onnx-asr` for it.
+- **Speech recognition** — only shown when Myna is installed: *VoxFox (own
+  model)* or *Myna* (see below)
 - **Compute** — *Auto* uses an NVIDIA GPU when detected (CUDA + cuDNN),
   otherwise the CPU, and falls back to CPU if GPU init fails
 - **Mic** — choose a specific input device, or leave at *Default*
@@ -307,7 +314,20 @@ Settings live on the *Dictation* tab:
 The active slot's language is used as a hint for Whisper, which is far more
 reliable than auto-detect. Models are downloaded on first use and cached under
 `~/.cache/huggingface/`; use the **download** button next to the model dropdown
-to fetch one ahead of time (with a progress bar).
+to fetch one ahead of time (with a progress bar). The Parakeet model is kept
+in `~/.local/share/voxfox/models/` instead, so it is easy to find and remove.
+
+### Myna (Ubuntu's own dictation)
+
+Ubuntu 26.10 ships [Myna](https://github.com/canonical/myna), an offline
+dictation tool. When Myna is running, the *Dictation* tab offers a choice
+under **Speech recognition**. With *Myna*, the Dictate button (and
+`Super+W`) starts and stops Myna: Myna records, recognises and types the
+text itself, and the button turns red while it listens. Choose Myna's
+language and model in Myna Settings. Because VoxFox never sees the text,
+these dictations are not in History. If Myna is not running, Dictate uses
+VoxFox's own model and says so. Live transcription always uses VoxFox's
+own model.
 
 ### GPU notes
 
@@ -495,6 +515,49 @@ may not apply. VoxFox re-asserts the "above" state shortly after launch and
 again whenever it loses focus, so opening another application doesn't push it
 behind.
 
+## Touch button
+
+For touchscreens (and anyone who prefers one big button to shortcuts),
+Settings → Touch button shows a round orange button that floats above all
+windows. Drag it anywhere; VoxFox remembers where. What it does:
+
+| Gesture         | Standard action                         |
+|-----------------|-----------------------------------------|
+| Tap once        | Choose a screen area and read it (OCR)  |
+| Tap twice       | Pause / resume                          |
+| Tap three times | Read web page                           |
+| Tap four times  | Show or hide the VoxFox window          |
+| Tap five times  | Switch the touch button off             |
+| Press and hold  | Stop, and clear the selection           |
+
+Each gesture can be set to any VoxFox action, or to nothing. Switching the
+button off (five taps) brings back the VoxFox window with its ordinary
+buttons; switch it on again in Settings or with `Super+T`
+(`voxfox --touch-toggle`), which also switches it off. A single tap
+acts after about a third of a second, because VoxFox first waits to see
+whether a second tap follows. "Clear the selection" empties the highlighted
+text (primary selection) so it is not read again; the ordinary clipboard is
+left alone. Tapping the button does not take the keyboard focus from the
+program you are reading in.
+
+The button shows what it is doing: it lights up once for each tap it
+understood (twice for a double tap, and one longer flash for a hold), pulses
+softly while VoxFox reads aloud, and stays light while reading is paused. If
+animations are switched off in your desktop settings, GTK leaves out the
+fading.
+
+The button steps aside while a window is full screen on its monitor (a
+video, a game, a presentation) and comes back when that window leaves full
+screen. Tick *Hide the VoxFox window while the touch button is on* to keep
+only the button on screen; the window goes away when you close Settings.
+Start VoxFox again from the app menu to see the window, or give a gesture the
+action *Show or hide the VoxFox window*.
+
+Like *Always on top*, this needs an X server: X11, or Wayland with VoxFox
+running through XWayland (VoxFox does that itself when the button is on;
+restart VoxFox after switching it on). On Wayland without XWayland the button
+is an ordinary small window that other windows can cover.
+
 ## Command-line interface
 
 VoxFox runs as a single instance with a local Unix socket. When the GUI is
@@ -534,7 +597,7 @@ briefly reloaded so the new keys take effect immediately). **Reset to defaults**
 restores the originals, and you can always change or remove them later in your
 desktop's own keyboard settings.
 
-The ten installable actions and their defaults:
+The eleven installable actions and their defaults:
 
 | Action          | Command                   | Default   |
 |-----------------|---------------------------|-----------|
@@ -544,6 +607,7 @@ The ten installable actions and their defaults:
 | Dictate         | `voxfox --whisper-toggle` | `Super+W` |
 | OCR select      | `voxfox --ocr-select`     | `Super+A` |
 | Read web page   | `voxfox --read-page`      | `Super+V` |
+| Touch button on/off | `voxfox --touch-toggle` | `Super+T` |
 | OCR select & translate | `voxfox --ocr-select-translate` | *(none)* |
 | Live transcription | `voxfox --live-toggle` | *(none)*  |
 | Translate & read | `voxfox --translate`    | *(none)*  |
@@ -647,6 +711,7 @@ Downloaded per user on first use: the Piper engine and voices, and
 | `~/Documents/VoxFox/Tile pictures/` | Pictures on tiles (the folder you chose)        |
 | `~/.cache/voxfox/voxfox.log`        | Log file                                        |
 | `~/.cache/huggingface/`             | Cached Whisper models (respects `$HF_HOME`)     |
+| `~/.local/share/voxfox/models/`     | The Parakeet model, once downloaded             |
 | `~/.piper/`                         | Piper engine, and any not-yet-migrated voices   |
 | `/usr/share/voxfox/voices/`         | System-wide voices (e.g. bundled by FoxOS), read-only |
 | `/usr/share/voxfox/locales/`        | Bundled translations                            |

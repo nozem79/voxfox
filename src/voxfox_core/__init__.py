@@ -29,6 +29,9 @@ from .piper import *  # noqa: F401,F403
 from .tts import *  # noqa: F401,F403
 from .sdengine import *  # noqa: F401,F403
 from .stt import *  # noqa: F401,F403
+from .parakeet import *  # noqa: F401,F403
+from .myna import *  # noqa: F401,F403
+from .touchbutton import *  # noqa: F401,F403
 from .ocr import *  # noqa: F401,F403
 from .textio import *  # noqa: F401,F403
 from .pointer import *  # noqa: F401,F403
